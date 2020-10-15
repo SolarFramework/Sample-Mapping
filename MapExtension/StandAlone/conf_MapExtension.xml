@@ -293,7 +293,7 @@
 			<property name="iterationsCount" type="Integer" value="500"/>
 			<property name="reprojError" type="Float" value="3.0"/>
 			<property name="confidence" type="Float" value="0.99"/>
-			<property name="minNbInliers" type="Integer" value="15"/>
+			<property name="minNbInliers" type="Integer" value="40"/>
 		</configure>
 		<configure component="SolARMapFilter">
 			<property name="reprojErrorThreshold" type="float" value="5.0"/>

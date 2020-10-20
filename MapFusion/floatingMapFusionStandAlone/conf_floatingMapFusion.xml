@@ -206,31 +206,19 @@
 	</module> 
 	
 	<factory>
-		<bindings>
-			<bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv" />
-			<!--bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorSIFTOpencv"/-->
-			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" />
-			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" name="Matcher-Mapping"/>
-			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherRadiusOpencv" name="Matcher-Fiducial"/>
-			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" name="Bootstrap"/>
-			<bind interface="IKeyframeSelector" to="SolARKeyframeSelector" name="Bootstrap" properties="BootstrapProperties"/>
+		<bindings>			
+			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" />		
 			<bind interface="IBundler" to="SolAROptimizationG2O" />
-			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>
-			<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
-			<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Blue" properties="BlueProperties"/>
-			<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Red" properties="RedProperties"/>
-			<bind interface="IMapper" to="SolARMapper" scope="Singleton"/>
-			<bind interface="IPointCloudManager" to="SolARPointCloudManager" scope="Singleton"/>
-			<bind interface="IKeyframesManager" to="SolARKeyframesManager" scope="Singleton"/>
-			<bind interface="ICovisibilityGraph" to="SolARCovisibilityGraph" scope="Singleton"/>
-			<bind interface="IKeyframeRetriever" to="SolARKeyframeRetrieverFBOW" scope="Singleton"/>
+			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>			
+			<bind interface="IMapper" to="SolARMapper" name="aMapper" properties="aMapper"/>
+			<bind interface="IMapper" to="SolARMapper" name="bMapper" properties="bMapper"/>
 		</bindings>
 	</factory>
 	
     <properties>
         <configure component="SolARDeviceDataLoader">
-			<property name="calibrationFile" type="string" value="\\filer.b-com.local\share\project\ARTWIN\Data\CALIBRATION_FILES\hololens_calibration.yml"/>
-			<property name="pathToData" type="string" value="\\filer.b-com.local\share\project\ARTWIN\Data\SOLAR_DEVICE_RECORDINGS\three_room_scale_24092020_090023"/>
+			<property name="calibrationFile" type="string" value="hololens_calibration.yml"/>
+			<property name="pathToData" type="string" value=""/>
 			<property name="delayTime" type="Integer" value="1"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
@@ -242,8 +230,19 @@
 			<property name="minWeightNeighbor" type="Float" value="15.0"/>
 			<property name="minTrackedPoints" type="Integer" value="100"/>
 		</configure>
-		<configure component="SolARMapper">
-			<property name="directory" type="string" value="map"/>
+		<configure component="SolARMapper" name="aMapper">
+			<property name="directory" type="string" value="D:\mapfusion\data\\map_oo_desktop_B_14102020_130641_marker1"/>
+			<property name="identificationFileName" type="string" value="identification.bin"/>
+			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
+			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
+			<property name="keyframesManagerFileName" type="string" value="keyframes.bin"/>
+			<property name="covisibilityGraphFileName" type="string" value="covisibility_graph.bin"/>
+			<property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
+			<property name="reprojErrorThreshold" type="float" value="10.0"/>
+			<property name="thresConfidence" type="float" value="0.5"/>
+		</configure>
+		<configure component="SolARMapper" name="bMapper">
+			<property name="directory" type="string" value="D:\mapfusion\data\map_oo_desktop_A_14102020_130351_marker2"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
@@ -428,17 +427,22 @@
 				<value>255</value>
 				<value>0</value>
 			</property>
+			<property name="points2Color" type="UnsignedInteger">
+				<value>255</value>
+				<value>255</value>
+				<value>0</value>
+			</property>
 			<property name="cameraColor" type="UnsignedInteger">
 				<value>255</value>
 				<value>255</value>
 				<value>255</value>
 			</property>
-			<property name="drawCameraAxis" type="UnsignedInteger" value="1"/>
+			<property name="drawCameraAxis" type="UnsignedInteger" value="0"/>
 			<property name="drawSceneAxis" type="UnsignedInteger" value="0"/>
-			<property name="drawWorldAxis" type="UnsignedInteger" value="1"/>
-			<property name="axisScale" type="Float" value="1.0"/>
+			<property name="drawWorldAxis" type="UnsignedInteger" value="0"/>
+			<property name="axisScale" type="Float" value="0.01"/>
 			<property name="pointSize" type="Float" value="1.0"/>
-			<property name="cameraScale" type="Float" value="1.0"/>
+			<property name="cameraScale" type="Float" value="0.075"/>
 			<property name="keyframeAsCamera" type="UnsignedInteger" value="1"/>
 			<property name="framesColor" type="UnsignedInteger">
 				<value>128</value>
@@ -446,6 +450,11 @@
 				<value>255</value>
 			</property>
 			<property name="keyframesColor" type="UnsignedInteger">
+				<value>255</value>
+				<value>0</value>
+				<value>0</value>
+			</property>
+			<property name="keyframes2Color" type="UnsignedInteger">
 				<value>0</value>
 				<value>0</value>
 				<value>255</value>

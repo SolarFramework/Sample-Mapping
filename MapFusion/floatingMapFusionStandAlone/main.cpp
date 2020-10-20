@@ -102,8 +102,13 @@ int main(int argc, char *argv[])
 		auto loopDetector = xpcfComponentManager->resolve<loop::ILoopClosureDetector>();
 		auto loopCorrector = xpcfComponentManager->resolve<loop::ILoopCorrector>();
 		auto bootstrapper = xpcfComponentManager->resolve<slam::IBootstrapper>();
-		auto mapping = xpcfComponentManager->resolve<slam::IMapping>();
 		auto fiducialMarkerPoseEstimator = xpcfComponentManager->resolve<solver::pose::IFiducialMarkerPose>();
+
+
+
+		auto aMapper = xpcfComponentManager->resolve<solver::map::IMapper>("aMapper");
+		auto bMapper = xpcfComponentManager->resolve<solver::map::IMapper>("bMapper");
+
 		LOG_INFO("Components created!");
 		LOG_INFO("Started!");
 
@@ -114,37 +119,58 @@ int main(int argc, char *argv[])
 		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		mapping->setCameraParameters(camParams.intrinsic, camParams.distortion);
+
+
 		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		projector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		pnpRansac->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
 
 
-		LOG_INFO("loading map from: ",)
-		if (mapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
-			LOG_INFO("Load map done!");
+		if (aMapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
+			LOG_INFO("Load map A done!");
 		}
-		LOG_INFO("Mapper info: ");
+		if (bMapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
+			LOG_INFO("Load map B done!");
+		}
 
-		LOG_INFO("Number of initial point cloud: {}", pointCloudManager->getNbPoints());
-		LOG_INFO("Number of initial keyframes: {}", keyframesManager->getNbKeyframes());
+		SRef<IPointCloudManager> aPointCloudManager, bPointCloudManager;
+		SRef<IKeyframesManager> aKeyframesManager, bKeyframesManager;
 
-		std::vector<Transform3Df> keyframePoses;
-		std::vector<SRef<Keyframe>> allKeyframes;
+		aMapper->getPointCloudManager(aPointCloudManager);
+		aMapper->getKeyframesManager(aKeyframesManager);
 
-		keyframesManager->getAllKeyframes(allKeyframes);
-		for (auto const &it : allKeyframes)
-			keyframePoses.push_back(it->getPose());
-		std::vector<SRef<CloudPoint>> pointCloud;
-		pointCloudManager->getAllPoints(pointCloud);
-		// display point cloud 
+		bMapper->getPointCloudManager(bPointCloudManager);
+		bMapper->getKeyframesManager(bKeyframesManager);
 
+		LOG_INFO("map A");
+		LOG_INFO("Number of point cloud: {}", aPointCloudManager->getNbPoints());
+		LOG_INFO("Number of keyframes: {}", aKeyframesManager->getNbKeyframes());
 
-		LOG_INFO(" kf no: ", allKeyframes.size());
-		LOG_INFO(" cloud no: ", pointCloud.size());
+		LOG_INFO("map B");
+		LOG_INFO("Number of point cloud: {}", bPointCloudManager->getNbPoints());
+		LOG_INFO("Number of keyframes: {}", bKeyframesManager->getNbKeyframes());
+
+		// get point clouds and keyframes
+		std::vector<SRef<Keyframe>> aKeyframes, bKeyframes;
+		std::vector<SRef<CloudPoint>> aPointCloud, bPointCloud;
+
+		aKeyframesManager->getAllKeyframes(aKeyframes);
+		bKeyframesManager->getAllKeyframes(bKeyframes);
+
+		aPointCloudManager->getAllPoints(aPointCloud);
+		bPointCloudManager->getAllPoints(bPointCloud);
+
+		std::vector<Transform3Df>aKfPoses, bKfPoses, aPoses,bPoses;
+		aPoses = {}; bPoses = {};
+		for (const auto &aKf : aKeyframes)
+			aKfPoses.push_back(aKf->getPose());
+
+		for (const auto &bKf : bKeyframes)
+			bKfPoses.push_back(bKf->getPose());
+
 		while (true) {
-			viewer3D->display(pointCloud, Transform3Df::Identity(), keyframePoses);
+			viewer3D->display(aPointCloud, Transform3Df::Identity(), aKfPoses,aPoses,bPointCloud,bKfPoses);
 		}
 
 

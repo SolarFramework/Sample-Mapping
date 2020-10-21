@@ -42,6 +42,7 @@
 #include "api/loop/ILoopCorrector.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/slam/IMapping.h"
+#include "api/loop/IOverlapDetector.h"
 #include "api/solver/pose/IFiducialMarkerPose.h"
 
 using namespace SolAR;
@@ -77,71 +78,33 @@ int main(int argc, char *argv[])
 		// declare and create components
 		LOG_INFO("Start creating components");
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
-		auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
-		auto overlay3D = xpcfComponentManager->resolve<display::I3DOverlay>();
-		auto overlay2DGreen = xpcfComponentManager->resolve<display::I2DOverlay>("Green");
-		auto overlay2DRed = xpcfComponentManager->resolve<display::I2DOverlay>("Red");
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
-		auto matchesOverlay = xpcfComponentManager->resolve<api::display::IMatchesOverlay>();
-		auto pointCloudManager = xpcfComponentManager->resolve<IPointCloudManager>();
-		auto keyframesManager = xpcfComponentManager->resolve<IKeyframesManager>();
-		auto covisibilityGraph = xpcfComponentManager->resolve<ICovisibilityGraph>();
-		auto keyframeRetriever = xpcfComponentManager->resolve<IKeyframeRetriever>();
-		auto mapper = xpcfComponentManager->resolve<solver::map::IMapper>();
-		auto keypointsDetector = xpcfComponentManager->resolve<features::IKeypointDetector>();
-		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractor>();
-		auto matcher = xpcfComponentManager->resolve<features::IDescriptorMatcher>();
-		auto corr2D3DFinder = xpcfComponentManager->resolve<solver::pose::I2D3DCorrespondencesFinder>();
-		auto pnpRansac = xpcfComponentManager->resolve<api::solver::pose::I3DTransformSACFinderFrom2D3D>();
-		auto keyframeSelector = xpcfComponentManager->resolve<solver::map::IKeyframeSelector>();
-		auto projector = xpcfComponentManager->resolve<api::geom::IProject>();
-		auto mapFilter = xpcfComponentManager->resolve<api::solver::map::IMapFilter>();
-		auto bundler = xpcfComponentManager->resolve<api::solver::map::IBundler>("BundleFixedKeyframes");
-		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
-		auto matchesFilter = xpcfComponentManager->resolve<features::IMatchesFilter>();
-		auto loopDetector = xpcfComponentManager->resolve<loop::ILoopClosureDetector>();
-		auto loopCorrector = xpcfComponentManager->resolve<loop::ILoopCorrector>();
-		auto bootstrapper = xpcfComponentManager->resolve<slam::IBootstrapper>();
-		auto fiducialMarkerPoseEstimator = xpcfComponentManager->resolve<solver::pose::IFiducialMarkerPose>();
-
-
-
-		auto aMapper = xpcfComponentManager->resolve<solver::map::IMapper>("aMapper");
-		auto bMapper = xpcfComponentManager->resolve<solver::map::IMapper>("bMapper");
-
+		auto globalMapper = xpcfComponentManager->resolve<solver::map::IMapper>("aMapper");
+		auto floatingMapper = xpcfComponentManager->resolve<solver::map::IMapper>("bMapper");
+		auto mapOverlapDetector = xpcfComponentManager->resolve<loop::IOverlapDetector>();	
 		LOG_INFO("Components created!");
-		LOG_INFO("Started!");
 
 		// Load camera intrinsics parameters
 		CameraParameters camParams;
 		camParams = arDevice->getParameters(0);
-		overlay3D->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
 
-
-		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		projector->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		pnpRansac->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
-
-
-		if (aMapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
+		if (globalMapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("Load map A done!");
 		}
-		if (bMapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
+		if (floatingMapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("Load map B done!");
 		}
 
+		mapOverlapDetector->setGlobalMapper(globalMapper);
+		LOG_INFO("overlap detector setted");
 		SRef<IPointCloudManager> aPointCloudManager, bPointCloudManager;
 		SRef<IKeyframesManager> aKeyframesManager, bKeyframesManager;
 
-		aMapper->getPointCloudManager(aPointCloudManager);
-		aMapper->getKeyframesManager(aKeyframesManager);
+		globalMapper->getPointCloudManager(aPointCloudManager);
+		globalMapper->getKeyframesManager(aKeyframesManager);
 
-		bMapper->getPointCloudManager(bPointCloudManager);
-		bMapper->getKeyframesManager(bKeyframesManager);
+		floatingMapper->getPointCloudManager(bPointCloudManager);
+		floatingMapper->getKeyframesManager(bKeyframesManager);
 
 		LOG_INFO("map A");
 		LOG_INFO("Number of point cloud: {}", aPointCloudManager->getNbPoints());
@@ -169,11 +132,14 @@ int main(int argc, char *argv[])
 		for (const auto &bKf : bKeyframes)
 			bKfPoses.push_back(bKf->getPose());
 
+		SRef<Keyframe> detectedLoopKeyframe;
+		Transform3Df sim3Transform;
+		std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
+		for (const auto & aKf : aKeyframes) {
+			LOG_INFO("trying to detect loop with kf: {}", aKf->getId());
+		}
 		while (true) {
 			viewer3D->display(aPointCloud, Transform3Df::Identity(), aKfPoses,aPoses,bPointCloud,bKfPoses);
 		}
-
-
-
     return 0;
 }

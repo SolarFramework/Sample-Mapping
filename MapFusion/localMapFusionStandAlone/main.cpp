@@ -121,14 +121,6 @@ int main(int argc, char *argv[])
 		LOG_INFO("Local map");
 		LOG_INFO("Number of point cloud: {}", localPointCloudManager->getNbPoints());
 		LOG_INFO("Number of keyframes: {}", localKeyframesManager->getNbKeyframes());
-				
-		// get point clouds and keyframes
-		std::vector<SRef<Keyframe>> globalKeyframes, localKeyframes;
-		std::vector<SRef<CloudPoint>> globalPointCloud, localPointCloud;
-		globalKeyframesManager->getAllKeyframes(globalKeyframes);
-		localKeyframesManager->getAllKeyframes(localKeyframes);
-		globalPointCloudManager->getAllPoints(globalPointCloud);
-		localPointCloudManager->getAllPoints(localPointCloud);
 
 		// load transformation matrix
 		Transform3Df transformLocalToGlobal;
@@ -152,7 +144,7 @@ int main(int argc, char *argv[])
 			LOG_INFO("Cannot merge two maps");
 			return 0;
 		}
-		LOG_INFO("The refined Transformation matrix: {}", transformLocalToGlobal.matrix());
+		LOG_INFO("The refined Transformation matrix: \n{}", transformLocalToGlobal.matrix());
 		LOG_INFO("Number of matched cloud points: {}", nbMatches);
 		LOG_INFO("Error: {}", error);
 
@@ -164,11 +156,15 @@ int main(int argc, char *argv[])
 		globalMap->pruning();
 		
 		// display		
-		globalPointCloud.clear();
+		std::vector<SRef<Keyframe>> globalKeyframes;
+		std::vector<SRef<CloudPoint>> globalPointCloud;
+		globalKeyframesManager->getAllKeyframes(globalKeyframes);
 		globalPointCloudManager->getAllPoints(globalPointCloud);
-		viewer3D->display(globalPointCloud, Transform3Df::Identity(), {}, {}, {}, {});
+		std::vector<Transform3Df> globalKeyframesPoses;
+		for (const auto &it : globalKeyframes)
+			globalKeyframesPoses.push_back(it->getPose());
 		while (true) {
-			if (viewer3D->display(globalPointCloud, Transform3Df::Identity(), {}, {}, {}, {}) == FrameworkReturnCode::_STOP)
+			if (viewer3D->display(globalPointCloud, Transform3Df::Identity(), globalKeyframesPoses, {}, {}, {}) == FrameworkReturnCode::_STOP)
 				break;
 		}
     }

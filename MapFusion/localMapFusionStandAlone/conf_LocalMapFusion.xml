@@ -247,6 +247,9 @@
 			<property name="reprojErrorThreshold" type="float" value="10.0"/>
 			<property name="thresConfidence" type="float" value="0.5"/>
 		</configure>
+		<configure component="SolARMapFusionOpencv">
+			<property name="radius" type="Float" value="0.3"/>
+		</configure>
 		<configure component="SolARKeypointDetectorOpencv">
 			<property name="type" type="string" value="AKAZE2"/>
 			<property name="imageRatio" type="Float" value="1.0"/>
@@ -436,9 +439,9 @@
 			<property name="drawCameraAxis" type="UnsignedInteger" value="0"/>
 			<property name="drawSceneAxis" type="UnsignedInteger" value="0"/>
 			<property name="drawWorldAxis" type="UnsignedInteger" value="1"/>
-			<property name="axisScale" type="Float" value="1.0"/>
+			<property name="axisScale" type="Float" value="0.1"/>
 			<property name="pointSize" type="Float" value="1.0"/>
-			<property name="cameraScale" type="Float" value="0.0"/>
+			<property name="cameraScale" type="Float" value="0.1"/>
 			<property name="keyframeAsCamera" type="UnsignedInteger" value="1"/>
 			<property name="framesColor" type="UnsignedInteger">
 				<value>255</value>

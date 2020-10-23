@@ -44,6 +44,7 @@
 #include "api/slam/IMapping.h"
 #include "api/loop/IOverlapDetector.h"
 #include "api/solver/pose/IFiducialMarkerPose.h"
+#include "api/solver/map/IMapFusion.h"
 
 using namespace SolAR;
 using namespace SolAR::datastructure;
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
 #endif
 
     LOG_ADD_LOG_TO_CONSOLE();
-
+	try {
 		/* instantiate component manager*/
 		/* this is needed in dynamic mode */
 		SRef<xpcf::IComponentManager> xpcfComponentManager = xpcf::getComponentManagerInstance();
@@ -79,14 +80,17 @@ int main(int argc, char *argv[])
 		LOG_INFO("Start creating components");
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
-		auto globalMapper = xpcfComponentManager->resolve<solver::map::IMapper>("aMapper");
-		auto floatingMapper = xpcfComponentManager->resolve<solver::map::IMapper>("bMapper");
-		auto mapOverlapDetector = xpcfComponentManager->resolve<loop::IOverlapDetector>();	
+		auto globalMapper = xpcfComponentManager->resolve<solver::map::IMapper>("globalMapper");
+		auto floatingMapper = xpcfComponentManager->resolve<solver::map::IMapper>("floatingMapper");
+		auto mapOverlapDetector = xpcfComponentManager->resolve<loop::IOverlapDetector>();
+		auto mapFusion = xpcfComponentManager->resolve<solver::map::IMapFusion>();
+		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
+
+
 		LOG_INFO("Components created!");
 
 		// Load camera intrinsics parameters
-		CameraParameters camParams;
-		camParams = arDevice->getParameters(0);
+		CameraParameters camParams = arDevice->getParameters(INDEX_USE_CAMERA);
 
 		if (globalMapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("Load map A done!");
@@ -97,49 +101,116 @@ int main(int argc, char *argv[])
 
 		mapOverlapDetector->setGlobalMapper(globalMapper);
 		LOG_INFO("overlap detector setted");
-		SRef<IPointCloudManager> aPointCloudManager, bPointCloudManager;
-		SRef<IKeyframesManager> aKeyframesManager, bKeyframesManager;
+		SRef<IPointCloudManager> floatingPointCloudManager, globalPointCloudManager;
+		SRef<IKeyframesManager> floatingKeyframesManager, globalKeyframesManager;
 
-		globalMapper->getPointCloudManager(aPointCloudManager);
-		globalMapper->getKeyframesManager(aKeyframesManager);
+		globalMapper->getPointCloudManager(globalPointCloudManager);
+		globalMapper->getKeyframesManager(globalKeyframesManager);
 
-		floatingMapper->getPointCloudManager(bPointCloudManager);
-		floatingMapper->getKeyframesManager(bKeyframesManager);
+		floatingMapper->getPointCloudManager(floatingPointCloudManager);
+		floatingMapper->getKeyframesManager(floatingKeyframesManager);
 
 		LOG_INFO("map A");
-		LOG_INFO("Number of point cloud: {}", aPointCloudManager->getNbPoints());
-		LOG_INFO("Number of keyframes: {}", aKeyframesManager->getNbKeyframes());
+		LOG_INFO("Number of point cloud: {}", globalPointCloudManager->getNbPoints());
+		LOG_INFO("Number of keyframes: {}", globalKeyframesManager->getNbKeyframes());
 
 		LOG_INFO("map B");
-		LOG_INFO("Number of point cloud: {}", bPointCloudManager->getNbPoints());
-		LOG_INFO("Number of keyframes: {}", bKeyframesManager->getNbKeyframes());
+		LOG_INFO("Number of point cloud: {}", floatingPointCloudManager->getNbPoints());
+		LOG_INFO("Number of keyframes: {}", floatingKeyframesManager->getNbKeyframes());
 
 		// get point clouds and keyframes
-		std::vector<SRef<Keyframe>> aKeyframes, bKeyframes;
-		std::vector<SRef<CloudPoint>> aPointCloud, bPointCloud;
+		std::vector<SRef<Keyframe>> floatingKeyframes, globalKeyframes;
+		std::vector<SRef<CloudPoint>> floatingPointCloud, globalPointCloud;
 
-		aKeyframesManager->getAllKeyframes(aKeyframes);
-		bKeyframesManager->getAllKeyframes(bKeyframes);
+		globalKeyframesManager->getAllKeyframes(globalKeyframes);
+		globalPointCloudManager->getAllPoints(globalPointCloud);
 
-		aPointCloudManager->getAllPoints(aPointCloud);
-		bPointCloudManager->getAllPoints(bPointCloud);
+		floatingKeyframesManager->getAllKeyframes(floatingKeyframes);
+		floatingPointCloudManager->getAllPoints(floatingPointCloud);
 
-		std::vector<Transform3Df>aKfPoses, bKfPoses, aPoses,bPoses;
+		std::vector<SRef<CloudPoint>>globalPointCloud_before;
+		for (auto &m : globalPointCloud) {
+			SRef<CloudPoint> cp = xpcf::utils::make_shared<CloudPoint>(Point3Df(m->getX(), m->getY(), m->getZ()));
+			globalPointCloud_before.push_back(cp);
+		}
+	
+		for (auto &m : floatingPointCloud) {
+			SRef<CloudPoint> cp = xpcf::utils::make_shared<CloudPoint>(Point3Df(m->getX(), m->getY(), m->getZ()));
+			globalPointCloud_before.push_back(cp);
+		}
+
+		LOG_INFO("map C");
+		LOG_INFO("Number of point cloud: {}", globalPointCloud_before.size());
+	
+		std::vector<Transform3Df>aKfPoses, bKfPoses, aPoses, bPoses;
 		aPoses = {}; bPoses = {};
-		for (const auto &aKf : aKeyframes)
-			aKfPoses.push_back(aKf->getPose());
 
-		for (const auto &bKf : bKeyframes)
-			bKfPoses.push_back(bKf->getPose());
+		//aKfPoses = {}; bKfPoses = {};
+		std::vector<Transform3Df> sim3Transform;
+		Transform3Df globalBestPose, floatingBestPose;
+		std::vector<std::pair<uint32_t, uint32_t>>overlaps;
+		std::vector<double>overlapScores;
+		SRef<Image>globalView;
+		SRef<Image>floatinglView;
 
-		SRef<Keyframe> detectedLoopKeyframe;
-		Transform3Df sim3Transform;
-		std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
-		for (const auto & aKf : aKeyframes) {
-			LOG_INFO("trying to detect loop with kf: {}", aKf->getId());
+		// detect overlap from global/floating map and extract sim3
+		LOG_INFO("<Overlaps detection: >");
+		if (mapOverlapDetector->detect(globalMapper,floatingMapper, sim3Transform, overlaps, overlapScores) == FrameworkReturnCode::_SUCCESS) {
+			LOG_INFO("	->number of overlaps detected: {}", overlaps.size());
+
+			globalView = globalKeyframes[overlaps[0].second]->getView();
+			floatinglView = globalKeyframes[overlaps[0].first]->getView();
+			auto maxOverlap = std::max_element(overlapScores.begin(), overlapScores.end());
+			int idxBestOverlap = std::distance(overlapScores.begin(), maxOverlap);
+			LOG_INFO("	->best at: {}  with {} ", idxBestOverlap ,overlapScores[idxBestOverlap]);
+			LOG_INFO("	->floating kf id {} - global kf id {}", overlaps[idxBestOverlap].first , overlaps[idxBestOverlap].second);
+			
+			// save overlaped poses as frames poses for viz purpose
+			aPoses.push_back(floatingKeyframes[overlaps[idxBestOverlap].first]->getPose());
+			aPoses.push_back(globalKeyframes[overlaps[idxBestOverlap].second]->getPose());
+
+			Transform3Df  bestSim3Transform = sim3Transform[idxBestOverlap];
+			// map fusion
+			uint32_t nbMatches;
+			float error;
+			if (mapFusion->merge(floatingMapper, globalMapper, bestSim3Transform, nbMatches, error) == FrameworkReturnCode::_SUCCESS) {
+
+				LOG_INFO("The refined Transformation matrix: {}", bestSim3Transform.matrix());
+				LOG_INFO("Number of matched cloud points: {}", nbMatches);
+				LOG_INFO("Error: {}", error);
+
+				// global bundle adjustment
+				globalBundler->setMapper(globalMapper);
+				globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+
+				globalMapper->pruning();
+
+				// display		
+				globalPointCloud.clear();
+				globalPointCloudManager->getAllPoints(globalPointCloud);
+				globalKeyframes.clear();
+				globalKeyframesManager->getAllKeyframes(globalKeyframes);
+				for (const auto &aKf : globalKeyframes)
+					aKfPoses.push_back(aKf->getPose());
+
+				viewer3D->display(globalPointCloud, Transform3Df::Identity(), aKfPoses, {}, {}, {});
+				while (true) {
+					if (viewer3D->display(globalPointCloud, Transform3Df::Identity(), aKfPoses, {}, globalPointCloud_before, {}) == FrameworkReturnCode::_STOP)
+						break;
+				}
+			}
+			else {
+				LOG_INFO(" no merge operated");
+				return -1;
+			}
+		}else {
+			LOG_INFO(" no overlaps detected")
+				return -1;
 		}
-		while (true) {
-			viewer3D->display(aPointCloud, Transform3Df::Identity(), aKfPoses,aPoses,bPointCloud,bKfPoses);
-		}
+	}
+	catch (xpcf::Exception e){
+		LOG_ERROR("The following exception has been catch : {}", e.what());
+		return -1;
+	}
     return 0;
 }

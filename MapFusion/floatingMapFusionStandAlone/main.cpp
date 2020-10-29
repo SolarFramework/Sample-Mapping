@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 		/* this is needed in dynamic mode */
 		SRef<xpcf::IComponentManager> xpcfComponentManager = xpcf::getComponentManagerInstance();
 
-		std::string configxml = std::string("conf_floatingMapFusion.xml");
+		std::string configxml = std::string("../conf_floatingMapFusion.xml");
 		if (argc == 2)
 			configxml = std::string(argv[1]);
 
@@ -79,15 +79,26 @@ int main(int argc, char *argv[])
 		// declare and create components
 		LOG_INFO("Start creating components");
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
+		LOG_INFO("AR device created");
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
+		LOG_INFO("viewer3D created");
+		auto viewerImage = xpcfComponentManager->resolve<display::IImageViewer>("viewerImage");
+		LOG_INFO("viewerImage created");
 		auto globalMapper = xpcfComponentManager->resolve<solver::map::IMapper>("globalMapper");
+		LOG_INFO("global mapper created");
 		auto floatingMapper = xpcfComponentManager->resolve<solver::map::IMapper>("floatingMapper");
+
+		auto currentGlobalMapper = xpcfComponentManager->resolve<solver::map::IMapper>("currentGlobalMapper");
+		LOG_INFO("global mapper created");
+		auto currentFloatingMapper = xpcfComponentManager->resolve<solver::map::IMapper>("currentFloatingMapper");
+
+		LOG_INFO("floating mapper created");
 		auto mapOverlapDetector = xpcfComponentManager->resolve<loop::IOverlapDetector>();
+		LOG_INFO("map overlap detector created");
 		auto mapFusion = xpcfComponentManager->resolve<solver::map::IMapFusion>();
+		LOG_INFO("map fusion created");
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
-
-
-		LOG_INFO("Components created!");
+		LOG_INFO("global bundler created");
 
 		// Load camera intrinsics parameters
 		CameraParameters camParams = arDevice->getParameters(INDEX_USE_CAMERA);
@@ -101,46 +112,20 @@ int main(int argc, char *argv[])
 
 		mapOverlapDetector->setGlobalMapper(globalMapper);
 		LOG_INFO("overlap detector setted");
-		SRef<IPointCloudManager> floatingPointCloudManager, globalPointCloudManager;
-		SRef<IKeyframesManager> floatingKeyframesManager, globalKeyframesManager;
-
-		globalMapper->getPointCloudManager(globalPointCloudManager);
-		globalMapper->getKeyframesManager(globalKeyframesManager);
-
-		floatingMapper->getPointCloudManager(floatingPointCloudManager);
-		floatingMapper->getKeyframesManager(floatingKeyframesManager);
-
-		LOG_INFO("map A");
-		LOG_INFO("Number of point cloud: {}", globalPointCloudManager->getNbPoints());
-		LOG_INFO("Number of keyframes: {}", globalKeyframesManager->getNbKeyframes());
-
-		LOG_INFO("map B");
-		LOG_INFO("Number of point cloud: {}", floatingPointCloudManager->getNbPoints());
-		LOG_INFO("Number of keyframes: {}", floatingKeyframesManager->getNbKeyframes());
 
 		// get point clouds and keyframes
-		std::vector<SRef<Keyframe>> floatingKeyframes, globalKeyframes;
-		std::vector<SRef<CloudPoint>> floatingPointCloud, globalPointCloud;
 
-		globalKeyframesManager->getAllKeyframes(globalKeyframes);
-		globalPointCloudManager->getAllPoints(globalPointCloud);
 
-		floatingKeyframesManager->getAllKeyframes(floatingKeyframes);
-		floatingPointCloudManager->getAllPoints(floatingPointCloud);
-
-		std::vector<SRef<CloudPoint>>globalPointCloud_before;
-		for (auto &m : globalPointCloud) {
-			SRef<CloudPoint> cp = xpcf::utils::make_shared<CloudPoint>(Point3Df(m->getX(), m->getY(), m->getZ()));
-			globalPointCloud_before.push_back(cp);
-		}
+		//std::vector<SRef<CloudPoint>>globalPointCloud_before;
+		//for (auto &m : globalPointCloud) {
+		//	SRef<CloudPoint> cp = xpcf::utils::make_shared<CloudPoint>(Point3Df(m->getX(), m->getY(), m->getZ()));
+		//	globalPointCloud_before.push_back(cp);
+		//}
 	
-		for (auto &m : floatingPointCloud) {
-			SRef<CloudPoint> cp = xpcf::utils::make_shared<CloudPoint>(Point3Df(m->getX(), m->getY(), m->getZ()));
-			globalPointCloud_before.push_back(cp);
-		}
-
-		LOG_INFO("map C");
-		LOG_INFO("Number of point cloud: {}", globalPointCloud_before.size());
+		//for (auto &m : floatingPointCloud) {
+		//	SRef<CloudPoint> cp = xpcf::utils::make_shared<CloudPoint>(Point3Df(m->getX(), m->getY(), m->getZ()));
+		//	globalPointCloud_before.push_back(cp);
+		//}
 	
 		std::vector<Transform3Df>aKfPoses, bKfPoses, aPoses, bPoses;
 		aPoses = {}; bPoses = {};
@@ -151,59 +136,95 @@ int main(int argc, char *argv[])
 		std::vector<std::pair<uint32_t, uint32_t>>overlaps;
 		std::vector<double>overlapScores;
 		SRef<Image>globalView;
-		SRef<Image>floatinglView;
-
+		
 		// detect overlap from global/floating map and extract sim3
 		LOG_INFO("<Overlaps detection: >");
-		if (mapOverlapDetector->detect(globalMapper,floatingMapper, sim3Transform, overlaps, overlapScores) == FrameworkReturnCode::_SUCCESS) {
+		if (mapOverlapDetector->detect(globalMapper, floatingMapper, sim3Transform, overlaps, overlapScores) == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("	->number of overlaps detected: {}", overlaps.size());
-
-			globalView = globalKeyframes[overlaps[0].second]->getView();
-			floatinglView = globalKeyframes[overlaps[0].first]->getView();
 			auto maxOverlap = std::max_element(overlapScores.begin(), overlapScores.end());
 			int idxBestOverlap = std::distance(overlapScores.begin(), maxOverlap);
-			LOG_INFO("	->best at: {}  with {} ", idxBestOverlap ,overlapScores[idxBestOverlap]);
-			LOG_INFO("	->floating kf id {} - global kf id {}", overlaps[idxBestOverlap].first , overlaps[idxBestOverlap].second);
-			
-			// save overlaped poses as frames poses for viz purpose
-			aPoses.push_back(floatingKeyframes[overlaps[idxBestOverlap].first]->getPose());
-			aPoses.push_back(globalKeyframes[overlaps[idxBestOverlap].second]->getPose());
+			LOG_INFO("	->best at: {}  with {} ", idxBestOverlap, overlapScores[idxBestOverlap]);
+			LOG_INFO("	->floating kf id {} - global kf id {}", overlaps[idxBestOverlap].first, overlaps[idxBestOverlap].second);
 
-			Transform3Df  bestSim3Transform = sim3Transform[idxBestOverlap];
-			// map fusion
-			uint32_t nbMatches;
-			float error;
-			if (mapFusion->merge(floatingMapper, globalMapper, bestSim3Transform, nbMatches, error) == FrameworkReturnCode::_SUCCESS) {
+			for (const auto &t : sim3Transform) {
+				std::cout << "------------------------------" << std::endl;
+				LOG_INFO("sim3: {}", t.matrix());
+			}
 
-				LOG_INFO("The refined Transformation matrix: {}", bestSim3Transform.matrix());
-				LOG_INFO("Number of matched cloud points: {}", nbMatches);
-				LOG_INFO("Error: {}", error);
 
-				// global bundle adjustment
-				globalBundler->setMapper(globalMapper);
-				globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+			Transform3Df  gtSim3Transform;
+			std::string transformFileName = "../TransformLocalToGlobal.txt";
+			std::ifstream transformFile;
+			transformFile.open(transformFileName);
+			if (!transformFile.is_open()) {
+				LOG_ERROR("Cannot open transform file: {}", transformFileName);
+				return 1;
+			}
+			for (int i = 0; i < 4; ++i)
+				for (int j = 0; j < 4; ++j)
+					transformFile >> gtSim3Transform(i, j);
+			transformFile.close();
+			//std::cout << " gt transform loaded corretcly" << std::endl;
+			//// map fusion
 
-				globalMapper->pruning();
+			//// display		
+			int idxOverlap = 0;
+			while (idxOverlap< sim3Transform.size()) {
+				globalMapper->loadFromFile(); floatingMapper->loadFromFile();
+				std::cout << "------------->operating with overlap: " << idxOverlap <<" / "<<sim3Transform.size()<<" with: "<<
+							overlapScores[idxOverlap]<<std::endl;
 
-				// display		
-				globalPointCloud.clear();
-				globalPointCloudManager->getAllPoints(globalPointCloud);
-				globalKeyframes.clear();
-				globalKeyframesManager->getAllKeyframes(globalKeyframes);
-				for (const auto &aKf : globalKeyframes)
-					aKfPoses.push_back(aKf->getPose());
+				currentFloatingMapper->set(floatingMapper);
+				currentGlobalMapper->set(globalMapper);
+				Transform3Df  bestSim3Transform = sim3Transform[idxOverlap];
+				uint32_t nbMatches;
+				float error;
+				int idxWeiting = 500;
+			//	LOG_INFO("sim3: \n{}", sim3Transform[idxOverlap].matrix());
+			//	LOG_INFO("sim3: \n{}", gtSim3Transform.matrix());
+				if (mapFusion->merge(currentFloatingMapper, currentGlobalMapper,
+					bestSim3Transform, nbMatches, error) == FrameworkReturnCode::_SUCCESS) {
 
-				viewer3D->display(globalPointCloud, Transform3Df::Identity(), aKfPoses, {}, {}, {});
-				while (true) {
-					if (viewer3D->display(globalPointCloud, Transform3Df::Identity(), aKfPoses, {}, globalPointCloud_before, {}) == FrameworkReturnCode::_STOP)
-						break;
+					SRef<IPointCloudManager>globalPointCloudManager;
+					SRef<IKeyframesManager> globalKeyframesManager;
+					SRef<ICovisibilityGraph> globalCovisibilityManager;
+
+					std::vector<SRef<Keyframe>> globalKeyframes;
+					std::vector<SRef<CloudPoint>> globalPointCloud;
+
+					globalPointCloud.clear();
+					globalKeyframes.clear();
+
+					//std::cout << "---> injecting parameters to bundler" << std::endl;
+					currentGlobalMapper->getPointCloudManager(globalPointCloudManager);
+					currentGlobalMapper->getKeyframesManager(globalKeyframesManager);
+					currentGlobalMapper->getCovisibilityGraph(globalCovisibilityManager);
+
+					//globalBundler->bindTo < xpcf::IInjectable >()->inject<IPointCloudManager>(globalPointCloudManager);
+					//globalBundler->bindTo < xpcf::IInjectable >()->inject<IKeyframesManager>(globalKeyframesManager);
+					//globalBundler->bindTo < xpcf::IInjectable >()->inject<ICovisibilityGraph>(globalCovisibilityManager);
+
+					//double error_bundle = globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+					//currentGlobalMapper->pruning();
+					//std::cout << "---> error bundle: " << error_bundle << std::endl;
+
+
+					globalPointCloudManager->getAllPoints(globalPointCloud);
+					globalKeyframesManager->getAllKeyframes(globalKeyframes);
+					aKfPoses.clear();
+
+					for (const auto &aKf : globalKeyframes)
+						aKfPoses.push_back(aKf->getPose());
+					for (unsigned int w = 0; w < idxWeiting; ++w)
+						viewer3D->display(globalPointCloud, Transform3Df::Identity(), aKfPoses, {}, {}, {});
 				}
+				else {
+					LOG_INFO(" no merge operated");
+				}
+				++idxOverlap;
 			}
-			else {
-				LOG_INFO(" no merge operated");
-				return -1;
-			}
-		}else {
+		}
+		else {
 			LOG_INFO(" no overlaps detected")
 				return -1;
 		}

@@ -217,9 +217,12 @@
 		<bindings>			
 			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" />		
 			<bind interface="IBundler" to="SolAROptimizationG2O" />
-			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>			
+			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>
+			<bind interface="IBundler" to="SolAROptimizationG2O" name="currentBundler" properties="currentBundlerProperties"/>			
 			<bind interface="IMapper" to="SolARMapper" name="globalMapper" properties="globalMapper"/>
 			<bind interface="IMapper" to="SolARMapper" name="floatingMapper" properties="floatingMapper"/>
+			<bind interface="IMapper" to="SolARMapper" name="currentGlobalMapper" properties="currentGlobalMapper"/>
+			<bind interface="IMapper" to="SolARMapper" name="currentFloatingMapper" properties="currentFloatingMapper"/>
 			<bind name="confImage" interface="IImageViewer" to="SolARImageViewerOpencv" properties="confImage_prop"/>
 		</bindings>
 	</factory>
@@ -240,7 +243,7 @@
 			<property name="minTrackedPoints" type="Integer" value="100"/>
 		</configure>
 		<configure component="SolARMapper" name="globalMapper">
-			<property name="directory" type="string" value="D:\mapfusion\data\\map_oo_desktop_A_14102020_130351_marker2"/>
+			<property name="directory" type="string" value="../../data/mapA"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
@@ -251,7 +254,7 @@
 			<property name="thresConfidence" type="float" value="0.5"/>
 		</configure>
 		<configure component="SolARMapper" name="floatingMapper">
-			<property name="directory" type="string" value="D:\mapfusion\data\\map_oo_desktop_B_14102020_130641_marker1"/>
+			<property name="directory" type="string" value="../../data/mapB"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
@@ -401,6 +404,17 @@
 			<property name="fixedMap" type="Integer" value="0"/>
 			<property name="fixedKeyframes" type="Integer" value="1"/>
 		</configure>
+		<configure component="SolAROptimizationG2O" name="currentBundler">
+			<property name="nbIterationsLocal" type="Integer" value="10"/>
+			<property name="nbIterationsGlobal" type="Integer" value="20"/>
+			<property name="setVerbose" type="Integer" value="0"/>
+			<property name="nbMaxFixedKeyframes" type="Integer" value="20"/>
+			<property name="errorOutlier" type="Float" value="5.0"/>
+			<property name="useSpanningTree" type="Integer" value="0"/>
+			<property name="isRobust" type="Integer" value="0"/>
+			<property name="fixedMap" type="Integer" value="0"/>
+			<property name="fixedKeyframes" type="Integer" value="1"/>
+		</configure>
         <configure component="SolARImageViewerOpencv" name="confImage_prop">
 			<property name="title" type="string" value="Image from the configuration file (press esc key to exit)"/>
 			<property name="exitKey" type="Integer" value="27"/>
@@ -462,9 +476,9 @@
 				<value>255</value>
 			</property>
 			<property name="keyframesColor" type="UnsignedInteger">
-				<value>0</value>
-				<value>0</value>
 				<value>255</value>
+				<value>0</value>
+				<value>0</value>
 			</property>
 			<property name="keyframes2Color" type="UnsignedInteger">
 				<value>0</value>

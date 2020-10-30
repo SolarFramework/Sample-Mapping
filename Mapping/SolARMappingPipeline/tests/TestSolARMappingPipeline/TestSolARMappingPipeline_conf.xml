@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<xpcf-registry autoAlias="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenCV/0.8.2/lib/x86_64/shared" description="OpenCV">
+                <component uuid="5B7396F4-A804-4F3C-A0EB-FB1D56042BB4" name="SolARCameraOpencv" description="SolARCameraOpencv">
+                        <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+                        <interface uuid="5DDC7DF0-8377-437F-9C81-3643F7676A5B" name="ICamera" description="ICamera"/>
+                </component>
+                <component uuid="d0116ed2-45d7-455d-8011-57959da1b0fa" name="SolARFiducialMarkerLoaderOpencv" description="Loads a fiducial marker from a description file.">
+                        <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+                        <interface uuid="8e54d5d0-f7a3-4d62-b012-728e5704b46a" name="ITrackableLoader" description="Loads a general Trackable object."/>
+                </component>
+        </module>
+        <factory>
+                <bindings>
+                        <bind interface="ICamera" to="SolARCameraOpencv" />
+                        <bind interface="ITrackableLoader" to="SolARFiducialMarkerLoaderOpencv" />
+                </bindings>
+        </factory>
+        <properties>
+                <configure component="SolARCameraOpencv">
+                        <property name="calibrationFile" type="string" value="camera_calibration.yml" description="path of the .yml file describing the calibration parameter of the camera."/>
+                        <property name="deviceID" type="UnsignedInteger" value="0" description="ID of the camera (default = 0)"/>
+                </configure>
+                <configure component="SolARFiducialMarkerLoaderOpencv">
+                        <property name="filePath" type="string" value="fiducialMarker.yml" description="Path of the .yml file describing the fiducial marker."/>
+                </configure>
+        </properties>
+</xpcf-registry>

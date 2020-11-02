@@ -94,7 +94,8 @@ int main(int argc, char *argv[])
 			kfPoses.push_back(kf->getPose());
 		}
 		while (true) {
-			viewer3D->display(pointCloud, Transform3Df::Identity(),kfPoses,fPoses);
+			if (viewer3D->display(pointCloud, Transform3Df::Identity(), kfPoses, fPoses) == FrameworkReturnCode::_STOP)
+				break;
 		}
     return 0;
 }

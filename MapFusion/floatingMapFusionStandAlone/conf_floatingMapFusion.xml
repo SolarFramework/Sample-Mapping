@@ -311,7 +311,7 @@
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
 			<property name="VOCpath" type="String" value="akaze.fbow"/>
-			<property name="threshold" type="Float" value="0.02"/>
+			<property name="threshold" type="Float" value="0.03"/>
 			<property name="level" type="Integer" value="3"/>
 			<property name="matchingDistanceRatio" type="Float" value="0.8"/>
 			<property name="matchingDistanceMax" type="Float" value="600"/>
@@ -321,7 +321,7 @@
 			<property name="reprojError" type="Float" value="10.0"/>
 			<property name="distanceError" type="Float" value="0.15"/>
 			<property name="confidence" type="Float" value="0.9"/>
-			<property name="minNbInliers" type="Integer" value="10"/>
+			<property name="minNbInliers" type="Integer" value="20"/>
 		</configure>
 		<configure component="SolARPoseFinderFrom2D2DOpencv">
 			<property name="confidence" type="Float" value="0.99"/>
@@ -404,7 +404,7 @@
 			</property>
 		</configure>
 		<configure component="SolAR3DPointsViewerOpengl" >
-			<property name="title" type="string" value="Points Cloud 1  (press esc to exit)"/>
+			<property name="title" type="string" value="Map fusion. Red = detected overlap keyframe. White = best detected overlap (press esc to exit)"/>
 			<property name="width" type="UnsignedInteger" value="1280"/>
 			<property name="height" type="UnsignedInteger" value="960"/>
 			<property name="backgroundColor" type="UnsignedInteger">

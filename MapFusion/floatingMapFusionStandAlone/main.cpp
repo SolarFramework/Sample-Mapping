@@ -121,9 +121,14 @@ int main(int argc, char *argv[])
 			LOG_INFO("	->floating kf id {} - global kf id {}", overlaps[idxBestOverlap].first, overlaps[idxBestOverlap].second);
 			LOG_INFO("  ->best sim3: \n{}", sim3Transform[idxBestOverlap].matrix());
 
-			for (const auto &t : sim3Transform) {
-				std::cout << "------------------------------" << std::endl;
-				LOG_INFO("sim3: \n{}", t.matrix());
+			// get overlap keyframe to visualize latter
+			std::vector<SRef<Keyframe>> overlapFltKeyframes;
+			SRef<IKeyframesManager> fltKeyframeMananger;
+			floatingMapper->getKeyframesManager(fltKeyframeMananger);
+			for (const auto &it : overlaps) {
+				SRef<Keyframe> keyframe;
+				fltKeyframeMananger->getKeyframe(it.first, keyframe);
+				overlapFltKeyframes.push_back(std::move(keyframe));
 			}
 
 			// map fusion
@@ -146,6 +151,7 @@ int main(int argc, char *argv[])
 			globalMapper->pruning();
 
 			// display		
+			// get global map
 			SRef<IPointCloudManager> globalPointCloudManager;
 			SRef<IKeyframesManager> globalKeyframesManager;
 			globalMapper->getPointCloudManager(globalPointCloudManager);
@@ -157,8 +163,12 @@ int main(int argc, char *argv[])
 			std::vector<Transform3Df> globalKeyframesPoses;
 			for (const auto &it : globalKeyframes)
 				globalKeyframesPoses.push_back(it->getPose());
+			// get overlap floating keyframe poses
+			std::vector<Transform3Df> overlapFltKfPoses;
+			for (const auto &it : overlapFltKeyframes)
+				overlapFltKfPoses.push_back(it->getPose());
 			while (true) {
-				if (viewer3D->display(globalPointCloud, Transform3Df::Identity(), globalKeyframesPoses, {}, {}, {}) == FrameworkReturnCode::_STOP)
+				if (viewer3D->display(globalPointCloud, overlapFltKfPoses[idxBestOverlap], overlapFltKfPoses, {}, {}, globalKeyframesPoses) == FrameworkReturnCode::_STOP)
 					break;
 			}
 		}

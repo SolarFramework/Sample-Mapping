@@ -215,15 +215,11 @@
 	
 	<factory>
 		<bindings>			
+			<bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv" />
 			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" />		
 			<bind interface="IBundler" to="SolAROptimizationG2O" />
-			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>
-			<bind interface="IBundler" to="SolAROptimizationG2O" name="currentBundler" properties="currentBundlerProperties"/>			
 			<bind interface="IMapper" to="SolARMapper" name="globalMapper" properties="globalMapper"/>
 			<bind interface="IMapper" to="SolARMapper" name="floatingMapper" properties="floatingMapper"/>
-			<bind interface="IMapper" to="SolARMapper" name="currentGlobalMapper" properties="currentGlobalMapper"/>
-			<bind interface="IMapper" to="SolARMapper" name="currentFloatingMapper" properties="currentFloatingMapper"/>
-			<bind name="confImage" interface="IImageViewer" to="SolARImageViewerOpencv" properties="confImage_prop"/>
 		</bindings>
 	</factory>
 	
@@ -232,15 +228,6 @@
 			<property name="calibrationFile" type="string" value="hololens_calibration.yml"/>
 			<property name="pathToData" type="string" value=""/>
 			<property name="delayTime" type="Integer" value="1"/>
-		</configure>
-		<configure component="SolARSLAMBootstrapper">
-			<property name="hasPose" type="Integer" value="1"/>
-			<property name="nbMinInitPointCloud" type="Integer" value="50"/>
-			<property name="angleThres" type="Float" value="0.05"/>
-		</configure>
-		<configure component="SolARSLAMMapping">
-			<property name="minWeightNeighbor" type="Float" value="15.0"/>
-			<property name="minTrackedPoints" type="Integer" value="100"/>
 		</configure>
 		<configure component="SolARMapper" name="globalMapper">
 			<property name="directory" type="string" value="../../data/mapA"/>
@@ -263,6 +250,9 @@
 			<property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
 			<property name="reprojErrorThreshold" type="float" value="10.0"/>
 			<property name="thresConfidence" type="float" value="0.5"/>
+		</configure>
+		<configure component="SolARMapFusionOpencv">
+			<property name="radius" type="Float" value="0.3"/>
 		</configure>
 		<configure component="SolARKeypointDetectorOpencv">
 			<property name="type" type="string" value="AKAZE2"/>
@@ -319,10 +309,6 @@
 			<property name="minNbMatchesIsKeyframe" type="Integer" value="5"/>
 			<property name="minMeanDistanceIsKeyframe" type="Float" value="0.05"/>			
 		</configure>
-		<configure component="SolARKeyframeSelector" name="BootstrapProperties">
-			<property name="minNbMatchesIsKeyframe" type="Integer" value="50"/>
-			<property name="minMeanDistanceIsKeyframe" type="Float" value="0.03"/>			
-		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
 			<property name="VOCpath" type="String" value="akaze.fbow"/>
 			<property name="threshold" type="Float" value="0.02"/>
@@ -333,6 +319,7 @@
 		<configure component="SolAR3DTransformEstimationSACFrom3D3D">
 			<property name="iterationsCount" type="Integer" value="500"/>
 			<property name="reprojError" type="Float" value="10.0"/>
+			<property name="distanceError" type="Float" value="0.15"/>
 			<property name="confidence" type="Float" value="0.9"/>
 			<property name="minNbInliers" type="Integer" value="10"/>
 		</configure>
@@ -393,29 +380,7 @@
 			<property name="fixedMap" type="Integer" value="0"/>
 			<property name="fixedKeyframes" type="Integer" value="0"/>
 		</configure>
-		<configure component="SolAROptimizationG2O" name="BundleFixedKeyframesProperties">
-			<property name="nbIterationsLocal" type="Integer" value="10"/>
-			<property name="nbIterationsGlobal" type="Integer" value="20"/>
-			<property name="setVerbose" type="Integer" value="0"/>
-			<property name="nbMaxFixedKeyframes" type="Integer" value="20"/>
-			<property name="errorOutlier" type="Float" value="5.0"/>
-			<property name="useSpanningTree" type="Integer" value="0"/>
-			<property name="isRobust" type="Integer" value="0"/>
-			<property name="fixedMap" type="Integer" value="0"/>
-			<property name="fixedKeyframes" type="Integer" value="1"/>
-		</configure>
-		<configure component="SolAROptimizationG2O" name="currentBundler">
-			<property name="nbIterationsLocal" type="Integer" value="10"/>
-			<property name="nbIterationsGlobal" type="Integer" value="20"/>
-			<property name="setVerbose" type="Integer" value="0"/>
-			<property name="nbMaxFixedKeyframes" type="Integer" value="20"/>
-			<property name="errorOutlier" type="Float" value="5.0"/>
-			<property name="useSpanningTree" type="Integer" value="0"/>
-			<property name="isRobust" type="Integer" value="0"/>
-			<property name="fixedMap" type="Integer" value="0"/>
-			<property name="fixedKeyframes" type="Integer" value="1"/>
-		</configure>
-        <configure component="SolARImageViewerOpencv" name="confImage_prop">
+        <configure component="SolARImageViewerOpencv">
 			<property name="title" type="string" value="Image from the configuration file (press esc key to exit)"/>
 			<property name="exitKey" type="Integer" value="27"/>
 			<property name="width" type="Integer" value="0"/>

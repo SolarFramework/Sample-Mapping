@@ -88,6 +88,7 @@ Release/
 *.vcxproj.filters
 *.bat
 *-packagedependencies.txt
+data*
 *-packagedependencies-win.txt
 *.pc
 *.sln

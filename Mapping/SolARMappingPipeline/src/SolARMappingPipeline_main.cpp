@@ -36,11 +36,7 @@ extern "C" XPCF_MODULEHOOKS_API xpcf::XPCFErrorCode XPCF_getComponent(const xpcf
     xpcf::XPCFErrorCode errCode = xpcf::XPCFErrorCode::_FAIL;
 
     errCode = xpcf::tryCreateComponent<SolAR::PIPELINES::MAPPINGPIPELINE::SolARMappingPipelineProcessing>(componentUUID,interfaceRef);
-/*
-    if (errCode != xpcf::XPCFErrorCode::_SUCCESS) {
-        errCode = xpcf::tryCreateComponent<SolARMappingPipeline::otherComponentType>(componentUUID,interfaceRef);
-    }
-*/
+
     return errCode;
 }
 

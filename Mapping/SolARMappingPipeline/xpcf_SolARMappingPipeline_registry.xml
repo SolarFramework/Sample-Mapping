@@ -1,9 +1,109 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
-<xpcf-registry>
-  <module uuid="43a3f181-99ba-4cc4-a926-8db6fab74454" name="SolARMappingPipeline" description="Mapping vision pipeline based on SolAR Framework" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARMappingPipeline/0.8.2/lib/x86_64/shared">
-    <component uuid="54b93f91-1628-4e63-b4d9-c8735b768b8b" name="SolARMappingPipelineProcessing" description="SolARMappingPipelineProcessing implements api::pipeline::IMappingPipeline interface">
+<xpcf-registry autoAlias="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <module uuid="28b89d39-41bd-451d-b19e-d25a3d7c5797" name="SolARModuleTools"  description="SolARModuleTools"  path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleTools/0.8.2/lib/x86_64/shared">
+    <component uuid="cddd23c4-da4e-4c5c-b3f9-7d095d097c97" name="SolARFiducialMarkerPoseEstimator" description="SolARFiducialMarkerPoseEstimator">
       <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-      <interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>
+      <interface uuid="d5247968-b74e-4afb-9abd-546021441ad4" name="IFiducialMarkerPose" description="IFiducialMarkerPose"/>
+    </component>
+    <component uuid="8f43eed0-1a2e-4c47-83f0-8dd5b259cdb0" name="SolARSLAMBootstrapper" description="SolARSLAMBootstrapper">
+      <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+      <interface uuid="b0515c62-cc81-4600-835c-8acdfedf39b5" name="IBootstrapper" description="IBootstrapper"/>
+    </component>
+    <component uuid="8e3c926a-0861-46f7-80b2-8abb5576692c" name="SolARMapper" description="SolARMapper">
+            <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+            <interface uuid="90075c1b-915b-469d-b92d-41c5d575bf15" name="IMapper" description="IMapper"/>
+    </component>
+    <component uuid="c276bcb1-2ac8-42f2-806d-d4fe0ce7d4be" name="SolARSLAMMapping" description="SolARSLAMMapping">
+      <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+      <interface uuid="33db5a56-9be2-4e5a-8fdc-de25e1633cf6" name="IMapping" description="IMapping"/>
+    </component>
+    <component uuid="f94b4b51-b8f2-433d-b535-ebf1f54b4bf6" name="SolARKeyframesManager" description="SolARPointCloudManager">
+      <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+      <interface uuid="2c147595-6c74-4f69-b63d-91e162c311ed" name="IKeyframesManager" description="IPointCloudManager"/>
+    </component>
+    <component uuid="958165e9-c4ea-4146-be50-b527a9a851f0" name="SolARPointCloudManager" description="SolARPointCloudManager">
+            <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+            <interface uuid="264d4406-b726-4ce9-a430-35d8b5e70331" name="IPointCloudManager" description="IPointCloudManager"/>
     </component>
   </module>
+  <module uuid="8f94a3c5-79ed-4851-9502-98033eae3a3b" name="SolARModuleG2O" description="SolARModuleG2O" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleG2O/0.8.2/lib/x86_64/shared">
+    <component uuid="870d89ba-bb5f-460a-a817-1fcb6473df70" name="SolAROptimizationG2O" description="SolAROptimizationG2O">
+      <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+      <interface uuid="35b9bdb7-d23c-4909-984f-ae7f9a292e6c" name="IBundler" description="IBundler"/>
+    </component>
+  </module>
+
+  <factory>
+    <bindings>
+      <bind interface="IBundler" to="SolAROptimizationG2O" />
+      <bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>
+      <bind interface="IMapper" to="SolARMapper" scope="Singleton"/>
+      <bind interface="IKeyframesManager" to="SolARKeyframesManager" scope="Singleton"/>
+      <bind interface="IPointCloudManager" to="SolARPointCloudManager" scope="Singleton"/>
+    </bindings>
+  </factory>
+
+  <properties>
+    <configure component="SolARFiducialMarkerPoseEstimator">
+      <property name="nbThreshold" type="Integer" value="3"/>
+      <property name="minThreshold" type="Integer" value="-1"/>
+      <property name="maxThreshold" type="Integer" value="220"/>
+    </configure>
+    <configure component="SolARSLAMBootstrapper">
+      <property name="hasPose" type="Integer" value="1"/>
+      <property name="nbMinInitPointCloud" type="Integer" value="50"/>
+      <property name="angleThres" type="Float" value="0.05"/>
+    </configure>
+    <configure component="SolAROptimizationG2O">
+      <property name="nbIterationsLocal" type="Integer" value="10"/>
+      <property name="nbIterationsGlobal" type="Integer" value="20"/>
+      <property name="setVerbose" type="Integer" value="0"/>
+      <property name="nbMaxFixedKeyframes" type="Integer" value="20"/>
+      <property name="errorOutlier" type="Float" value="5.0"/>
+      <property name="useSpanningTree" type="Integer" value="0"/>
+      <property name="isRobust" type="Integer" value="0"/>
+      <property name="fixedMap" type="Integer" value="0"/>
+      <property name="fixedKeyframes" type="Integer" value="0"/>
+    </configure>
+    <configure component="SolAROptimizationG2O" name="BundleFixedKeyframesProperties">
+      <property name="nbIterationsLocal" type="Integer" value="10"/>
+      <property name="nbIterationsGlobal" type="Integer" value="20"/>
+      <property name="setVerbose" type="Integer" value="0"/>
+      <property name="nbMaxFixedKeyframes" type="Integer" value="20"/>
+      <property name="errorOutlier" type="Float" value="5.0"/>
+      <property name="useSpanningTree" type="Integer" value="0"/>
+      <property name="isRobust" type="Integer" value="0"/>
+      <property name="fixedMap" type="Integer" value="0"/>
+      <property name="fixedKeyframes" type="Integer" value="1"/>
+    </configure>
+    <configure component="SolARMapper">
+      <property name="directory" type="string" value="map"/>
+      <property name="identificationFileName" type="string" value="identification.bin"/>
+      <property name="coordinateFileName" type="string" value="coordinate.bin"/>
+      <property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
+      <property name="keyframesManagerFileName" type="string" value="keyframes.bin"/>
+      <property name="covisibilityGraphFileName" type="string" value="covisibility_graph.bin"/>
+      <property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
+      <property name="reprojErrorThreshold" type="float" value="10.0"/>
+      <property name="thresConfidence" type="float" value="0.5"/>
+    </configure>
+    <configure component="SolARSLAMMapping">
+      <property name="minWeightNeighbor" type="Float" value="15.0"/>
+      <property name="minTrackedPoints" type="Integer" value="100"/>
+    </configure>
+    <configure component="SolARMapper">
+      <property name="directory" type="string" value="map"/>
+      <property name="identificationFileName" type="string" value="identification.bin"/>
+      <property name="coordinateFileName" type="string" value="coordinate.bin"/>
+      <property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
+      <property name="keyframesManagerFileName" type="string" value="keyframes.bin"/>
+      <property name="covisibilityGraphFileName" type="string" value="covisibility_graph.bin"/>
+      <property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
+      <property name="reprojErrorThreshold" type="float" value="10.0"/>
+      <property name="thresConfidence" type="float" value="0.5"/>
+    </configure>
+  </properties>
+
 </xpcf-registry>
+

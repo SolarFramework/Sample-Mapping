@@ -20,8 +20,6 @@
 #include "api/input/files/ITrackableLoader.h"
 #include "datastructure/FiducialMarker.h"
 
-#include "api/solver/pose/IFiducialMarkerPose.h"
-
 using namespace std;
 using namespace SolAR;
 using namespace SolAR::api;
@@ -63,6 +61,7 @@ int main(int argc, char ** argv)
         auto trackableLoader = xpcfComponentManager->resolve<input::files::ITrackableLoader>();
         LOG_INFO("Trackable loader component created");
 
+
         LOG_INFO("Init mapping pipeline");
         if (mapping_pipeline->init(xpcfComponentManager) == FrameworkReturnCode::_SUCCESS) {
 
@@ -98,14 +97,10 @@ int main(int argc, char ** argv)
                     std::vector<Transform3Df> poses;
                     std::chrono::system_clock::time_point timestamp;
 
-                    LOG_INFO("Get Hololens data");
-
                     if (arDevice->getData(images, poses, timestamp) != FrameworkReturnCode::_SUCCESS) {
                         LOG_ERROR ("Error while geting Hololens data");
                         return -1;
                     }
-
-                    LOG_INFO("Get image/pose for pose correction and bootstrap");
 
                     SRef<Image> image = images[INDEX_USE_CAMERA];
                     Transform3Df pose = poses[INDEX_USE_CAMERA];
@@ -114,7 +109,7 @@ int main(int argc, char ** argv)
                 }
 
                 LOG_INFO("Pose correction and bootstrap finished");
-
+/*
                 LOG_INFO("Start mapping pipeline");
                 if (mapping_pipeline->start() == FrameworkReturnCode::_SUCCESS) {
                     LOG_INFO("Start to send data from hololens to mapping pipeline");
@@ -145,6 +140,7 @@ int main(int argc, char ** argv)
 
                 LOG_INFO("Stop mapping pipeline");
                 mapping_pipeline->stop();
+*/
             }
             else {
                 LOG_ERROR ("Error while loading fiducial marker");

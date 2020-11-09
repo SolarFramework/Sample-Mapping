@@ -7,33 +7,33 @@
       <interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>
     </component>
   </module>
-  <module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenCV/0.8.2/lib/x86_64/shared" description="OpenCV">
-    <component uuid="4b5576c1-4c44-4835-a405-c8de2d4f85b0" name="SolARDeviceDataLoader" description="SolARDeviceDataLoader">
-      <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-      <interface uuid="999085e6-1d11-41a5-8cca-3daf4e02e941" name="IARDevice" description="IARDevice"/>
-    </component>
+
+  <module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" description="SolARModuleOpenCV" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenCV/0.8.2/lib/x86_64/shared">
     <component uuid="d0116ed2-45d7-455d-8011-57959da1b0fa" name="SolARFiducialMarkerLoaderOpencv" description="Loads a fiducial marker from a description file.">
       <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
       <interface uuid="8e54d5d0-f7a3-4d62-b012-728e5704b46a" name="ITrackableLoader" description="Loads a general Trackable object."/>
+    </component>
+    <component uuid="4b5576c1-4c44-4835-a405-c8de2d4f85b0" name="SolARDeviceDataLoader" description="SolARDeviceDataLoader">
+      <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+      <interface uuid="999085e6-1d11-41a5-8cca-3daf4e02e941" name="IARDevice" description="IARDevice"/>
     </component>
   </module>
 
   <factory>
     <bindings>
       <bind interface="IMappingPipeline" to="SolARMappingPipelineProcessing" />
-      <bind interface="IARDevice" to="SolARDeviceDataLoader" />
       <bind interface="ITrackableLoader" to="SolARFiducialMarkerLoaderOpencv" />
     </bindings>
   </factory>
 
   <properties>
-    <configure component="SolARDeviceDataLoader">
-      <property name="calibrationFile" type="string" value="C:\B-com\Dev\data_hololens\hololens_calibration.yml"/>
-      <property name="pathToData" type="string" value="C:\B-com\Dev\data_hololens\three_room_scale_24092020_090023"/>
-      <property name="delayTime" type="Integer" value="1"/>
-    </configure>
     <configure component="SolARFiducialMarkerLoaderOpencv">
       <property name="filePath" type="string" value="fiducialMarker.yml" description="Path of the .yml file describing the fiducial marker."/>
+    </configure>
+    <configure component="SolARDeviceDataLoader">
+      <property name="calibrationFile" type="string" value="C:\B-com\Dev\data\data_hololens\hololens_calibration.yml"/>
+      <property name="pathToData" type="string" value="C:\B-com\Dev\data\data_hololens\three_room_scale_24092020_090023"/>
+      <property name="delayTime" type="Integer" value="1"/>
     </configure>
   </properties>
 

@@ -94,8 +94,6 @@ namespace MAPPINGPIPELINE {
                 m_mappingTask = new xpcf::DelegateTask(fnMappingProcessing);
             }
 
-            LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
-
             return FrameworkReturnCode::_SUCCESS;
         }
         catch (xpcf::Exception e) {
@@ -136,9 +134,12 @@ namespace MAPPINGPIPELINE {
 
             LOG_DEBUG("Fiducial marker url / width / height = {} / {} / {}",
                      m_fiducialMarker.getURL(), m_fiducialMarker.getWidth(), m_fiducialMarker.getHeight());
-        }
 
-        return FrameworkReturnCode::_SUCCESS;
+            return FrameworkReturnCode::_SUCCESS;
+        }
+        else {
+            return FrameworkReturnCode::_ERROR_;
+        }
     }
 
     FrameworkReturnCode SolARMappingPipelineProcessing::correctPoseAndBootstrap
@@ -175,12 +176,16 @@ namespace MAPPINGPIPELINE {
             // Prepare mapping process
             m_keyframesManager->getKeyframe(1, m_refKeyframe);
             updateLocalMap(m_refKeyframe);
+
+            LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
         }
         else {
             LOG_DEBUG("Boostrap not finished");
 
             return FrameworkReturnCode::_STOP;
         }
+
+        return FrameworkReturnCode::_SUCCESS;
     }
 
     bool SolARMappingPipelineProcessing::isBootstrapFinished() const {
@@ -214,6 +219,8 @@ namespace MAPPINGPIPELINE {
             LOG_DEBUG("Camera parameters and/or fiducial marker description not set");
             return FrameworkReturnCode::_ERROR_;
         }
+
+        return FrameworkReturnCode::_SUCCESS;
     }
 
     FrameworkReturnCode SolARMappingPipelineProcessing::stop() {

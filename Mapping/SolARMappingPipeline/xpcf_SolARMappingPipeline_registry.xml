@@ -204,12 +204,8 @@
     <factory>
         <bindings>
             <bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv" />
-            <!--bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorSIFTOpencv"/-->
             <bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" />
-            <bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" name="Matcher-Mapping"/>
-            <bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherRadiusOpencv" name="Matcher-Fiducial"/>
-            <bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" name="Bootstrap"/>
-            <bind interface="IKeyframeSelector" to="SolARKeyframeSelector" name="Bootstrap" properties="BootstrapProperties"/>
+            <bind interface="IKeyframeSelector" to="SolARKeyframeSelector"/>
             <bind interface="IBundler" to="SolAROptimizationG2O" />
             <bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>
             <bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
@@ -221,6 +217,14 @@
             <bind interface="ICovisibilityGraph" to="SolARCovisibilityGraph" scope="Singleton"/>
             <bind interface="IKeyframeRetriever" to="SolARKeyframeRetrieverFBOW" scope="Singleton"/>
         </bindings>
+        <injects>
+            <inject to="SolARFiducialMarkerPoseEstimator">
+                <bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherRadiusOpencv"/>
+            </inject>
+            <inject to="SolARSLAMBootstrapper">
+                <bind interface="IKeyframeSelector" to="SolARKeyframeSelector" properties="BootstrapProperties"/>
+            </inject>
+        </injects>
     </factory>
 
     <properties>

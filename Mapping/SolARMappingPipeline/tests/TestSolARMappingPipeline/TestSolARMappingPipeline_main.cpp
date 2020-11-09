@@ -19,6 +19,7 @@
 #include "api/input/devices/IARDevice.h"
 #include "api/input/files/ITrackableLoader.h"
 #include "datastructure/FiducialMarker.h"
+#include "api/display/IImageViewer.h"
 
 using namespace std;
 using namespace SolAR;
@@ -61,6 +62,8 @@ int main(int argc, char ** argv)
         auto trackableLoader = xpcfComponentManager->resolve<input::files::ITrackableLoader>();
         LOG_INFO("Trackable loader component created");
 
+        auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
+        LOG_INFO("Image viewer component created");
 
         LOG_INFO("Init mapping pipeline");
         if (mapping_pipeline->init(xpcfComponentManager) == FrameworkReturnCode::_SUCCESS) {
@@ -104,6 +107,9 @@ int main(int argc, char ** argv)
 
                     SRef<Image> image = images[INDEX_USE_CAMERA];
                     Transform3Df pose = poses[INDEX_USE_CAMERA];
+
+                    if (imageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP)
+                        exit(0);
 
                     mapping_pipeline->correctPoseAndBootstrap(image, pose);
                 }

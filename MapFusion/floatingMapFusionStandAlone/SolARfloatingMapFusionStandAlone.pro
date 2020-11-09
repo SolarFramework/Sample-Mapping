@@ -64,7 +64,7 @@ win32 {
 }
 
 configfile.path = $${TARGETDEPLOYDIR}/
-configfile.files = $$files($${PWD}/conf_MapFusion.xml)
+configfile.files = $$files($${PWD}/conf_floatingMapFusion.xml)
 INSTALLS += configfile
 
 DISTFILES += \

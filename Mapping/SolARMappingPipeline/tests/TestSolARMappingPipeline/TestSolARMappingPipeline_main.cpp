@@ -37,6 +37,8 @@ int main(int argc, char ** argv)
 
     LOG_ADD_LOG_TO_CONSOLE();
 
+    int nb_images = 0;
+
     try {
         LOG_INFO("Get Component Manager instance");
 
@@ -64,6 +66,8 @@ int main(int argc, char ** argv)
 
         auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
         LOG_INFO("Image viewer component created");
+
+        LOG_INFO("\n\n************* Part 1: send images and poses to mapping pipeline *************\n\n");
 
         LOG_INFO("Init mapping pipeline");
         if (mapping_pipeline->init(xpcfComponentManager) == FrameworkReturnCode::_SUCCESS) {
@@ -115,7 +119,7 @@ int main(int argc, char ** argv)
                 }
 
                 LOG_INFO("Pose correction and bootstrap finished");
-/*
+
                 LOG_INFO("Start mapping pipeline");
                 if (mapping_pipeline->start() == FrameworkReturnCode::_SUCCESS) {
                     LOG_INFO("Start to send data from hololens to mapping pipeline");
@@ -131,12 +135,16 @@ int main(int argc, char ** argv)
                             break;
                         }
 
-                        LOG_INFO("Send (image, pose) to mapping pipeline");
+                        nb_images ++;
+                        LOG_INFO("Send (image, pose) num {} to mapping pipeline", nb_images);
 
                         SRef<Image> image = images[INDEX_USE_CAMERA];
                         Transform3Df pose = poses[INDEX_USE_CAMERA];
 
                         mapping_pipeline->mappingProcessRequest(image, pose);
+
+                        if (imageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP)
+                            exit(0);
                     }
                 }
                 else {
@@ -146,7 +154,7 @@ int main(int argc, char ** argv)
 
                 LOG_INFO("Stop mapping pipeline");
                 mapping_pipeline->stop();
-*/
+
             }
             else {
                 LOG_ERROR ("Error while loading fiducial marker");
@@ -158,6 +166,13 @@ int main(int argc, char ** argv)
         LOG_ERROR("The following exception has been caught {}", e.what());
         return -1;
     }
+
+    LOG_INFO("\n\n************* Part 2: get mapping pipeline result for display *************\n\n");
+
+    HANDLE g_hMainThread = OpenThread(THREAD_ALL_ACCESS,
+                               FALSE,
+                               GetCurrentThreadId());
+    SuspendThread(g_hMainThread);
 
     return 0;
 }

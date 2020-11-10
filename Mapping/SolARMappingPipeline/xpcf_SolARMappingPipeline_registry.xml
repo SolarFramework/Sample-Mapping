@@ -91,28 +91,9 @@
             <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
             <interface uuid="2e2bde18-ce39-11e7-abc4-cec278b6b50a" name="IDescriptorsExtractorSBPattern" description="IDescriptorsExtractorSBPattern"/>
         </component>
-        <component uuid="cc51d685-9797-4ffd-a9dd-cec4f367fa6a" name="SolAR2DOverlayOpencv" description="SolAR2DOverlayOpencv">
-            <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-            <interface uuid="62b8b0b5-9344-40e6-a288-e609eb3ff0f1" name="I2DOverlay" description="I2DOverlay"/>
-        </component>
-        <component uuid="19ea4e13-7085-4e3f-92ca-93f200ffb01b" name="SolARImageViewerOpencv" description="SolARImageViewerOpencv">
-            <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-            <interface uuid="b05f3dbb-f93d-465c-aee1-fb58e1480c42" name="IImageViewer" description="IImageViewer"/>
-        </component>
-        <component uuid="2db01f59-9793-4cd5-8e13-b25d0ed5735b" name="SolAR3DOverlayBoxOpencv" description="SolAR3DOverlayBoxOpencv">
-            <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-            <interface uuid="81a20f52-6bf9-4949-b914-df2f614bc945" name="I3DOverlay" description="I3DOverlay"/>
-        </component>
         <component uuid="52babb5e-9d33-11e8-98d0-529269fb1459" name="SolARPoseFinderFrom2D2DOpencv" description="SolARPoseFinderFrom2D2DOpencv">
             <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
             <interface uuid="6063a606-9d30-11e8-98d0-529269fb1459" name="I3DTransformFinderFrom2D2D" description="I3DTransformFinderFrom2D2D"/>
-        </component>
-    </module>
-
-    <module uuid="6e960df6-9a36-11e8-9eb6-529269fb1459" name="SolARModuleOpenGL" description="SolARModuleOpenGL" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenGL/0.8.2/lib/x86_64/shared">
-        <component uuid="afd38ea0-9a46-11e8-9eb6-529269fb1459" name="SolAR3DPointsViewerOpengl" description="SolAR3DPointsViewerOpengl">
-            <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-            <interface uuid="575d365a-9a27-11e8-9eb6-529269fb1459" name="I3DPointsViewer" description="I3DPointsViewer"/>
         </component>
     </module>
 
@@ -208,9 +189,6 @@
             <bind interface="IKeyframeSelector" to="SolARKeyframeSelector"/>
             <bind interface="IBundler" to="SolAROptimizationG2O" />
             <bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>
-            <bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
-            <bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Blue" properties="BlueProperties"/>
-            <bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Red" properties="RedProperties"/>
             <bind interface="IMapper" to="SolARMapper" scope="Singleton"/>
             <bind interface="IPointCloudManager" to="SolARPointCloudManager" scope="Singleton"/>
             <bind interface="IKeyframesManager" to="SolARKeyframesManager" scope="Singleton"/>
@@ -324,45 +302,6 @@
         <configure component="SolARLoopClosureDetector">
             <property name="minNbInliers" type="Integer" value="30"/>
         </configure>
-        <configure component="SolAR2DOverlayOpencv" name="GreenProperties">
-            <property name="thickness" type="UnsignedInteger" value="2"/>
-            <property name="radius" type="UnsignedInteger" value="2"/>
-            <property name="color"  type="UnsignedInteger">
-                <value>0</value>
-                <value>255</value>
-                <value>0</value>
-            </property>
-            <property name="maxMatches" type="UnsignedInteger" value="-1"/>
-        </configure>
-        <configure component="SolAR2DOverlayOpencv" name="BlueProperties">
-            <property name="thickness" type="UnsignedInteger" value="2"/>
-            <property name="radius" type="UnsignedInteger" value="2"/>
-            <property name="color"  type="UnsignedInteger">
-                <value>255</value>
-                <value>0</value>
-                <value>0</value>
-            </property>
-        <property name="maxMatches" type="UnsignedInteger" value="-1"/>
-        </configure>
-        <configure component="SolAR2DOverlayOpencv" name="RedProperties">
-            <property name="thickness" type="UnsignedInteger" value="2"/>
-            <property name="radius" type="UnsignedInteger" value="2"/>
-            <property name="color"  type="UnsignedInteger">
-                <value>0</value>
-                <value>0</value>
-                <value>255</value>
-            </property>
-            <property name="maxMatches" type="UnsignedInteger" value="-1"/>
-        </configure>
-        <configure component="SolARMatchesOverlayOpencv">
-            <property name="thickness" type="UnsignedInteger" value="1"/>
-            <property name="mode" type="string" value="COLOR"/>
-            <property name="color"  type="UnsignedInteger">
-                <value>0</value>
-                <value>255</value>
-                <value>0</value>
-            </property>
-        </configure>
         <configure component="SolAROptimizationG2O">
             <property name="nbIterationsLocal" type="Integer" value="10"/>
             <property name="nbIterationsGlobal" type="Integer" value="20"/>
@@ -384,69 +323,6 @@
             <property name="isRobust" type="Integer" value="0"/>
             <property name="fixedMap" type="Integer" value="0"/>
             <property name="fixedKeyframes" type="Integer" value="1"/>
-        </configure>
-        <configure component="SolARImageViewerOpencv">
-            <property name="title" type="string" value="AR device mapping. Green = inliers, Red = outliers"/>
-            <property name="exitKey" type="Integer" value="27"/>
-            <property name="width" type="Integer" value="700"/>
-            <property name="height" type="Integer" value="400"/>
-        </configure>
-        <configure component="SolAR3DOverlayBoxOpencv">
-            <property name="position" type="Float">
-                <value>0</value>
-                <value>0</value>
-                <value>0</value>
-            </property>
-            <property name="orientation" type="Float">
-                <value>0.0</value>
-                <value>0.0</value>
-                <value>0.0</value>
-            </property>
-            <property name="size" type="Float">
-                <value>0.185</value>
-                <value>0.185</value>
-                <value>0.185</value>
-            </property>
-        </configure>
-        <configure component="SolAR3DPointsViewerOpengl">
-            <property name="title" type="string" value="Points Cloud (press esc to exit)"/>
-            <property name="width" type="UnsignedInteger" value="1280"/>
-            <property name="height" type="UnsignedInteger" value="960"/>
-            <property name="backgroundColor" type="UnsignedInteger">
-                <value>0</value>
-                <value>0</value>
-                <value>0</value>
-            </property>
-            <property name="fixedPointsColor" type="UnsignedInteger" value="1"/>
-            <property name="pointsColor" type="UnsignedInteger">
-                <value>0</value>
-                <value>255</value>
-                <value>0</value>
-            </property>
-            <property name="cameraColor" type="UnsignedInteger">
-                <value>255</value>
-                <value>255</value>
-                <value>255</value>
-            </property>
-            <property name="drawCameraAxis" type="UnsignedInteger" value="1"/>
-            <property name="drawSceneAxis" type="UnsignedInteger" value="0"/>
-            <property name="drawWorldAxis" type="UnsignedInteger" value="1"/>
-            <property name="axisScale" type="Float" value="1.0"/>
-            <property name="pointSize" type="Float" value="1.0"/>
-            <property name="cameraScale" type="Float" value="1.0"/>
-            <property name="keyframeAsCamera" type="UnsignedInteger" value="1"/>
-            <property name="framesColor" type="UnsignedInteger">
-                <value>128</value>
-                <value>0</value>
-                <value>255</value>
-            </property>
-            <property name="keyframesColor" type="UnsignedInteger">
-                <value>0</value>
-                <value>0</value>
-                <value>255</value>
-            </property>
-            <property name="zoomSensitivity" type="Float" value="10.0"/>
-            <property name="exitKey" type="Integer" value="27"/>
         </configure>
         <configure component="SolARFiducialMarkerPoseEstimator">
             <property name="nbThreshold" type="Integer" value="3"/>

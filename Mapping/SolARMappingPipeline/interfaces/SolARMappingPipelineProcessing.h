@@ -19,7 +19,7 @@
 
 #include "xpcf/component/ConfigurableBase.h"
 #include "SolARMappingPipelineAPI.h"
-#include "xpcf/threading/DropBuffer.h"
+#include "xpcf/threading/SharedFifo.h"
 #include "xpcf/threading/BaseTask.h"
 
 #include "api/pipeline/IMappingPipeline.h"
@@ -30,6 +30,15 @@
 #include "api/slam/IMapping.h"
 #include "api/storage/IKeyframesManager.h"
 #include "api/storage/IPointCloudManager.h"
+#include "api/storage/ICovisibilityGraph.h"
+#include "api/features/IKeypointDetector.h"
+#include "api/features/IDescriptorsExtractor.h"
+#include "api/features/IDescriptorMatcher.h"
+#include "api/features/IMatchesFilter.h"
+#include "api/solver/pose/I2D3DCorrespondencesFinder.h"
+#include "api/geom/IProject.h"
+#include "api/loop/ILoopClosureDetector.h"
+#include "api/loop/ILoopCorrector.h"
 #include "datastructure/CameraDefinitions.h"
 #include "datastructure/Image.h"
 #include "datastructure/CloudPoint.h"
@@ -123,13 +132,22 @@ namespace MAPPINGPIPELINE {
         SRef<api::slam::IMapping> m_mapping;
         SRef<api::storage::IKeyframesManager> m_keyframesManager;
         SRef<api::storage::IPointCloudManager> m_pointCloudManager;
+        SRef<api::features::IKeypointDetector> m_keypointsDetector;
+        SRef<api::features::IDescriptorsExtractor> m_descriptorExtractor;
+        SRef<api::features::IDescriptorMatcher> m_matcher;
+        SRef<api::features::IMatchesFilter> m_matchesFilter;
+        SRef<api::solver::pose::I2D3DCorrespondencesFinder> m_corr2D3DFinder;
+        SRef<api::geom::IProject> m_projector;
+        SRef<api::ICovisibilityGraph> m_covisibilityGraph;
+        SRef<api::loop::ILoopClosureDetector> m_loopDetector;
+        SRef<api::loop::ILoopCorrector> m_loopCorrector;
 
+        bool m_askedToStop;               // indicates if a "stop" request has been sent
         bool m_isBootstrapFinished;       // indicates if the bootstrap step is finished
         bool m_isFoundTransform;          // indicates if the 3D transformation as been found
         Transform3Df m_T_M_W;             // 3D transformation matrix
         std::vector<SRef<CloudPoint>> m_localMap; // Local map
         float m_minWeightNeighbor, m_reprojErrorThreshold;
-        std::vector<Transform3Df> m_framePoses;
         SRef<Keyframe> m_refKeyframe;
         int m_countNewKeyframes;
 
@@ -137,11 +155,15 @@ namespace MAPPINGPIPELINE {
         xpcf::DelegateTask * m_mappingTask = nullptr;
 
         // Drop buffer containing (image,pose) pairs for mapping pipeline processing
-        xpcf::DropBuffer<std::pair<SRef<Image>, Transform3Df>> m_inputDropBufferImagePose;
+        xpcf::SharedFifo<std::pair<SRef<Image>, Transform3Df>> m_inputSharedFifoImagePose;
 
         /// @brief Clear local map and initialize mapper
         /// @param[in] keyframe: reference key frame
         void updateLocalMap(const SRef<Keyframe> & keyframe);
+
+        /// @brief Process to bundle adjustment, map pruning
+        /// and update global map
+        void globalBundleAdjustment();
 
         /// @brief method that implementes the full maping processing
         void processMapping();

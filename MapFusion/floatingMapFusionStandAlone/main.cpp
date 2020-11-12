@@ -53,10 +53,6 @@ namespace xpcf  = org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
 
-
-
-
-
 int main(int argc, char *argv[])
 {
 
@@ -70,7 +66,7 @@ int main(int argc, char *argv[])
 		/* this is needed in dynamic mode */
 		SRef<xpcf::IComponentManager> xpcfComponentManager = xpcf::getComponentManagerInstance();
 
-		std::string configxml = std::string("../conf_floatingMapFusion.xml");
+		std::string configxml = std::string("conf_floatingMapFusion.xml");
 		if (argc == 2)
 			configxml = std::string(argv[1]);
 
@@ -83,21 +79,13 @@ int main(int argc, char *argv[])
 		// declare and create components
 		LOG_INFO("Start creating components");
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
-		LOG_INFO("AR device created");
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
-		LOG_INFO("viewer3D created");
 		auto viewerImage = xpcfComponentManager->resolve<display::IImageViewer>("viewerImage");
-		LOG_INFO("viewerImage created");
 		auto globalMapper = xpcfComponentManager->resolve<solver::map::IMapper>("globalMapper");
-		LOG_INFO("global mapper created");
 		auto floatingMapper = xpcfComponentManager->resolve<solver::map::IMapper>("floatingMapper");
-		LOG_INFO("floating mapper created");
 		auto mapOverlapDetector = xpcfComponentManager->resolve<loop::IOverlapDetector>();
-		LOG_INFO("map overlap detector created");
 		auto mapFusion = xpcfComponentManager->resolve<solver::map::IMapFusion>();
-		LOG_INFO("map fusion created");
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
-		LOG_INFO("global bundler created");
 
 		// Load camera intrinsics parameters
 		CameraParameters camParams = arDevice->getParameters(INDEX_USE_CAMERA);
@@ -116,7 +104,7 @@ int main(int argc, char *argv[])
 		// detect overlap from global/floating map and extract sim3
 		LOG_INFO("Overlap detection: ");
 		if (mapOverlapDetector->detect(globalMapper, floatingMapper, sim3Transform, overlapsIndices) == FrameworkReturnCode::_SUCCESS) {
-			LOG_INFO("	->overlap sim3: {}", sim3Transform.matrix());
+			LOG_INFO("	->overlap sim3: \n{}", sim3Transform.matrix());
 
 			// get overlap keyframe to visualize latter
 			std::vector<SRef<Keyframe>> overlapFltKeyframes;
@@ -129,6 +117,7 @@ int main(int argc, char *argv[])
 				LOG_INFO("Cannot merge two maps");
 				return 0;
 			}
+			LOG_INFO("The refined Transformation matrix: \n{}", sim3Transform.matrix());
 			LOG_INFO("Number of matched cloud points: {}", nbMatches);
 			LOG_INFO("Error: {}", error);
 

@@ -230,7 +230,7 @@
 			<property name="delayTime" type="Integer" value="1"/>
 		</configure>
 		<configure component="SolARMapper" name="globalMapper">
-			<property name="directory" type="string" value="../../data/mapA"/>
+			<property name="directory" type="string" value="mapA"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
@@ -241,7 +241,7 @@
 			<property name="thresConfidence" type="float" value="0.5"/>
 		</configure>
 		<configure component="SolARMapper" name="floatingMapper">
-			<property name="directory" type="string" value="../../data/mapB"/>
+			<property name="directory" type="string" value="mapB"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>

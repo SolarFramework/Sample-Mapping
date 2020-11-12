@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 		int countNewKeyframes(0);
 		while (true)
 		{
-			LOG_INFO("Reference keyframe id: {}", refKeyframe->getId());
+			LOG_DEBUG("Reference keyframe id: {}", refKeyframe->getId());
 			// get data
 			std::vector<SRef<Image>> images;
 			std::vector<Transform3Df> poses;
@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 					pts2d_outliers.push_back(pts2d[i]);
 				}
 			}
-			LOG_INFO("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
+			LOG_DEBUG("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
 
 			// Find more visibilities by projecting the rest of local map
 			//  projection points
@@ -280,19 +280,19 @@ int main(int argc, char *argv[])
 
 			// Add visibilities to current frame
 			frame->addVisibilities(newMapVisibility);
-			LOG_INFO("Number of tracked points: {}", newMapVisibility.size());
+			LOG_DEBUG("Number of tracked points: {}", newMapVisibility.size());
 			if (newMapVisibility.size() < minWeightNeighbor)
 				break;
 
 			// mapping
 			SRef<Keyframe> keyframe;
 			if (mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
-				LOG_INFO("New keyframe id: {}", keyframe->getId());			
+				LOG_DEBUG("New keyframe id: {}", keyframe->getId());			
 				// Local bundle adjustment
 				std::vector<uint32_t> bestIdx;
 				covisibilityGraph->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx);
 				bestIdx.push_back(keyframe->getId());
-				LOG_INFO("Nb keyframe to local bundle: {}", bestIdx.size());
+				LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
 				double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdx);
 				// map pruning
 				updateLocalMap(keyframe);
@@ -307,8 +307,8 @@ int main(int argc, char *argv[])
 					if (loopDetector->detect(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
 						// detected loop keyframe
 						LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-						LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-						LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
+						LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+						LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
 						// performs loop correction 						
 						Transform3Df keyframeOldPose = keyframe->getPose();
 						loopCorrector->correct(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
@@ -355,7 +355,9 @@ int main(int argc, char *argv[])
 		// map pruning
 		mapper->pruning();
 
-		LOG_INFO("Nb of keyframes / cloud points: {} / {}", keyframesManager->getNbKeyframes(), pointCloudManager->getNbPoints());
+		LOG_INFO("Nb keyframes of map: {}", keyframesManager->getNbKeyframes());
+		LOG_INFO("Nb cloud points of map: {}", pointCloudManager->getNbPoints());
+
 		// display
 		std::vector<Transform3Df> keyframePoses;
 		std::vector<SRef<Keyframe>> allKeyframes;

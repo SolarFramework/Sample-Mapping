@@ -44,7 +44,7 @@ namespace MAPPINGPIPELINE {
 
             LOG_DEBUG("Load configuration file");
 
-            if(componentManager->load("xpcf_SolARMappingPipeline_registry.xml")!=org::bcom::xpcf::_SUCCESS)
+            if (componentManager->load("xpcf_SolARMappingPipeline_registry.xml") != org::bcom::xpcf::_SUCCESS)
             {
                 LOG_ERROR("Failed to load the configuration file xpcf_SolARMappingPipeline_registry.xml");
                 return FrameworkReturnCode::_ERROR_;
@@ -80,7 +80,7 @@ namespace MAPPINGPIPELINE {
             m_fiducialMarker.setHeight(0);
             m_countNewKeyframes = 0;
 
-            m_askedToStop = false;
+            m_dataToStore = false;
             m_isBootstrapFinished = false;
             m_isFoundTransform = false;
             Transform3Df T_M_W = Transform3Df::Identity();
@@ -90,7 +90,7 @@ namespace MAPPINGPIPELINE {
             m_reprojErrorThreshold = m_mapper->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
 
             // Reset drop buffers
-            m_inputSharedFifoImagePose.empty();
+            m_inputImagePoseBuffer.empty();
 
             LOG_DEBUG("Set the mapping function for asynchronous task");
 
@@ -239,7 +239,8 @@ namespace MAPPINGPIPELINE {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::stop");
 
-        m_askedToStop = true;
+        LOG_DEBUG("Stop mapping processing task");
+        m_mappingTask->stop();
 
         return FrameworkReturnCode::_SUCCESS;
     }
@@ -249,42 +250,38 @@ namespace MAPPINGPIPELINE {
         LOG_DEBUG("SolARMappingPipelineProcessing::mappingProcessRequest");
 
         // Add pair (image, pose) to input drop buffer
-        m_inputSharedFifoImagePose.push(std::make_pair(image, pose));
+        m_inputImagePoseBuffer.push(std::make_pair(image, pose));
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode SolARMappingPipelineProcessing::getDataForVisualization(std::vector<CloudPoint> & outputPointClouds,
-                                                std::vector<SRef<Transform3Df>> & keyframePoses) {
+    FrameworkReturnCode SolARMappingPipelineProcessing::getDataForVisualization(std::vector<SRef<CloudPoint>> & outputPointClouds,
+                                                std::vector<Transform3Df> & keyframePoses) const {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::getDataForVisualization");
 
-        FrameworkReturnCode result = FrameworkReturnCode::_ERROR_;
+        std::vector<SRef<Keyframe>> allKeyframes;
 
-        // Get data from mapper
-        SRef<IPointCloudManager> pointCloudManager;
-        SRef<IKeyframesManager> keyframesManager;
+        if (m_keyframesManager->getAllKeyframes(allKeyframes) == FrameworkReturnCode::_SUCCESS)
+        {
+            for (auto const &it : allKeyframes)
+                keyframePoses.push_back(it->getPose());
 
-        // Get managers
-        if (m_mapper->getPointCloudManager(pointCloudManager) == FrameworkReturnCode::_SUCCESS) {
-            if (m_mapper->getKeyframesManager(keyframesManager) == FrameworkReturnCode::_SUCCESS) {
-/*
-                // Get point clouds
-                if (pointCloudManager->getAllPoints(outputPointClouds) == FrameworkReturnCode::_SUCCESS) {
-                    // Get key frames
-                    result = keyframesManager->getAllKeyframes(keyframePoses);
-                }
-*/
-            }
+            return m_pointCloudManager->getAllPoints(outputPointClouds);
+        }
+        else {
+            return FrameworkReturnCode::_ERROR_;
         }
 
-        return result;
     }
 
     void SolARMappingPipelineProcessing::updateLocalMap(const SRef<Keyframe> & keyframe) {
         m_localMap.clear();
         m_mapper->getLocalPointCloud(keyframe, m_minWeightNeighbor, m_localMap);
+
+        // New data to store
+        m_dataToStore = true;
     }
 
     void SolARMappingPipelineProcessing::globalBundleAdjustment() {
@@ -313,11 +310,14 @@ namespace MAPPINGPIPELINE {
 
             LOG_DEBUG("Reference keyframe id: {}", m_refKeyframe->getId());
 
-            if (!m_inputSharedFifoImagePose.empty()) {
+            if (!m_inputImagePoseBuffer.empty()) {
+
+                m_inputImagePoseBuffer.pop(image_pose_pair);
+/*
+            if (m_inputImagePoseBuffer.tryPop(image_pose_pair)) {
+
                 LOG_DEBUG("Got an (image, pose) pair to process");
-
-                m_inputSharedFifoImagePose.pop(image_pose_pair);
-
+*/
                 SRef<Image> image = image_pose_pair.first;
                 Transform3Df pose = image_pose_pair.second;
 
@@ -469,13 +469,12 @@ namespace MAPPINGPIPELINE {
             else {
                 LOG_DEBUG("***** No (image, pose) pair to process *****");
 
-                // Asked to stop?
-                if (m_askedToStop) {
+                // Data to store ?
+                if (m_dataToStore) {
+                    m_dataToStore = false;
+
                     // Bundle adjustment, map pruning and global map udate
                     globalBundleAdjustment();
-
-                    LOG_DEBUG("Stop mapping processing task");
-                    m_mappingTask->stop();
                 }
             }
         }

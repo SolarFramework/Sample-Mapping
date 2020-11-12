@@ -19,7 +19,7 @@
 
 #include "xpcf/component/ConfigurableBase.h"
 #include "SolARMappingPipelineAPI.h"
-#include "xpcf/threading/SharedFifo.h"
+#include "xpcf/threading/DropBuffer.h"
 #include "xpcf/threading/BaseTask.h"
 
 #include "api/pipeline/IMappingPipeline.h"
@@ -116,8 +116,8 @@ namespace MAPPINGPIPELINE {
         /// @param[out] outputPointClouds: pipeline current point clouds
         /// @param[out] keyframePoses: pipeline current keyframe poses
         /// @return FrameworkReturnCode::_SUCCESS if data are available, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode getDataForVisualization(std::vector<CloudPoint> & outputPointClouds,
-                                                            std::vector<SRef<Transform3Df>> & keyframePoses) override;
+        FrameworkReturnCode getDataForVisualization(std::vector<SRef<CloudPoint>> & outputPointClouds,
+                                                            std::vector<Transform3Df> & keyframePoses) const override;
 
     private:
 
@@ -142,7 +142,7 @@ namespace MAPPINGPIPELINE {
         SRef<api::loop::ILoopClosureDetector> m_loopDetector;
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
 
-        bool m_askedToStop;               // indicates if a "stop" request has been sent
+        bool m_dataToStore;               // indicates if new data to store
         bool m_isBootstrapFinished;       // indicates if the bootstrap step is finished
         bool m_isFoundTransform;          // indicates if the 3D transformation as been found
         Transform3Df m_T_M_W;             // 3D transformation matrix
@@ -155,7 +155,9 @@ namespace MAPPINGPIPELINE {
         xpcf::DelegateTask * m_mappingTask = nullptr;
 
         // Drop buffer containing (image,pose) pairs for mapping pipeline processing
-        xpcf::SharedFifo<std::pair<SRef<Image>, Transform3Df>> m_inputSharedFifoImagePose;
+        xpcf::SharedFifo<std::pair<SRef<Image>, Transform3Df>> m_inputImagePoseBuffer;
+//        xpcf::DropBuffer<std::pair<SRef<Image>, Transform3Df>> m_inputImagePoseBuffer;
+
 
         /// @brief Clear local map and initialize mapper
         /// @param[in] keyframe: reference key frame

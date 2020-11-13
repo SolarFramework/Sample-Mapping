@@ -76,8 +76,7 @@ namespace MAPPINGPIPELINE {
             // Initialize private members
             m_cameraParams.resolution.width = 0;
             m_cameraParams.resolution.height = 0;
-            m_fiducialMarker.setWidth(0);
-            m_fiducialMarker.setHeight(0);
+            m_fiducialMarker = nullptr;
             m_countNewKeyframes = 0;
 
             m_dataToStore = false;
@@ -142,10 +141,12 @@ namespace MAPPINGPIPELINE {
 
             const FiducialMarker *fiducialMarker = dynamic_cast<const FiducialMarker *>(&trackableObject);
 
-            m_fiducialMarker = *fiducialMarker;
+            m_fiducialMarker = xpcf::utils::make_shared<FiducialMarker>(*fiducialMarker);
+
+            m_fiducialMarkerPoseEstimator->setMarker(m_fiducialMarker);
 
             LOG_DEBUG("Fiducial marker url / width / height = {} / {} / {}",
-                     m_fiducialMarker.getURL(), m_fiducialMarker.getWidth(), m_fiducialMarker.getHeight());
+                     m_fiducialMarker->getURL(), m_fiducialMarker->getWidth(), m_fiducialMarker->getHeight());
 
             return FrameworkReturnCode::_SUCCESS;
         }
@@ -213,7 +214,7 @@ namespace MAPPINGPIPELINE {
 
         // Check members initialization
         if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.width > 0)
-                && (m_fiducialMarker.getWidth() > 0) && (m_fiducialMarker.getHeight() > 0)) {
+                && (m_fiducialMarker != nullptr) && (m_fiducialMarker->getWidth() > 0) && (m_fiducialMarker->getHeight() > 0)) {
 
             if (m_isBootstrapFinished) {
 
@@ -292,7 +293,7 @@ namespace MAPPINGPIPELINE {
         // Map pruning
         m_mapper->pruning();
 
-        LOG_INFO("Nb of keyframes / cloud points: {} / {}",
+        LOG_DEBUG("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 
         LOG_DEBUG("Update global map");

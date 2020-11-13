@@ -121,8 +121,8 @@ namespace MAPPINGPIPELINE {
 
     private:
 
-        CameraParameters m_cameraParams;  // camera parameters
-        FiducialMarker m_fiducialMarker;  // fiducial marker description
+        CameraParameters m_cameraParams;        // camera parameters
+        SRef<FiducialMarker> m_fiducialMarker;  // fiducial marker description
 
         // Components used
         SRef<api::solver::pose::IFiducialMarkerPose> m_fiducialMarkerPoseEstimator;

@@ -190,13 +190,16 @@ int main(int argc, char *argv[])
 			// get data
 			std::vector<SRef<Image>> images;
 			std::vector<Transform3Df> poses;
-			std::chrono::system_clock::time_point timestamp;
+            std::chrono::system_clock::time_point timestamp;
 			if (arDevice->getData(images, poses, timestamp) != FrameworkReturnCode::_SUCCESS) {
 				LOG_ERROR("Error during capture");
 				break;
 			}
 			SRef<Image> image = images[INDEX_USE_CAMERA];
 			Transform3Df pose = poses[INDEX_USE_CAMERA];
+
+
+//
 			// correct pose
 			pose = T_M_W * pose;
 
@@ -207,7 +210,7 @@ int main(int argc, char *argv[])
 			descriptorExtractor->extract(image, keypoints, descriptors);
 			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, descriptors, image, refKeyframe, pose);
 			framePoses.push_back(pose);
-
+//
 			// feature matching to reference keyframe			
 			std::vector<DescriptorMatch> matches;
 			matcher->match(refKeyframe->getDescriptors(), descriptors, matches);
@@ -218,7 +221,9 @@ int main(int argc, char *argv[])
 				if (score > maxMatchDistance)
 					maxMatchDistance = score;
 			}
-			
+//
+            LOG_INFO("maxMatchDistance = {}", maxMatchDistance);
+
 			// find 2D-3D point correspondences
 			std::vector<Point2Df> pts2d;
 			std::vector<Point3Df> pts3d;
@@ -232,14 +237,15 @@ int main(int argc, char *argv[])
 			for (const auto & itCorr : corres2D3D) {
 				idxCPSeen.insert(itCorr.second->getId());
 			}
+//
 			// Find map visibilities of the current frame
 			std::map<uint32_t, uint32_t> newMapVisibility;	// map visibilities			
 			std::vector< Point2Df > refCPSeenProj;
 			projector->project(pts3d, refCPSeenProj, pose); // Project ref cloud point seen to current frame to define inliers/outliers
-			std::vector<Point2Df> pts2d_inliers, pts2d_outliers;
+            std::vector<Point2Df> pts2d_inliers, pts2d_outliers;
 			for (int i = 0; i < refCPSeenProj.size(); ++i) {
 				float dis = (pts2d[i] - refCPSeenProj[i]).norm();
-				if (dis < reprojErrorThreshold) {
+                if (dis < reprojErrorThreshold) {
 					corres2D3D[i].second->updateConfidence(true);
 					newMapVisibility[corres2D3D[i].first] = corres2D3D[i].second->getId();
 					pts2d_inliers.push_back(pts2d[i]);
@@ -250,7 +256,7 @@ int main(int argc, char *argv[])
 				}
 			}
 			LOG_INFO("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
-
+//
 			// Find more visibilities by projecting the rest of local map
 			//  projection points
 			std::vector<SRef<CloudPoint>> localMapUnseen;
@@ -267,6 +273,7 @@ int main(int argc, char *argv[])
 			}
 			std::vector<DescriptorMatch> allMatches;
 			matcher->matchInRegion(projected2DPts, desAllLocalMapUnseen, frame, allMatches, 0, maxMatchDistance * 1.5);
+//
 			// find visibility of new frame					
 			for (auto &it_match : allMatches) {
 				int idx_2d = it_match.getIndexInDescriptorB();
@@ -277,13 +284,13 @@ int main(int argc, char *argv[])
 					newMapVisibility[idx_2d] = localMapUnseen[idx_3d]->getId();
 				}
 			}
-
+//
 			// Add visibilities to current frame
 			frame->addVisibilities(newMapVisibility);
 			LOG_INFO("Number of tracked points: {}", newMapVisibility.size());
 			if (newMapVisibility.size() < minWeightNeighbor)
 				break;
-
+//
 			// mapping
 			SRef<Keyframe> keyframe;
 			if (mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
@@ -323,6 +330,7 @@ int main(int argc, char *argv[])
 					}
 				}
 			}			
+//
 			// update reference keyframe
 			if (keyframe) {
 				refKeyframe = keyframe;

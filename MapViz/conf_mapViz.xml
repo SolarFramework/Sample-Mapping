@@ -230,7 +230,7 @@
 			<property name="minTrackedPoints" type="Integer" value="100"/>
 		</configure>
 		<configure component="SolARMapper" name="mapViz">
-			<property name="directory" type="string" value="D:\mapfusion\data\\oo_A_B\\mapA"/>
+			<property name="directory" type="string" value="map"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>

@@ -243,7 +243,7 @@
 			<property name="angleThres" type="Float" value="0.05"/>
 		</configure>
 		<configure component="SolARSLAMMapping">
-			<property name="minWeightNeighbor" type="Float" value="10.0"/>
+			<property name="minWeightNeighbor" type="Float" value="2.0"/>
 			<property name="minTrackedPoints" type="Integer" value="100"/>
 		</configure>
 		<configure component="SolARMapper">
@@ -255,12 +255,12 @@
 			<property name="covisibilityGraphFileName" type="string" value="covisibility_graph.bin"/>
 			<property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
 			<property name="reprojErrorThreshold" type="float" value="10.0"/>
-			<property name="thresConfidence" type="float" value="0.5"/>
+			<property name="thresConfidence" type="float" value="0.25"/>
 		</configure>
 		<configure component="SolARKeypointDetectorOpencv">
 			<property name="type" type="string" value="AKAZE2"/>
-			<property name="imageRatio" type="Float" value="0.5"/>
-			<property name="nbDescriptors" type="Integer" value="1000"/>
+			<property name="imageRatio" type="Float" value="1.0"/>
+			<property name="nbDescriptors" type="Integer" value="2000"/>
 			<property name="nbOctaves" type="Integer" value="3"/>
 			<property name="threshold" type="Float" value="0.0001"/>
 		</configure>
@@ -297,7 +297,8 @@
 			<property name="iterationsCount" type="Integer" value="500"/>
 			<property name="reprojError" type="Float" value="3.0"/>
 			<property name="confidence" type="Float" value="0.99"/>
-			<property name="minNbInliers" type="Integer" value="40"/>
+			<property name="minNbInliers" type="Integer" value="30"/>
+			<property name="method" type="String" value="EPNP"/>
 		</configure>
 		<configure component="SolARMapFilter">
 			<property name="reprojErrorThreshold" type="float" value="5.0"/>
@@ -311,11 +312,11 @@
 		</configure>
 		<configure component="SolARKeyframeSelector" name="BootstrapProperties">
 			<property name="minNbMatchesIsKeyframe" type="Integer" value="50"/>
-			<property name="minMeanDistanceIsKeyframe" type="Float" value="0.03"/>			
+			<property name="minMeanDistanceIsKeyframe" type="Float" value="0.02"/>			
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
 			<property name="VOCpath" type="String" value="akaze.fbow"/>
-			<property name="threshold" type="Float" value="0.02"/>
+			<property name="threshold" type="Float" value="0.01"/>
 			<property name="level" type="Integer" value="3"/>
 			<property name="matchingDistanceRatio" type="Float" value="0.8"/>
 			<property name="matchingDistanceMax" type="Float" value="600"/>

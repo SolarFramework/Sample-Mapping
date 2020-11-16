@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
 					maxMatchDistance = score;
 			}
 
-            LOG_INFO("maxMatchDistance = {}", maxMatchDistance);
+            LOG_DEBUG("maxMatchDistance = {}", maxMatchDistance);
 
 			// find 2D-3D point correspondences
 			std::vector<Point2Df> pts2d;
@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
 				}
 			}
 
-            LOG_INFO("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
+            LOG_DEBUG("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
 
 			// Find more visibilities by projecting the rest of local map
 			//  projection points

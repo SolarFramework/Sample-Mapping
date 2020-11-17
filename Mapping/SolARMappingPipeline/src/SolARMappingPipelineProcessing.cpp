@@ -21,6 +21,13 @@ namespace SolAR {
 namespace PIPELINES {
 namespace MAPPINGPIPELINE {
 
+    // Initialization of static class members
+    bool SolARMappingPipelineProcessing::m_isBootstrapFinished = false;
+    SRef<api::storage::IKeyframesManager> SolARMappingPipelineProcessing::m_keyframesManager = 0;
+    SRef<api::storage::IPointCloudManager> SolARMappingPipelineProcessing::m_pointCloudManager = 0;
+
+// Public methods
+
     SolARMappingPipelineProcessing::SolARMappingPipelineProcessing():ConfigurableBase(xpcf::toUUID<SolARMappingPipelineProcessing>())
     {
         declareInterface<api::pipeline::IMappingPipeline>(this);
@@ -57,8 +64,12 @@ namespace MAPPINGPIPELINE {
             m_globalBundler = componentManager->resolve<api::solver::map::IBundler>();
             m_mapper = componentManager->resolve<api::solver::map::IMapper>();
             m_mapping = componentManager->resolve<api::slam::IMapping>();
-            m_keyframesManager = componentManager->resolve<api::storage::IKeyframesManager>();
-            m_pointCloudManager = componentManager->resolve<api::storage::IPointCloudManager>();
+            if (SolARMappingPipelineProcessing::m_keyframesManager == 0) {
+                SolARMappingPipelineProcessing::m_keyframesManager = componentManager->resolve<api::storage::IKeyframesManager>();
+            }
+            if (SolARMappingPipelineProcessing::m_pointCloudManager == 0) {
+                SolARMappingPipelineProcessing::m_pointCloudManager = componentManager->resolve<api::storage::IPointCloudManager>();
+            }
             m_keypointsDetector = componentManager->resolve<api::features::IKeypointDetector>();
             m_descriptorExtractor = componentManager->resolve<api::features::IDescriptorsExtractor>();
             m_matcher = componentManager->resolve<api::features::IDescriptorMatcher>();
@@ -80,16 +91,19 @@ namespace MAPPINGPIPELINE {
             m_countNewKeyframes = 0;
 
             m_dataToStore = false;
-            m_isBootstrapFinished = false;
             m_isFoundTransform = false;
             Transform3Df T_M_W = Transform3Df::Identity();
             m_minWeightNeighbor = 0;
+
+            // Initial bootstrap status
+            setBootstrapSatus(false);
 
             // Get properties
             m_reprojErrorThreshold = m_mapper->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
 
             // Reset drop buffers
             m_inputImagePoseBuffer.empty();
+
 
             LOG_DEBUG("Set the mapping function for asynchronous task");
 
@@ -155,59 +169,6 @@ namespace MAPPINGPIPELINE {
         }
     }
 
-    FrameworkReturnCode SolARMappingPipelineProcessing::correctPoseAndBootstrap
-                                            (const SRef<Image> & image, const Transform3Df & pose) {
-
-        LOG_DEBUG("SolARMappingPipelineProcessing::correctPoseAndBootstrap");
-
-        // Find T_W_M
-        if (!m_isFoundTransform) {
-            Transform3Df T_M_C;
-            if (m_fiducialMarkerPoseEstimator->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
-                m_T_M_W = T_M_C * pose.inverse();
-                m_isFoundTransform = true;
-                LOG_DEBUG("3D transformation found");
-            }
-            else {
-                LOG_DEBUG("3D transformation not found");
-                return FrameworkReturnCode::_STOP;
-            }
-        }
-
-        // Correct pose
-        Transform3Df pose2 = m_T_M_W * pose;
-
-        LOG_DEBUG("3D transformation found: do bootstrap");
-
-        SRef<Image> view;
-        if (m_bootstrapper->process(image, view, pose2) == FrameworkReturnCode::_SUCCESS) {
-            LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
-
-            double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
-            m_isBootstrapFinished = true;
-
-            // Prepare mapping process
-            m_keyframesManager->getKeyframe(1, m_refKeyframe);
-            updateLocalMap(m_refKeyframe);
-
-            LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
-        }
-        else {
-            LOG_DEBUG("Boostrap not finished");
-
-            return FrameworkReturnCode::_STOP;
-        }
-
-        return FrameworkReturnCode::_SUCCESS;
-    }
-
-    bool SolARMappingPipelineProcessing::isBootstrapFinished() const {
-
-        LOG_DEBUG("SolARMappingPipelineProcessing::isBootstrapFinished");
-
-        return m_isBootstrapFinished;
-    }
-
     FrameworkReturnCode SolARMappingPipelineProcessing::start() {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::start");
@@ -216,17 +177,8 @@ namespace MAPPINGPIPELINE {
         if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.width > 0)
                 && (m_fiducialMarker != nullptr) && (m_fiducialMarker->getWidth() > 0) && (m_fiducialMarker->getHeight() > 0)) {
 
-            if (m_isBootstrapFinished) {
-
-                LOG_DEBUG("Start mapping processing task");
-                m_mappingTask->start();
-
-                return FrameworkReturnCode::_SUCCESS;
-            }
-            else {
-                LOG_DEBUG("Bootstrap step is not finished");
-                return FrameworkReturnCode::_ERROR_;
-            }
+            LOG_DEBUG("Start mapping processing task");
+            m_mappingTask->start();
         }
         else {
             LOG_DEBUG("Camera parameters and/or fiducial marker description not set");
@@ -250,8 +202,9 @@ namespace MAPPINGPIPELINE {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::mappingProcessRequest");
 
-        // Add pair (image, pose) to input drop buffer
+        // Add pair (image, pose) to input drop buffer for mapping
         m_inputImagePoseBuffer.push(std::make_pair(image, pose));
+
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 
         return FrameworkReturnCode::_SUCCESS;
@@ -262,19 +215,74 @@ namespace MAPPINGPIPELINE {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::getDataForVisualization");
 
-        std::vector<SRef<Keyframe>> allKeyframes;
+        if (isBootstrapFinished()) {
 
-        if (m_keyframesManager->getAllKeyframes(allKeyframes) == FrameworkReturnCode::_SUCCESS)
-        {
-            for (auto const &it : allKeyframes)
-                keyframePoses.push_back(it->getPose());
+            std::vector<SRef<Keyframe>> allKeyframes;
 
-            return m_pointCloudManager->getAllPoints(outputPointClouds);
+            if (SolARMappingPipelineProcessing::m_keyframesManager->getAllKeyframes(allKeyframes) == FrameworkReturnCode::_SUCCESS)
+            {
+                for (auto const &it : allKeyframes)
+                    keyframePoses.push_back(it->getPose());
+
+                return SolARMappingPipelineProcessing::m_pointCloudManager->getAllPoints(outputPointClouds);
+            }
+            else {
+                return FrameworkReturnCode::_ERROR_;
+            }
         }
         else {
             return FrameworkReturnCode::_ERROR_;
         }
 
+    }
+
+// Private methods
+
+    bool SolARMappingPipelineProcessing::correctPoseAndBootstrap
+                                            (const SRef<Image> & image, const Transform3Df & pose) {
+
+        LOG_DEBUG("SolARMappingPipelineProcessing::correctPoseAndBootstrap");
+
+        // Find T_W_M
+        if (!m_isFoundTransform) {
+            Transform3Df T_M_C;
+            if (m_fiducialMarkerPoseEstimator->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
+                m_T_M_W = T_M_C * pose.inverse();
+                m_isFoundTransform = true;
+                LOG_DEBUG("3D transformation found");
+            }
+            else {
+                LOG_DEBUG("3D transformation not found");
+                return false;
+            }
+        }
+
+        // Correct pose
+        Transform3Df pose2 = m_T_M_W * pose;
+
+        LOG_DEBUG("3D transformation found: do bootstrap");
+
+        SRef<Image> view;
+        if (m_bootstrapper->process(image, view, pose2) == FrameworkReturnCode::_SUCCESS) {
+            LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
+
+            double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+
+            // Prepare mapping process
+            SolARMappingPipelineProcessing::m_keyframesManager->getKeyframe(1, m_refKeyframe);
+            updateLocalMap(m_refKeyframe);
+
+            LOG_DEBUG("Number of initial point cloud: {}", SolARMappingPipelineProcessing::m_pointCloudManager->getNbPoints());
+
+            setBootstrapSatus(true);
+        }
+        else {
+            LOG_DEBUG("Boostrap not finished");
+
+            return false;
+        }
+
+        return true;
     }
 
     void SolARMappingPipelineProcessing::updateLocalMap(const SRef<Keyframe> & keyframe) {
@@ -294,7 +302,7 @@ namespace MAPPINGPIPELINE {
         m_mapper->pruning();
 
         LOG_DEBUG("Nb of keyframes / cloud points: {} / {}",
-                 m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
+                 SolARMappingPipelineProcessing::m_keyframesManager->getNbKeyframes(), SolARMappingPipelineProcessing::m_pointCloudManager->getNbPoints());
 
         LOG_DEBUG("Update global map");
         m_mapper->saveToFile();
@@ -306,21 +314,38 @@ namespace MAPPINGPIPELINE {
 
         std::pair<SRef<Image>, Transform3Df> image_pose_pair;
 
+        LOG_DEBUG("Start pose correction and bootstrap");
+
+        while (!isBootstrapFinished()) {
+
+            // Get (image, pose) from input buffer
+            if (!m_inputImagePoseBuffer.empty()) {
+
+                m_inputImagePoseBuffer.pop(image_pose_pair);
+
+                SRef<Image> image = image_pose_pair.first;
+                Transform3Df pose = image_pose_pair.second;
+
+                // Ask for pose correction and bootstrap
+                correctPoseAndBootstrap(image, pose);
+            }
+        }
+
+        LOG_DEBUG("Pose correction and bootstrap finisehd");
+
         while (true) {
             LOG_DEBUG("Try to get (image, pose) pair from input buffer");
-
-            LOG_DEBUG("Reference keyframe id: {}", m_refKeyframe->getId());
 
             if (!m_inputImagePoseBuffer.empty()) {
 
                 m_inputImagePoseBuffer.pop(image_pose_pair);
-/*
-            if (m_inputImagePoseBuffer.tryPop(image_pose_pair)) {
 
-                LOG_DEBUG("Got an (image, pose) pair to process");
-*/
                 SRef<Image> image = image_pose_pair.first;
                 Transform3Df pose = image_pose_pair.second;
+
+                // Mapping
+
+                LOG_DEBUG("Reference keyframe id: {}", m_refKeyframe->getId());
 
                 // Correct pose
                 pose = m_T_M_W * pose;
@@ -461,11 +486,11 @@ namespace MAPPINGPIPELINE {
                 // get all keyframes and point cloud
                 std::vector<Transform3Df> keyframePoses;
                 std::vector<SRef<Keyframe>> allKeyframes;
-                m_keyframesManager->getAllKeyframes(allKeyframes);
+                SolARMappingPipelineProcessing::m_keyframesManager->getAllKeyframes(allKeyframes);
                 for (auto const &it : allKeyframes)
                     keyframePoses.push_back(it->getPose());
                 std::vector<SRef<CloudPoint>> pointCloud;
-                m_pointCloudManager->getAllPoints(pointCloud);
+                SolARMappingPipelineProcessing::m_pointCloudManager->getAllPoints(pointCloud);
             }
             else {
                 LOG_DEBUG("***** No (image, pose) pair to process *****");
@@ -480,6 +505,25 @@ namespace MAPPINGPIPELINE {
             }
         }
     }
+
+    bool SolARMappingPipelineProcessing::isBootstrapFinished() const {
+
+        // Protect variable access with mutex
+        std::shared_lock lock(m_bootstrap_mutex);
+
+        return SolARMappingPipelineProcessing::m_isBootstrapFinished;
+    }
+
+    void SolARMappingPipelineProcessing::setBootstrapSatus(const bool status) {
+
+        LOG_DEBUG("Set bootstrap status to: {}", status);
+
+        // Protect variable access with mutex
+        std::unique_lock lock(m_bootstrap_mutex);
+
+        SolARMappingPipelineProcessing::m_isBootstrapFinished = status;
+    }
+
 }
 }
 } // SolAR::PIPELINES::MAPPINGPIPELINE

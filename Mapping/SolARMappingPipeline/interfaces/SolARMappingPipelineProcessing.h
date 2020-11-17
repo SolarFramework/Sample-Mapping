@@ -22,6 +22,9 @@
 #include "xpcf/threading/DropBuffer.h"
 #include "xpcf/threading/BaseTask.h"
 
+#include <mutex>  // For std::unique_lock
+#include <shared_mutex>
+
 #include "api/pipeline/IMappingPipeline.h"
 #include "api/solver/pose/IFiducialMarkerPose.h"
 #include "api/slam/IBootstrapper.h"
@@ -83,18 +86,6 @@ namespace MAPPINGPIPELINE {
         /// @return FrameworkReturnCode::_SUCCESS if the trackable object is correctly set, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode setObjectToTrack(const Trackable & trackableObject) override;
 
-        /// @brief Correct pose and do bootstrap using an image and the associated pose
-        /// This method must be called with successive pairs of (image, pose)
-        /// until the bootstrap process is finished (i.e. isBootstrapFinished returns True)
-        /// @param[in] image: the input image to process
-        /// @param[in] pose: the input pose to process
-        /// @return FrameworkReturnCode::_SUCCESS if the processing is ok, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode correctPoseAndBootstrap(const SRef<Image> & image, const Transform3Df & pose) override;
-
-        /// @brief Returns true if the boostrap process is finished
-        /// @return bool::true if the bootstrap is finished, else false
-        bool isBootstrapFinished() const override;
-
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode start() override;
@@ -121,6 +112,13 @@ namespace MAPPINGPIPELINE {
 
     private:
 
+        // Static class members
+        static bool m_isBootstrapFinished;                                  // indicates if the bootstrap step is finished
+        static SRef<api::storage::IKeyframesManager> m_keyframesManager;    // Keyframes manager component
+        static SRef<api::storage::IPointCloudManager> m_pointCloudManager;  // Point cloud manager component
+
+        mutable std::shared_mutex m_bootstrap_mutex;  // Mutex used for bootstrap state
+
         CameraParameters m_cameraParams;        // camera parameters
         SRef<FiducialMarker> m_fiducialMarker;  // fiducial marker description
 
@@ -130,8 +128,6 @@ namespace MAPPINGPIPELINE {
         SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;
         SRef<api::solver::map::IMapper> m_mapper;
         SRef<api::slam::IMapping> m_mapping;
-        SRef<api::storage::IKeyframesManager> m_keyframesManager;
-        SRef<api::storage::IPointCloudManager> m_pointCloudManager;
         SRef<api::features::IKeypointDetector> m_keypointsDetector;
         SRef<api::features::IDescriptorsExtractor> m_descriptorExtractor;
         SRef<api::features::IDescriptorMatcher> m_matcher;
@@ -142,10 +138,9 @@ namespace MAPPINGPIPELINE {
         SRef<api::loop::ILoopClosureDetector> m_loopDetector;
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
 
-        bool m_dataToStore;               // indicates if new data to store
-        bool m_isBootstrapFinished;       // indicates if the bootstrap step is finished
-        bool m_isFoundTransform;          // indicates if the 3D transformation as been found
-        Transform3Df m_T_M_W;             // 3D transformation matrix
+        bool m_dataToStore;                 // indicates if new data to store
+        bool m_isFoundTransform;            // indicates if the 3D transformation as been found
+        Transform3Df m_T_M_W;               // 3D transformation matrix
         std::vector<SRef<CloudPoint>> m_localMap; // Local map
         float m_minWeightNeighbor, m_reprojErrorThreshold;
         SRef<Keyframe> m_refKeyframe;
@@ -154,12 +149,18 @@ namespace MAPPINGPIPELINE {
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_mappingTask = nullptr;
 
-        // Drop buffer containing (image,pose) pairs for mapping pipeline processing
+        // Drop buffer containing (image,pose) pairs sent by client
         xpcf::SharedFifo<std::pair<SRef<Image>, Transform3Df>> m_inputImagePoseBuffer;
-//        xpcf::DropBuffer<std::pair<SRef<Image>, Transform3Df>> m_inputImagePoseBuffer;
 
+        /// @brief Correct pose and do bootstrap using an image and the associated pose
+        /// This method must be called with successive pairs of (image, pose)
+        /// until the bootstrap process is finished (i.e. m_isBootstrapFinished is True)
+        /// @param[in] image: the input image to process
+        /// @param[in] pose: the input pose to process
+        /// @return true if bootstrap is finished
+        bool correctPoseAndBootstrap(const SRef<Image> & image, const Transform3Df & pose);
 
-        /// @brief Clear local map and initialize mapper
+        /// @brief Update local map
         /// @param[in] keyframe: reference key frame
         void updateLocalMap(const SRef<Keyframe> & keyframe);
 
@@ -169,6 +170,16 @@ namespace MAPPINGPIPELINE {
 
         /// @brief method that implementes the full maping processing
         void processMapping();
+
+        /// @brief returns the status of bootstrap
+        /// @return true if bootstrap is finished (m_isBootstrapFinished value)
+        bool isBootstrapFinished() const;
+
+        /// @brief sets the bootstrap status
+        /// (the m_isBootstrapFinished variable value)
+        /// @param status: true (finished) or false (not finished)
+        void setBootstrapSatus(const bool status);
+
     };
 
 }

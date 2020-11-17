@@ -58,7 +58,9 @@ win32 {
 }
 
 config_files.path = $${TARGETDEPLOYDIR}
-config_files.files= $$files($${PWD}/TestSolARMappingPipeline_conf.xml)\
+config_files.files= $$files($${PWD}/TestSolARMappingPipelineProducer_conf.xml)\
+                    $$files($${PWD}/TestSolARMappingPipelineViewer_conf.xml)\
+                    $$files($${PWD}/xpcf_SolARMappingPipeline_registry.xml)\
                     $$files($${PWD}/camera_calibration.yml)\
                     $$files($${PWD}/fiducialMarker.yml)\
                     $$files($${PWD}/FiducialMarker.gif)
@@ -69,4 +71,9 @@ OTHER_FILES += \
 
 #NOTE : Must be placed at the end of the .pro
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/remaken_install_target.pri)))) # Shell_quote & shell_path required for visual on windows
+
+DISTFILES += \
+    TestSolARMappingPipelineProducer_conf.xml \
+    TestSolARMappingPipelineViewer_conf.xml \
+    xpcf_SolARMappingPipeline_registry.xml
 

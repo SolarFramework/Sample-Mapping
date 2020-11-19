@@ -233,9 +233,9 @@
 	
     <properties>
         <configure component="SolARDeviceDataLoader">
-								<property name="calibrationFile" type="string" value="C:\B-com\Dev\data\data_hololens\hololens_calibration.yml"/>
-								<property name="pathToData" type="string" value="C:\B-com\Dev\data\data_hololens\three_room_scale_24092020_090023"/>
-			<property name="delayTime" type="Integer" value="1"/>
+			<property name="calibrationFile" type="string" value="\\filer.b-com.local\share\project\ARTWIN\Data\CALIBRATION_FILES\hololens_calibration.yml"/>
+			<property name="pathToData" type="string" value="\\filer.b-com.local\share\project\ARTWIN\Data\SOLAR_DEVICE_RECORDINGS\three_room_scale_24092020_090023"/>
+			<property name="delayTime" type="Integer" value="200"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
 			<property name="hasPose" type="Integer" value="1"/>

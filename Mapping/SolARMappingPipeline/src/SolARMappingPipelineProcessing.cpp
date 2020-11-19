@@ -21,66 +21,37 @@ namespace SolAR {
 namespace PIPELINES {
 namespace MAPPINGPIPELINE {
 
-    // Initialization of static class members
-    bool SolARMappingPipelineProcessing::m_isBootstrapFinished = false;
-    SRef<api::storage::IKeyframesManager> SolARMappingPipelineProcessing::m_keyframesManager = 0;
-    SRef<api::storage::IPointCloudManager> SolARMappingPipelineProcessing::m_pointCloudManager = 0;
 
 // Public methods
 
     SolARMappingPipelineProcessing::SolARMappingPipelineProcessing():ConfigurableBase(xpcf::toUUID<SolARMappingPipelineProcessing>())
     {
-        declareInterface<api::pipeline::IMappingPipeline>(this);
-
         LOG_DEBUG("SolARMappingPipelineProcessing constructor");
-    }
-
-
-    SolARMappingPipelineProcessing::~SolARMappingPipelineProcessing() {
-
-        LOG_DEBUG("SolARMappingPipelineProcessing destructor");
-
-        delete m_mappingTask;
-    }
-
-    FrameworkReturnCode SolARMappingPipelineProcessing::init(SRef<xpcf::IComponentManager> componentManager) {
 
         try {
+            declareInterface<api::pipeline::IMappingPipeline>(this);
 
-            LOG_DEBUG("SolARMappingPipelineProcessing::init");
+            LOG_DEBUG("Components injection declaration");
 
-            LOG_DEBUG("Load configuration file");
+            declareInjectable<solver::pose::IFiducialMarkerPose>(m_fiducialMarkerPoseEstimator);
+            declareInjectable<slam::IBootstrapper>(m_bootstrapper);
+            declareInjectable<api::solver::map::IBundler>(m_bundler, "BundleFixedKeyframes");
+            declareInjectable<api::solver::map::IBundler>(m_globalBundler);
+            declareInjectable<api::solver::map::IMapper>(m_mapper);
+            declareInjectable<api::slam::IMapping>(m_mapping);
+            declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
+            declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
+            declareInjectable<api::features::IKeypointDetector>(m_keypointsDetector);
+            declareInjectable<api::features::IDescriptorsExtractor>(m_descriptorExtractor);
+            declareInjectable<api::features::IDescriptorMatcher>(m_matcher);
+            declareInjectable<api::features::IMatchesFilter>(m_matchesFilter);
+            declareInjectable<api::solver::pose::I2D3DCorrespondencesFinder>(m_corr2D3DFinder);
+            declareInjectable<api::geom::IProject>(m_projector);
+            declareInjectable<api::ICovisibilityGraph>(m_covisibilityGraph);
+            declareInjectable<api::loop::ILoopClosureDetector>(m_loopDetector);
+            declareInjectable<api::loop::ILoopCorrector>(m_loopCorrector);
 
-            if (componentManager->load("xpcf_SolARMappingPipeline_registry.xml") != org::bcom::xpcf::_SUCCESS)
-            {
-                LOG_ERROR("Failed to load the configuration file xpcf_SolARMappingPipeline_registry.xml");
-                return FrameworkReturnCode::_ERROR_;
-            }
-
-            // Declare and create components
-            m_fiducialMarkerPoseEstimator = componentManager->resolve<solver::pose::IFiducialMarkerPose>();
-            m_bootstrapper = componentManager->resolve<slam::IBootstrapper>();
-            m_bundler = componentManager->resolve<api::solver::map::IBundler>("BundleFixedKeyframes");
-            m_globalBundler = componentManager->resolve<api::solver::map::IBundler>();
-            m_mapper = componentManager->resolve<api::solver::map::IMapper>();
-            m_mapping = componentManager->resolve<api::slam::IMapping>();
-            if (SolARMappingPipelineProcessing::m_keyframesManager == 0) {
-                SolARMappingPipelineProcessing::m_keyframesManager = componentManager->resolve<api::storage::IKeyframesManager>();
-            }
-            if (SolARMappingPipelineProcessing::m_pointCloudManager == 0) {
-                SolARMappingPipelineProcessing::m_pointCloudManager = componentManager->resolve<api::storage::IPointCloudManager>();
-            }
-            m_keypointsDetector = componentManager->resolve<api::features::IKeypointDetector>();
-            m_descriptorExtractor = componentManager->resolve<api::features::IDescriptorsExtractor>();
-            m_matcher = componentManager->resolve<api::features::IDescriptorMatcher>();
-            m_matchesFilter = componentManager->resolve<api::features::IMatchesFilter>();
-            m_corr2D3DFinder = componentManager->resolve<api::solver::pose::I2D3DCorrespondencesFinder>();
-            m_projector = componentManager->resolve<api::geom::IProject>();
-            m_covisibilityGraph = componentManager->resolve<api::ICovisibilityGraph>();
-            m_loopDetector = componentManager->resolve<api::loop::ILoopClosureDetector>();
-            m_loopCorrector = componentManager->resolve<api::loop::ILoopCorrector>();
-
-            LOG_DEBUG("All components created");
+            LOG_DEBUG("All component injections declared");
 
             LOG_DEBUG("Initialize instance attributes");
 
@@ -96,14 +67,10 @@ namespace MAPPINGPIPELINE {
             m_minWeightNeighbor = 0;
 
             // Initial bootstrap status
-            setBootstrapSatus(false);
-
-            // Get properties
-            m_reprojErrorThreshold = m_mapper->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
+            m_isBootstrapFinished = false;
 
             // Reset drop buffers
             m_inputImagePoseBuffer.empty();
-
 
             LOG_DEBUG("Set the mapping function for asynchronous task");
 
@@ -115,13 +82,33 @@ namespace MAPPINGPIPELINE {
 
                 m_mappingTask = new xpcf::DelegateTask(fnMappingProcessing);
             }
-
-            return FrameworkReturnCode::_SUCCESS;
         }
         catch (xpcf::Exception e) {
             LOG_ERROR("The following exception has been caught {}", e.what());
-            return FrameworkReturnCode::_ERROR_;
         }
+    }
+
+    void SolARMappingPipelineProcessing::onInjected() {
+
+        LOG_DEBUG("SolARMappingPipelineProcessing::onInjected");
+
+        // Get properties
+        m_reprojErrorThreshold = m_mapper->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
+        m_minWeightNeighbor = m_mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
+    }
+
+    SolARMappingPipelineProcessing::~SolARMappingPipelineProcessing() {
+
+        LOG_DEBUG("SolARMappingPipelineProcessing destructor");
+
+        delete m_mappingTask;
+    }
+
+    FrameworkReturnCode SolARMappingPipelineProcessing::init(SRef<xpcf::IComponentManager> componentManager) {
+
+        LOG_DEBUG("SolARMappingPipelineProcessing::setCameraParameters");
+
+        return FrameworkReturnCode::_SUCCESS;
     }
 
     FrameworkReturnCode SolARMappingPipelineProcessing::setCameraParameters(const CameraParameters & cameraParams) {
@@ -137,25 +124,19 @@ namespace MAPPINGPIPELINE {
         m_loopDetector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_loopCorrector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 
-        // get properties
-        m_minWeightNeighbor = m_mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
-
-
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
                   m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
 
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode SolARMappingPipelineProcessing::setObjectToTrack(const Trackable & trackableObject) {
+    FrameworkReturnCode SolARMappingPipelineProcessing::setObjectToTrack(const SRef<Trackable> & trackableObject) {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::setObjectToTrack");
 
-        if (trackableObject.getType() == FIDUCIAL_MARKER) {
+        if ((trackableObject != 0) && (trackableObject->getType() == FIDUCIAL_MARKER)) {
 
-            const FiducialMarker *fiducialMarker = dynamic_cast<const FiducialMarker *>(&trackableObject);
-
-            m_fiducialMarker = xpcf::utils::make_shared<FiducialMarker>(*fiducialMarker);
+            m_fiducialMarker = xpcf::utils::dynamic_pointer_cast<FiducialMarker>(trackableObject);
 
             m_fiducialMarkerPoseEstimator->setMarker(m_fiducialMarker);
 
@@ -219,12 +200,12 @@ namespace MAPPINGPIPELINE {
 
             std::vector<SRef<Keyframe>> allKeyframes;
 
-            if (SolARMappingPipelineProcessing::m_keyframesManager->getAllKeyframes(allKeyframes) == FrameworkReturnCode::_SUCCESS)
+            if (m_keyframesManager->getAllKeyframes(allKeyframes) == FrameworkReturnCode::_SUCCESS)
             {
                 for (auto const &it : allKeyframes)
                     keyframePoses.push_back(it->getPose());
 
-                return SolARMappingPipelineProcessing::m_pointCloudManager->getAllPoints(outputPointClouds);
+                return m_pointCloudManager->getAllPoints(outputPointClouds);
             }
             else {
                 return FrameworkReturnCode::_ERROR_;
@@ -269,10 +250,10 @@ namespace MAPPINGPIPELINE {
             double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
 
             // Prepare mapping process
-            SolARMappingPipelineProcessing::m_keyframesManager->getKeyframe(1, m_refKeyframe);
+            m_keyframesManager->getKeyframe(1, m_refKeyframe);
             updateLocalMap(m_refKeyframe);
 
-            LOG_DEBUG("Number of initial point cloud: {}", SolARMappingPipelineProcessing::m_pointCloudManager->getNbPoints());
+            LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
 
             setBootstrapSatus(true);
         }
@@ -302,7 +283,7 @@ namespace MAPPINGPIPELINE {
         m_mapper->pruning();
 
         LOG_DEBUG("Nb of keyframes / cloud points: {} / {}",
-                 SolARMappingPipelineProcessing::m_keyframesManager->getNbKeyframes(), SolARMappingPipelineProcessing::m_pointCloudManager->getNbPoints());
+                 m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 
         LOG_DEBUG("Update global map");
         m_mapper->saveToFile();
@@ -486,11 +467,11 @@ namespace MAPPINGPIPELINE {
                 // get all keyframes and point cloud
                 std::vector<Transform3Df> keyframePoses;
                 std::vector<SRef<Keyframe>> allKeyframes;
-                SolARMappingPipelineProcessing::m_keyframesManager->getAllKeyframes(allKeyframes);
+                m_keyframesManager->getAllKeyframes(allKeyframes);
                 for (auto const &it : allKeyframes)
                     keyframePoses.push_back(it->getPose());
                 std::vector<SRef<CloudPoint>> pointCloud;
-                SolARMappingPipelineProcessing::m_pointCloudManager->getAllPoints(pointCloud);
+                m_pointCloudManager->getAllPoints(pointCloud);
             }
             else {
                 LOG_DEBUG("***** No (image, pose) pair to process *****");
@@ -511,7 +492,7 @@ namespace MAPPINGPIPELINE {
         // Protect variable access with mutex
         std::shared_lock lock(m_bootstrap_mutex);
 
-        return SolARMappingPipelineProcessing::m_isBootstrapFinished;
+        return m_isBootstrapFinished;
     }
 
     void SolARMappingPipelineProcessing::setBootstrapSatus(const bool status) {
@@ -521,7 +502,7 @@ namespace MAPPINGPIPELINE {
         // Protect variable access with mutex
         std::unique_lock lock(m_bootstrap_mutex);
 
-        SolARMappingPipelineProcessing::m_isBootstrapFinished = status;
+        m_isBootstrapFinished = status;
     }
 
 }

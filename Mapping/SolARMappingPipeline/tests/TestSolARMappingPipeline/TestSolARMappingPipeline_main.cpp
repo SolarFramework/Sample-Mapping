@@ -32,6 +32,8 @@ namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
 
+// Global Mapping Pipeline instance
+SRef<pipeline::IMappingPipeline> gMappingPipeline = 0;
 
 ///
 /// \brief Test application for SolARMappingPipeline
@@ -57,13 +59,9 @@ int main(int argc, char ** argv)
 
             if (xpcfComponentManager->load("TestSolARMappingPipelineViewer_conf.xml") == org::bcom::xpcf::_SUCCESS)
             {
-                // Declare and create components
-                LOG_INFO("Viewer client: Start creating components");
+                LOG_INFO("Configuration loaded");
 
-                auto mapping_pipeline = xpcfComponentManager->resolve<pipeline::IMappingPipeline>();
-                LOG_INFO("Viewer client: Mapping pipeline component created");
-
-                SRef<api::display::I3DPointsViewer> viewer3D = nullptr;
+                SRef<api::display::I3DPointsViewer> viewer3D = 0;
 
                 // display point cloud
                 std::vector<SRef<CloudPoint>> pointClouds ;
@@ -74,20 +72,19 @@ int main(int argc, char ** argv)
                 // Display mapping pipeline results
                 while (true) {
 
-                    if (mapping_pipeline->getDataForVisualization(pointClouds, keyframePoses) == FrameworkReturnCode::_SUCCESS) {
+                    if (gMappingPipeline->getDataForVisualization(pointClouds, keyframePoses) == FrameworkReturnCode::_SUCCESS) {
 
-                        if (viewer3D == nullptr) {
+                        if (viewer3D == 0) {
                             viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
                             LOG_INFO("Viewer client: I3DPointsViewer component created");
                         }
 
                         viewer3D->display(pointClouds, keyframePoses[keyframePoses.size()-1], keyframePoses, {}, {});
-
                     }
                 }
             }
             else {
-                LOG_ERROR("Failed to load the configuration file TestSolARMappingPipelineViewer_conf.xml", argv[1]);
+                LOG_ERROR("Failed to load the configuration file TestSolARMappingPipelineViewer_conf.xml");
             }
         }
         catch (xpcf::Exception e) {
@@ -112,9 +109,6 @@ int main(int argc, char ** argv)
                 // declare and create components
                 LOG_INFO("Producer client: Start creating components");
 
-                auto mapping_pipeline = xpcfComponentManager->resolve<pipeline::IMappingPipeline>();
-                LOG_INFO("Producer client: Mapping pipeline component created");
-
                 auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
                 LOG_INFO("Producer client: AR device component created");
 
@@ -124,76 +118,70 @@ int main(int argc, char ** argv)
                 auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
                 LOG_INFO("Producer client: Image viewer component created");
 
-                LOG_INFO("Producer client: Init mapping pipeline");
-                if (mapping_pipeline->init(xpcfComponentManager) == FrameworkReturnCode::_SUCCESS) {
+                LOG_INFO("Producer client: Start AR device loader");
 
-                    LOG_INFO("Producer client: Start AR device loader");
+                // Connect remotely to the HoloLens streaming app
+                if (arDevice->start() == FrameworkReturnCode::_SUCCESS) {
 
-                    // Connect remotely to the HoloLens streaming app
-                    if (arDevice->start() == FrameworkReturnCode::_SUCCESS) {
+                    // Load camera intrinsics parameters
+                    CameraParameters camParams;
+                    camParams = arDevice->getParameters(0);
 
-                        // Load camera intrinsics parameters
-                        CameraParameters camParams;
-                        camParams = arDevice->getParameters(0);
+                    LOG_INFO("Producer client: Set mapping pipeline camera parameters");
+                    gMappingPipeline->setCameraParameters(camParams);
 
-                        LOG_INFO("Producer client: Set mapping pipeline camera parameters");
-                        mapping_pipeline->setCameraParameters(camParams);
+                    LOG_INFO("Producer client: Load fiducial marker description file");
+                    SRef<Trackable> trackableObject = trackableLoader->loadTrackable();
 
-                        LOG_INFO("Producer client: Load fiducial marker description file");
-                        Trackable * trackableObject = trackableLoader->loadTrackable();
+                    if (trackableObject != 0) {
+                        LOG_INFO("Producer client: Fiducial marker created: url = {}", trackableObject->getURL());
 
-                        if (trackableObject != nullptr) {
-                            LOG_INFO("Producer client: Fiducial marker created: url = {}", trackableObject->getURL());
+                        LOG_INFO("Producer client: Set mapping pipeline fiducial marker");
+                        gMappingPipeline->setObjectToTrack(trackableObject);
 
-                            LOG_INFO("Producer client: Set mapping pipeline fiducial marker");
-                            mapping_pipeline->setObjectToTrack(*trackableObject);
+                        LOG_INFO("Producer client: Start mapping pipeline");
 
-                            delete trackableObject;
+                        if (gMappingPipeline->start() == FrameworkReturnCode::_SUCCESS) {
+                            LOG_INFO("Producer client: Start to send data from hololens to mapping pipeline");
 
-                            LOG_INFO("Producer client: Start mapping pipeline");
+                            while (true) {
+                                std::vector<SRef<Image>> images;
+                                std::vector<Transform3Df> poses;
+                                std::chrono::system_clock::time_point timestamp;
 
-                            if (mapping_pipeline->start() == FrameworkReturnCode::_SUCCESS) {
-                                LOG_INFO("Producer client: Start to send data from hololens to mapping pipeline");
-
-                                while (true) {
-                                    std::vector<SRef<Image>> images;
-                                    std::vector<Transform3Df> poses;
-                                    std::chrono::system_clock::time_point timestamp;
-
-                                    // Get data from hololens files
-                                    if (arDevice->getData(images, poses, timestamp) != FrameworkReturnCode::_SUCCESS) {
-                                        LOG_ERROR ("Error while geting Hololens data");
-                                        break;
-                                    }
-
-                                    nb_images ++;
-    //                              LOG_INFO("Producer client: Send (image, pose) num {} to mapping pipeline", nb_images);
-
-                                    SRef<Image> image = images[INDEX_USE_CAMERA];
-                                    Transform3Df pose = poses[INDEX_USE_CAMERA];
-
-                                    mapping_pipeline->mappingProcessRequest(image, pose);
-
-                                    if (imageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP)
-                                        exit(0);
+                                // Get data from hololens files
+                                if (arDevice->getData(images, poses, timestamp) != FrameworkReturnCode::_SUCCESS) {
+                                    LOG_ERROR ("Error while geting Hololens data");
+                                    break;
                                 }
 
-                                LOG_INFO("Producer client: no more hololens images to send");
+                                nb_images ++;
+//                                    LOG_INFO("Producer client: Send (image, pose) num {} to mapping pipeline", nb_images);
+
+                                SRef<Image> image = images[INDEX_USE_CAMERA];
+                                Transform3Df pose = poses[INDEX_USE_CAMERA];
+
+                                gMappingPipeline->mappingProcessRequest(image, pose);
+
+                                if (imageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP)
+                                    exit(0);
+
+                                // Delay between 2 image
+                                boost::this_thread::sleep(boost::posix_time::milliseconds(100));
                             }
-                            else {
-                                LOG_ERROR("Cannot start mapping pipeline");
-                            }
+
+                            LOG_INFO("Producer client: no more hololens images to send");
                         }
                         else {
-                            LOG_ERROR ("Error while loading fiducial marker");
+                            LOG_ERROR("Cannot start mapping pipeline");
                         }
                     }
                     else {
-                        LOG_ERROR("Cannot start AR device loader");
+                        LOG_ERROR ("Error while loading fiducial marker");
                     }
                 }
                 else {
-                    LOG_ERROR ("Error while initializing mapping pipeline");
+                    LOG_ERROR("Cannot start AR device loader");
                 }
 
                 LOG_INFO("Producer client: end of thread");
@@ -202,7 +190,7 @@ int main(int argc, char ** argv)
                 while(true);
             }
             else {
-                LOG_ERROR("Failed to load the configuration file TestSolARMappingPipelineProducer_conf.xml", argv[1])
+                LOG_ERROR("Failed to load the configuration file TestSolARMappingPipelineProducer_conf.xml");
             }
 
         }
@@ -211,16 +199,49 @@ int main(int argc, char ** argv)
         }
     };
 
-    // Start producer client process
-    xpcf::DelegateTask * clientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
-    clientProducerTask->start();
+    // Main code
 
-    // Start viewer client process
-    xpcf::DelegateTask * clientViewerTask  = new xpcf::DelegateTask(fnClientViewer);
-    clientViewerTask->start();
+    if (argc > 1) {
+        // Get configuration file path and name from main args
+        char * config_file = argv[1];
 
-    // Wait...
-    while (true);
+        try {
+            // Get unique component manager instance
+            SRef<xpcf::IComponentManager> xpcfComponentManager = xpcf::getComponentManagerInstance();
+
+            LOG_INFO("Load Mapping Pipeline configuration file");
+
+            if (xpcfComponentManager->load(config_file) == org::bcom::xpcf::_SUCCESS)
+            {
+                // Create Mapping Pipeline component
+                gMappingPipeline = xpcfComponentManager->resolve<pipeline::IMappingPipeline>();
+
+                LOG_INFO("Mapping pipeline component created");
+
+                LOG_INFO("Start clients...");
+
+                // Start producer client process
+                xpcf::DelegateTask * clientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
+                clientProducerTask->start();
+
+                // Start viewer client process
+                xpcf::DelegateTask * clientViewerTask  = new xpcf::DelegateTask(fnClientViewer);
+                clientViewerTask->start();
+
+                // Wait...
+                while (true);
+            }
+            else {
+                LOG_ERROR("Failed to load the configuration file {}", config_file);
+            }
+        }
+        catch (xpcf::Exception e) {
+            LOG_ERROR("The following exception has been caught {}", e.what());
+        }
+    }
+    else {
+        LOG_ERROR("No configuration file given in arguments");
+    }
 
     return 0;
 }

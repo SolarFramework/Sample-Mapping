@@ -69,6 +69,9 @@ namespace MAPPINGPIPELINE {
         SolARMappingPipelineProcessing();
         ~SolARMappingPipelineProcessing() override;
 
+        /// @brief Method called when all component injections have been done
+        void onInjected() override;
+
         void unloadComponent() override final {}
 
         /// @brief Initialization of the pipeline
@@ -84,7 +87,7 @@ namespace MAPPINGPIPELINE {
         /// @brief Set the object to track during mapping
         /// @param[in] trackableObject: the trackable object
         /// @return FrameworkReturnCode::_SUCCESS if the trackable object is correctly set, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode setObjectToTrack(const Trackable & trackableObject) override;
+        FrameworkReturnCode setObjectToTrack(const SRef<Trackable> & trackableObject) override;
 
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
@@ -112,11 +115,7 @@ namespace MAPPINGPIPELINE {
 
     private:
 
-        // Static class members
-        static bool m_isBootstrapFinished;                                  // indicates if the bootstrap step is finished
-        static SRef<api::storage::IKeyframesManager> m_keyframesManager;    // Keyframes manager component
-        static SRef<api::storage::IPointCloudManager> m_pointCloudManager;  // Point cloud manager component
-
+        bool m_isBootstrapFinished; // indicates if the bootstrap step is finished
         mutable std::shared_mutex m_bootstrap_mutex;  // Mutex used for bootstrap state
 
         CameraParameters m_cameraParams;        // camera parameters
@@ -128,6 +127,8 @@ namespace MAPPINGPIPELINE {
         SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;
         SRef<api::solver::map::IMapper> m_mapper;
         SRef<api::slam::IMapping> m_mapping;
+        SRef<api::storage::IKeyframesManager> m_keyframesManager;
+        SRef<api::storage::IPointCloudManager> m_pointCloudManager;
         SRef<api::features::IKeypointDetector> m_keypointsDetector;
         SRef<api::features::IDescriptorsExtractor> m_descriptorExtractor;
         SRef<api::features::IDescriptorMatcher> m_matcher;

@@ -10,6 +10,7 @@
  * PARTICULAR PURPOSE.
  *
  */
+
 #include "xpcf/module/ModuleFactory.h"
 #include "SolARMappingPipeline_traits.h"
 

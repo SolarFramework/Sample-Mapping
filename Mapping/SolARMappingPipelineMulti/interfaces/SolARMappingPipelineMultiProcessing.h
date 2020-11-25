@@ -117,6 +117,7 @@ namespace MAPPINGPIPELINE {
 
         bool m_isBootstrapFinished; // indicates if the bootstrap step is finished
         mutable std::shared_mutex m_bootstrap_mutex;  // Mutex used for bootstrap state
+        mutable std::mutex m_mutexUseLocalMap; // Mutex used for mapping task
 
         CameraParameters m_cameraParams;        // camera parameters
         SRef<FiducialMarker> m_fiducialMarker;  // fiducial marker description
@@ -141,6 +142,7 @@ namespace MAPPINGPIPELINE {
 
         bool m_dataToStore;                 // indicates if new data to store
         bool m_isFoundTransform;            // indicates if the 3D transformation as been found
+        bool m_isStopMapping;               // indicates if the mapping task is stopped
         Transform3Df m_T_M_W;               // 3D transformation matrix
         std::vector<SRef<CloudPoint>> m_localMap; // Local map
         float m_minWeightNeighbor, m_reprojErrorThreshold;
@@ -150,11 +152,19 @@ namespace MAPPINGPIPELINE {
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;
         xpcf::DelegateTask * m_keypointsDetectionTask = nullptr;
+        xpcf::DelegateTask * m_featureExtractionTask = nullptr;
+        xpcf::DelegateTask * m_updateVisibilityTask = nullptr;
+        xpcf::DelegateTask * m_mappingTask = nullptr;
+        xpcf::DelegateTask * m_loopClosureTask = nullptr;
 
         // Drop buffers used by mapping processing
         xpcf::DropBuffer<std::pair<SRef<Image>, Transform3Df>>  m_dropBufferCamImagePoseCaptureBootstrap;
         xpcf::DropBuffer<std::pair<SRef<Image>, Transform3Df>>  m_dropBufferCamImagePoseCapture;
         xpcf::DropBuffer<SRef<Frame>>                           m_dropBufferKeypoints;
+        xpcf::DropBuffer<SRef<Frame>>                           m_dropBufferFrameDescriptors;
+        xpcf::DropBuffer<SRef<Frame>>                           m_dropBufferAddKeyframe;
+        xpcf::DropBuffer<SRef<Keyframe>>                        m_dropBufferNewKeyframe;
+        xpcf::DropBuffer<SRef<Keyframe>>                        m_dropBufferNewKeyframeLoop;
 
         /// @brief Correct pose and do bootstrap using an image and the associated pose
         /// This method must be called with successive pairs of (image, pose)
@@ -163,6 +173,18 @@ namespace MAPPINGPIPELINE {
 
         /// @brief Detection of keypoints
         void keypointsDetection();
+
+        /// @brief Feature extraction
+        void featureExtraction();
+
+        /// @bried Update visibility
+        void updateVisibility();
+
+        /// @bried Mapping
+        void mapping();
+
+        /// @bried Loop closure detection
+        void loopClosure();
 
         /// @brief Update local map
         /// @param[in] keyframe: reference key frame

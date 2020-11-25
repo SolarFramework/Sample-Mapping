@@ -63,7 +63,7 @@ namespace MAPPINGPIPELINE {
 
             m_dataToStore = false;
             m_isFoundTransform = false;
-            Transform3Df T_M_W = Transform3Df::Identity();
+            m_T_M_W = Transform3Df::Identity();
             m_minWeightNeighbor = 0;
 
             // Initial bootstrap status

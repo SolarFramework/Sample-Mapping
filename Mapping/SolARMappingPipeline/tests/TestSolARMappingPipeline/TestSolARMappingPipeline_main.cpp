@@ -33,7 +33,6 @@ using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
-#define IMAGE_DELAY 100 // Delay between 2 images in ms
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -82,9 +81,6 @@ auto fnClientProducer = [&]() {
             if (gImageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP) {
                 gClientProducerTask->stop();
             }
-
-            // Delay between 2 image
-            boost::this_thread::sleep(boost::posix_time::milliseconds(IMAGE_DELAY));
         }
         else {
             gImageToSend = false;

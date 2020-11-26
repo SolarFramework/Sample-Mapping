@@ -81,6 +81,9 @@ OTHER_FILES += \
     packagedependencies.txt
 
 DISTFILES += \
+    .gitignore \
+    LICENSE \
+    README.md \
     bcom-SolARMappingPipelineMulti.pc.in \
     xpcf_SolARMappingPipelineMulti_registry.xml
 

@@ -328,6 +328,8 @@ namespace MAPPINGPIPELINE {
                 // feature extraction image
                 std::vector<Keypoint> keypoints;
                 m_keypointsDetector->detect(image, keypoints);
+                LOG_DEBUG("Keypoints size = {}", keypoints.size());
+
                 SRef<DescriptorBuffer> descriptors;
                 m_descriptorExtractor->extract(image, keypoints, descriptors);
                 SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, descriptors, image, m_refKeyframe, pose);
@@ -366,6 +368,7 @@ namespace MAPPINGPIPELINE {
                 std::vector<Point2Df> pts2d_inliers, pts2d_outliers;
                 for (int i = 0; i < refCPSeenProj.size(); ++i) {
                     float dis = (pts2d[i] - refCPSeenProj[i]).norm();
+                    LOG_DEBUG("dis / m_reprojErrorThreshold: {} / {}", dis, m_reprojErrorThreshold);
                     if (dis < m_reprojErrorThreshold) {
                         corres2D3D[i].second->updateConfidence(true);
                         newMapVisibility[corres2D3D[i].first] = corres2D3D[i].second->getId();

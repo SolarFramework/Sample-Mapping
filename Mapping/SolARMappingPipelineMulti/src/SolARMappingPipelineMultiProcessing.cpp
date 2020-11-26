@@ -68,6 +68,11 @@ namespace MAPPINGPIPELINE {
             m_isStopMapping = false;
             m_minWeightNeighbor = 0;
 
+            m_dropBufferKeypointsEmpty = false;
+            m_dropBufferFrameDescriptorsEmpty = false;
+            m_dropBufferAddKeyframeEmpty = false;
+            m_dropBufferNewKeyframeLoopEmpty = false;
+
             // Initial bootstrap status
             m_isBootstrapFinished = false;
 
@@ -255,7 +260,7 @@ namespace MAPPINGPIPELINE {
         }
         else {
             // Add pair (image, pose) to input drop buffer for mapping
-//            m_dropBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
+            m_dropBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
 
             LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
         }
@@ -314,7 +319,7 @@ namespace MAPPINGPIPELINE {
             if (m_fiducialMarkerPoseEstimator->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
                 m_T_M_W = T_M_C * pose.inverse();
                 m_isFoundTransform = true;
-                LOG_INFO("Transformation found");
+                LOG_DEBUG("Transformation found");
             }
             else {
                 LOG_DEBUG("3D transformation not found");
@@ -328,85 +333,117 @@ namespace MAPPINGPIPELINE {
         SRef<Image> view;
         if (m_bootstrapper->process(image, view, pose) == FrameworkReturnCode::_SUCCESS) {
 
-            LOG_INFO("Bootstrap finished: apply bundle adjustement");
+            LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
             m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
             m_keyframesManager->getKeyframe(1, m_refKeyframe);
             updateLocalMap(m_refKeyframe);
 
-            LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
+            LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
 
             setBootstrapSatus(true);
         }
     }
 
     void SolARMappingPipelineMultiProcessing::keypointsDetection() {
-/*
+
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::keypointsDetection");
 
-        // Images to process ?
-        if (!isBootstrapFinished() || m_dropBufferCamImagePoseCapture.empty()) {
+        std::pair<SRef<Image>, Transform3Df> imagePose;
+
+        // Bootstrap finished?
+        if (!isBootstrapFinished() ) {
             xpcf::DelegateTask::yield();
             return;
         }
 
-        std::pair<SRef<Image>, Transform3Df> imagePose;
-        m_dropBufferCamImagePoseCapture.pop(imagePose);
+        // Images to process?
+        if (!m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
+
+            // Data to store ?
+            if (m_dataToStore) {
+
+                // Test if all drop buffers are empty
+                if (m_dropBufferKeypointsEmpty &&
+                    m_dropBufferFrameDescriptorsEmpty &&
+                    m_dropBufferAddKeyframeEmpty &&
+                    m_dropBufferNewKeyframeLoopEmpty) {
+
+                    m_dataToStore = false;
+
+                    LOG_INFO("No more (image, pose) pair to process => save map");
+
+                    // Bundle adjustment, map pruning and global map udate
+                    globalBundleAdjustment();
+                }
+            }
+
+            xpcf::DelegateTask::yield();
+            return;
+        }
+
+        LOG_DEBUG("Reference keyframe id: {}", m_refKeyframe->getId());
 
         std::vector<Keypoint> keypoints;
         m_keypointsDetector->detect(imagePose.first, keypoints);
-        if (keypoints.size() > 0)
+        if (keypoints.size() > 0) {
             m_dropBufferKeypoints.push(xpcf::utils::make_shared<Frame>(keypoints, nullptr, imagePose.first, imagePose.second));
-*/
+        }
+
     }
 
     void SolARMappingPipelineMultiProcessing::featureExtraction() {
-/*
+
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::featureExtraction");
 
+        SRef<Frame> frame;
+
         // Images to process ?
-        if (m_dropBufferKeypoints.empty()) {
+        if (!m_dropBufferKeypoints.tryPop(frame)) {
+            m_dropBufferKeypointsEmpty = true;
+
             xpcf::DelegateTask::yield();
             return;
         }
 
-        SRef<Frame> frame;
-        m_dropBufferKeypoints.pop(frame);
+        m_dropBufferKeypointsEmpty = false;
 
         SRef<DescriptorBuffer> descriptors;
         m_descriptorExtractor->extract(frame->getView(), frame->getKeypoints(), descriptors);
         frame->setDescriptors(descriptors);
         m_dropBufferFrameDescriptors.push(frame);
-*/
+
     }
 
     void SolARMappingPipelineMultiProcessing::updateVisibility() {
-/*
+
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::updateVisibility");
 
+        SRef<Frame> frame;
+
         // Frame to process?
-        if (m_dropBufferFrameDescriptors.empty()) {
+        if (!m_dropBufferFrameDescriptors.tryPop(frame)) {
+            m_dropBufferFrameDescriptorsEmpty = true;
+
             xpcf::DelegateTask::yield();
             return;
         }
 
-        SRef<Frame> frame;
-        m_dropBufferFrameDescriptors.pop(frame);
+        m_dropBufferFrameDescriptorsEmpty = false;
 
         // Protect from concurrent access
         std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
 
-        if (!m_dropBufferNewKeyframe.empty())
-        {
-            LOG_INFO("Update new keyframe in update task");
+        SRef<Keyframe> newKeyframe;
 
-            SRef<Keyframe> newKeyframe;
-            m_dropBufferNewKeyframe.pop(newKeyframe);
+        if (m_dropBufferNewKeyframe.tryPop(newKeyframe))
+        {
+            LOG_DEBUG("Update new keyframe in update task");
 
             m_refKeyframe = newKeyframe;
             updateLocalMap(m_refKeyframe);
 
             SRef<Frame> tmpFrame;
-            m_dropBufferAddKeyframe.pop(tmpFrame);
+            m_dropBufferAddKeyframe.tryPop(tmpFrame);
             m_isStopMapping = false;
         }
         frame->setReferenceKeyframe(m_refKeyframe);
@@ -421,7 +458,7 @@ namespace MAPPINGPIPELINE {
                 maxMatchDistance = score;
         }
 
-        LOG_INFO("maxMatchDistance = {}", maxMatchDistance);
+        LOG_DEBUG("maxMatchDistance = {}", maxMatchDistance);
 
         // find 2D-3D point correspondences
         std::vector<Point2Df> pts2d;
@@ -455,7 +492,7 @@ namespace MAPPINGPIPELINE {
                 pts2d_outliers.push_back(pts2d[i]);
             }
         }
-        LOG_INFO("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
+        LOG_DEBUG("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
 
         // Find more visibilities by projecting the rest of local map
         //  projection points
@@ -488,33 +525,40 @@ namespace MAPPINGPIPELINE {
 
         // Add visibilities to current frame
         frame->addVisibilities(newMapVisibility);
-        LOG_INFO("Number of tracked points: {}", newMapVisibility.size());
+        LOG_DEBUG("Number of tracked points: {}", newMapVisibility.size());
         if (newMapVisibility.size() < m_minWeightNeighbor) {
             return;
         }
 
-        LOG_INFO("New frame for mapping task");
         // send frame to mapping task
         m_dropBufferAddKeyframe.push(frame);
-*/
+
     }
 
     void SolARMappingPipelineMultiProcessing::mapping()
     {
-/*
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::mapping");
 
-        if (m_isStopMapping || (m_dropBufferAddKeyframe.empty())) {
+        SRef<Frame> frame;
+
+        // Images to process ?
+        if (!m_dropBufferAddKeyframe.tryPop(frame)) {
+            m_dropBufferAddKeyframeEmpty = true;
+
             xpcf::DelegateTask::yield();
             return;
         }
 
-        SRef<Frame> frame;
-        m_dropBufferAddKeyframe.pop(frame);
+        m_dropBufferAddKeyframeEmpty = false;
+
+        if (m_isStopMapping) {
+            xpcf::DelegateTask::yield();
+            return;
+        }
 
         SRef<Keyframe> keyframe;
         if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
-            LOG_INFO("New keyframe id: {}", keyframe->getId());
+            LOG_DEBUG("New keyframe id: {}", keyframe->getId());
             // Local bundle adjustment
             std::vector<uint32_t> bestIdx;
             m_covisibilityGraph->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx);
@@ -528,29 +572,37 @@ namespace MAPPINGPIPELINE {
             m_isStopMapping = true;
             m_dropBufferNewKeyframe.push(keyframe);
         }
-*/
     }
 
     void SolARMappingPipelineMultiProcessing::loopClosure() {
-/*
+
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::loopClosure");
 
-        if ((m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) || (m_dropBufferNewKeyframeLoop.empty())) {
+        SRef<Keyframe> lastKeyframe;
+
+        // Images to process ?
+        if (!m_dropBufferNewKeyframeLoop.tryPop(lastKeyframe)) {
+            m_dropBufferNewKeyframeLoopEmpty = true;
+
             xpcf::DelegateTask::yield();
             return;
         }
 
-        SRef<Keyframe> lastKeyframe;
-        m_dropBufferNewKeyframeLoop.pop(lastKeyframe);
+        m_dropBufferNewKeyframeLoopEmpty = false;
+
+        if (m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) {
+            xpcf::DelegateTask::yield();
+            return;
+        }
 
         SRef<Keyframe> detectedLoopKeyframe;
         Transform3Df sim3Transform;
         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
         if (m_loopDetector->detect(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
             // detected loop keyframe
-            LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-            LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-            LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
+            LOG_DEBUG("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
+            LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+            LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
             // performs loop correction
             {
                 std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
@@ -573,7 +625,6 @@ namespace MAPPINGPIPELINE {
             Transform3Df transform = lastKeyframe->getPose() * keyframeOldPose.inverse();
             m_T_M_W = transform * m_T_M_W;
         }
-*/
     }
 
     void SolARMappingPipelineMultiProcessing::updateLocalMap(const SRef<Keyframe> & keyframe) {

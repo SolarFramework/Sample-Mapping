@@ -117,7 +117,7 @@ namespace MAPPINGPIPELINE {
 
         bool m_isBootstrapFinished; // indicates if the bootstrap step is finished
         mutable std::shared_mutex m_bootstrap_mutex;  // Mutex used for bootstrap state
-        mutable std::mutex m_mutexUseLocalMap; // Mutex used for mapping task
+        std::mutex m_mutexUseLocalMap; // Mutex used for mapping task
 
         CameraParameters m_cameraParams;        // camera parameters
         SRef<FiducialMarker> m_fiducialMarker;  // fiducial marker description
@@ -165,6 +165,12 @@ namespace MAPPINGPIPELINE {
         xpcf::DropBuffer<SRef<Frame>>                           m_dropBufferAddKeyframe;
         xpcf::DropBuffer<SRef<Keyframe>>                        m_dropBufferNewKeyframe;
         xpcf::DropBuffer<SRef<Keyframe>>                        m_dropBufferNewKeyframeLoop;
+
+        // Indicators for empty buffers
+        bool m_dropBufferKeypointsEmpty;
+        bool m_dropBufferFrameDescriptorsEmpty;
+        bool m_dropBufferAddKeyframeEmpty;
+        bool m_dropBufferNewKeyframeLoopEmpty;
 
         /// @brief Correct pose and do bootstrap using an image and the associated pose
         /// This method must be called with successive pairs of (image, pose)

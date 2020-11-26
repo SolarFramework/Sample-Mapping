@@ -70,6 +70,7 @@ OTHER_FILES += \
     packagedependencies.txt
 
 DISTFILES += \
+    .gitignore \
     FiducialMarker.gif \
     TestSolARMappingPipelineProducer_conf.xml \
     TestSolARMappingPipelineViewer_conf.xml \

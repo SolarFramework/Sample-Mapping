@@ -12,9 +12,9 @@
  */
 
 #include "xpcf/module/ModuleFactory.h"
-#include "SolARMappingPipeline_traits.h"
+#include "SolARMappingPipelineMulti_traits.h"
 
-#include "SolARMappingPipelineProcessing.h"
+#include "SolARMappingPipelineMultiProcessing.h"
 
 namespace xpcf=org::bcom::xpcf;
 
@@ -24,7 +24,8 @@ namespace xpcf=org::bcom::xpcf;
 /**
   * Declare module.
   */
-XPCF_DECLARE_MODULE("{43a3f181-99ba-4cc4-a926-8db6fab74454}","SolARMappingPipeline","Mapping vision pipeline based on SolAR Framework");
+XPCF_DECLARE_MODULE("{e7b8c768-a14a-4841-8700-6112697cf599}","SolARMappingPipelineMulti",
+                    "Multi threads mapping vision pipeline based on SolAR Framework");
 
 /**
  * This method is the module entry point.
@@ -36,7 +37,7 @@ extern "C" XPCF_MODULEHOOKS_API xpcf::XPCFErrorCode XPCF_getComponent(const xpcf
 {
     xpcf::XPCFErrorCode errCode = xpcf::XPCFErrorCode::_FAIL;
 
-    errCode = xpcf::tryCreateComponent<SolAR::PIPELINES::MAPPINGPIPELINE::SolARMappingPipelineProcessing>(componentUUID,interfaceRef);
+    errCode = xpcf::tryCreateComponent<SolAR::PIPELINES::MAPPINGPIPELINE::SolARMappingPipelineMultiProcessing>(componentUUID,interfaceRef);
 
     return errCode;
 }
@@ -46,5 +47,5 @@ extern "C" XPCF_MODULEHOOKS_API xpcf::XPCFErrorCode XPCF_getComponent(const xpcf
   * XPCF uses this index to introspect the components available in a module, providing the ability to generate the configuration file skeleton from the code.
   */
 XPCF_BEGIN_COMPONENTS_DECLARATION
-XPCF_ADD_COMPONENT(SolAR::PIPELINES::MAPPINGPIPELINE::SolARMappingPipelineProcessing)
+XPCF_ADD_COMPONENT(SolAR::PIPELINES::MAPPINGPIPELINE::SolARMappingPipelineMultiProcessing)
 XPCF_END_COMPONENTS_DECLARATION

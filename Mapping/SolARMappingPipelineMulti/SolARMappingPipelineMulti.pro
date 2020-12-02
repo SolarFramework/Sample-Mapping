@@ -4,7 +4,7 @@ CONFIG -= app_bundle qt
 
 ## global defintions : target lib name, version
 INSTALLSUBDIR = SolARBuild
-TARGET = SolARMappingPipeline
+TARGET = SolARMappingPipelineMulti
 FRAMEWORK = $${TARGET}
 VERSION=0.9.0
 
@@ -40,7 +40,7 @@ DEFINES += "_BCOM_SHARED=__declspec(dllexport)"
 
 INCLUDEPATH += interfaces/
 
-include (SolARMappingPipeline.pri)
+include (SolARMappingPipelineMulti.pri)
 
 unix:!android {
     QMAKE_CXXFLAGS += -Wignored-qualifiers
@@ -81,11 +81,24 @@ OTHER_FILES += \
     packagedependencies.txt
 
 DISTFILES += \
-    bcom-SolARMappingPipeline.pc.in
+    .gitignore \
+    LICENSE \
+    README.md \
+    bcom-SolARMappingPipelineMulti.pc.in \
+    xpcf_SolARMappingPipelineMulti_registry.xml
+
+SOURCES += \
+    src/SolARMappingPipelineMultiProcessing.cpp \
+    src/SolARMappingPipelineMulti_main.cpp
+
+HEADERS += \
+    interfaces/SolARMappingPipelineMultiAPI.h \
+    interfaces/SolARMappingPipelineMultiProcessing.h \
+    interfaces/SolARMappingPipelineMulti_traits.h
+
 
 #NOTE : Must be placed at the end of the .pro
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/remaken_install_target.pri)))) # Shell_quote & shell_path required for visual on windows
-
 
 
 

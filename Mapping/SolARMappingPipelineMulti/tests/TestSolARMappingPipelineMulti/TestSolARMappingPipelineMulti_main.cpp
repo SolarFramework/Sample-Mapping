@@ -37,8 +37,8 @@ namespace xpcf=org::bcom::xpcf;
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
 
-// Global Mapping Pipeline instance
-SRef<pipeline::IMappingPipeline> gMappingPipeline = 0;
+// Global Mapping Pipeline Multithreads instance
+SRef<pipeline::IMappingPipeline> gMappingPipelineMulti = 0;
 
 // Global client threads
 xpcf::DelegateTask * gClientProducerTask = 0;
@@ -76,7 +76,7 @@ auto fnClientProducer = [&]() {
             SRef<Image> image = images[INDEX_USE_CAMERA];
             Transform3Df pose = poses[INDEX_USE_CAMERA];
 
-            gMappingPipeline->mappingProcessRequest(image, pose);
+            gMappingPipelineMulti->mappingProcessRequest(image, pose);
 
             if (gImageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP) {
                 gClientProducerTask->stop();
@@ -93,7 +93,7 @@ auto fnClientProducer = [&]() {
 auto fnClientViewer = [&]() {
 
     // Try to get point clouds and key frame poses to display
-    if (gMappingPipeline->getDataForVisualization(gPointClouds, gKeyframePoses) == FrameworkReturnCode::_SUCCESS) {
+    if (gMappingPipelineMulti->getDataForVisualization(gPointClouds, gKeyframePoses) == FrameworkReturnCode::_SUCCESS) {
 
         if (gViewer3D == 0) {
             gViewer3D = gXpcfComponentManager->resolve<display::I3DPointsViewer>();
@@ -122,8 +122,8 @@ static void SigInt(int signo) {
 
     LOG_INFO("Stop mapping pipeline process");
 
-    if (gMappingPipeline != 0)
-        gMappingPipeline->stop();
+    if (gMappingPipelineMulti != 0)
+        gMappingPipelineMulti->stop();
 
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
@@ -158,14 +158,14 @@ int main(int argc, char ** argv)
 
             gXpcfComponentManager = xpcf::getComponentManagerInstance();
 
-            LOG_INFO("Load Mapping Pipeline configuration file");
+            LOG_INFO("Load Mapping Pipeline Multithreads configuration file");
 
             if (gXpcfComponentManager->load(config_file) == org::bcom::xpcf::_SUCCESS)
             {
                 // Create Mapping Pipeline component
-                gMappingPipeline = gXpcfComponentManager->resolve<pipeline::IMappingPipeline>();
+                gMappingPipelineMulti = gXpcfComponentManager->resolve<pipeline::IMappingPipeline>();
 
-                LOG_INFO("Mapping pipeline component created");
+                LOG_INFO("Mapping pipeline multithreads component created");
             }
             else {
                 LOG_ERROR("Failed to load the configuration file {}", config_file);
@@ -194,7 +194,7 @@ int main(int argc, char ** argv)
                     camParams = gArDevice->getParameters(0);
 
                     LOG_INFO("Producer client: Set mapping pipeline camera parameters");
-                    gMappingPipeline->setCameraParameters(camParams);
+                    gMappingPipelineMulti->setCameraParameters(camParams);
 
                     LOG_INFO("Producer client: Load fiducial marker description file");
                     SRef<Trackable> trackableObject = trackableLoader->loadTrackable();
@@ -203,11 +203,11 @@ int main(int argc, char ** argv)
                         LOG_INFO("Producer client: Fiducial marker created: url = {}", trackableObject->getURL());
 
                         LOG_INFO("Producer client: Set mapping pipeline fiducial marker");
-                        gMappingPipeline->setObjectToTrack(trackableObject);
+                        gMappingPipelineMulti->setObjectToTrack(trackableObject);
 
                         LOG_INFO("Producer client: Start mapping pipeline");
 
-                        if (gMappingPipeline->start() == FrameworkReturnCode::_SUCCESS) {
+                        if (gMappingPipelineMulti->start() == FrameworkReturnCode::_SUCCESS) {
                             LOG_INFO("Start producer client thread");
 
                             gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);

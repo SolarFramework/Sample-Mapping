@@ -63,14 +63,11 @@ namespace MAPPINGPIPELINE {
 
             m_dataToStore = false;
             m_isFoundTransform = false;
-            Transform3Df T_M_W = Transform3Df::Identity();
+            m_T_M_W = Transform3Df::Identity();
             m_minWeightNeighbor = 0;
 
             // Initial bootstrap status
             m_isBootstrapFinished = false;
-
-            // Reset drop buffers
-            m_inputImagePoseBuffer.empty();
 
             LOG_DEBUG("Set the mapping function for asynchronous task");
 
@@ -295,9 +292,9 @@ namespace MAPPINGPIPELINE {
 
         std::pair<SRef<Image>, Transform3Df> image_pose_pair;
 
-        LOG_DEBUG("Start pose correction and bootstrap");
+        if (!isBootstrapFinished()) {
 
-        while (!isBootstrapFinished()) {
+            // Process bootstrap
 
             // Get (image, pose) from input buffer
             if (!m_inputImagePoseBuffer.empty()) {
@@ -311,11 +308,8 @@ namespace MAPPINGPIPELINE {
                 correctPoseAndBootstrap(image, pose);
             }
         }
-
-        LOG_DEBUG("Pose correction and bootstrap finisehd");
-
-        while (true) {
-            LOG_DEBUG("Try to get (image, pose) pair from input buffer");
+        else {
+            // Process mapping;
 
             if (!m_inputImagePoseBuffer.empty()) {
 
@@ -334,6 +328,8 @@ namespace MAPPINGPIPELINE {
                 // feature extraction image
                 std::vector<Keypoint> keypoints;
                 m_keypointsDetector->detect(image, keypoints);
+                LOG_DEBUG("Keypoints size = {}", keypoints.size());
+
                 SRef<DescriptorBuffer> descriptors;
                 m_descriptorExtractor->extract(image, keypoints, descriptors);
                 SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, descriptors, image, m_refKeyframe, pose);
@@ -359,7 +355,7 @@ namespace MAPPINGPIPELINE {
                 std::vector<DescriptorMatch> remainingMatches;
                 m_corr2D3DFinder->find(m_refKeyframe, frame, matches, pts3d, pts2d, corres2D3D, foundMatches, remainingMatches);
                 if (corres2D3D.size() == 0)
-                    break;
+                    xpcf::DelegateTask::yield();
                 std::set<uint32_t> idxCPSeen;					// Index of CP seen
                 for (const auto & itCorr : corres2D3D) {
                     idxCPSeen.insert(itCorr.second->getId());
@@ -372,6 +368,7 @@ namespace MAPPINGPIPELINE {
                 std::vector<Point2Df> pts2d_inliers, pts2d_outliers;
                 for (int i = 0; i < refCPSeenProj.size(); ++i) {
                     float dis = (pts2d[i] - refCPSeenProj[i]).norm();
+                    LOG_DEBUG("dis / m_reprojErrorThreshold: {} / {}", dis, m_reprojErrorThreshold);
                     if (dis < m_reprojErrorThreshold) {
                         corres2D3D[i].second->updateConfidence(true);
                         newMapVisibility[corres2D3D[i].first] = corres2D3D[i].second->getId();
@@ -416,7 +413,7 @@ namespace MAPPINGPIPELINE {
                 frame->addVisibilities(newMapVisibility);
                 LOG_DEBUG("Number of tracked points: {}", newMapVisibility.size());
                 if (newMapVisibility.size() < m_minWeightNeighbor)
-                    break;
+                    xpcf::DelegateTask::yield();;
 
                 // mapping
                 SRef<Keyframe> keyframe;

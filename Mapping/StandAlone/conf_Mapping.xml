@@ -233,8 +233,8 @@
 	
     <properties>
         <configure component="SolARDeviceDataLoader">
-                                                                <property name="calibrationFile" type="string" value="hololens_calibration.yml"/>
-                                                                <property name="pathToData" type="string" value="C:\B-com\Dev\data\data_hololens\three_room_scale_24092020_090023"/>
+                        <property name="calibrationFile" type="string" value=""/>
+                        <property name="pathToData" type="string" value=""/>
 			<property name="delayTime" type="Integer" value="1"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
@@ -266,14 +266,22 @@
 			<property name="threshold" type="Float" value="0.0001"/>
 		</configure>
 		<configure component="SolARDescriptorsExtractorAKAZEOpencv">
-			<property name="threshold" type="Float" value="3e-4"/>
+                        <property name="threshold" type="Double" value="3e-4"/>
 		</configure>
 		<configure component="SolARDescriptorsExtractorAKAZE2Opencv">
-			<property name="threshold" type="Float" value="3e-4"/>
+                        <property name="threshold" type="Double" value="3e-4"/>
 		</configure>
 		<configure component="SolARDescriptorsExtractorORBOpencv">
-			<property name="threshold" type="Float" value="3e-4"/>
-		</configure>
+                        <property name="nbFeatures" type="Integer" value="500"/>
+                        <property name="scaleFactor" type="Float" value="1.2"/>
+                        <property name="nbLevels" type="Integer" value="8"/>
+                        <property name="edgeThreshold" type="Integer" value="31"/>
+                        <property name="firstLevel" type="Integer" value="0"/>
+                        <property name="WTAK" type="Integer" value="2"/>
+                        <property name="scoreType" type="String" value="Harris"/>
+                        <property name="patchSize" type="Integer" value="31"/>
+                        <property name="fastThreshold" type="Integer" value="20"/>
+                </configure>
 		<configure component="SolARDescriptorsExtractorSIFTOpencv">
             <property name="nbFeatures" type="Integer" value="2000"/>
             <property name="nbOctaveLayers" type="Integer" value="4"/>
@@ -287,7 +295,7 @@
 			<property name="distanceRatio" type="Float" value="0.9"/>
 		</configure>
 		<configure component="SolARDescriptorMatcherRadiusOpencv">
-			<property name="distanceRatio" type="Float" value="0.9"/>
+                        <property name="maxDistance" type="Float" value="1.0"/>
 		</configure>
 		<configure component="SolARGeometricMatchesFilterOpencv">
 			<property name="confidence" type="Float" value="0.99"/>
@@ -301,10 +309,10 @@
 			<property name="minNbInliers" type="Integer" value="15"/>
 		</configure>
 		<configure component="SolARMapFilter">
-			<property name="reprojErrorThreshold" type="float" value="5.0"/>
-			<property name="minTriangulationAngle" type="float" value="0.02"/>
-			<property name="maxTriangulationAngle" type="float" value="1.0"/>
-			<property name="cheiralityCheck" type="integer" value ="1"/>
+                        <property name="reprojErrorThreshold" type="Float" value="5.0"/>
+                        <property name="minTriangulationAngle" type="Float" value="0.02"/>
+                        <property name="maxTriangulationAngle" type="Float" value="1.0"/>
+                        <property name="cheiralityCheck" type="Integer" value ="1"/>
 		</configure>
 		<configure component="SolARKeyframeSelector">
 			<property name="minNbMatchesIsKeyframe" type="Integer" value="5"/>
@@ -315,7 +323,7 @@
 			<property name="minMeanDistanceIsKeyframe" type="Float" value="0.02"/>			
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
-                        <property name="VOCpath" type="String" value="akaze.fbow"/>
+                        <property name="VOCpath" type="String" value=""/>
 			<property name="threshold" type="Float" value="0.01"/>
 			<property name="level" type="Integer" value="3"/>
 			<property name="matchingDistanceRatio" type="Float" value="0.8"/>
@@ -342,6 +350,7 @@
 				<value>255</value>
 				<value>0</value>
 			</property>
+			<property name="maxMatches" type="UnsignedInteger" value="-1"/>																  
 		</configure>
 		<configure component="SolAR2DOverlayOpencv" name="BlueProperties">
 			<property name="thickness" type="UnsignedInteger" value="2"/>
@@ -351,6 +360,7 @@
 				<value>0</value>
 				<value>0</value>
                         </property>
+			<property name="maxMatches" type="UnsignedInteger" value="-1"/>
 		</configure>
 		<configure component="SolAR2DOverlayOpencv" name="RedProperties">
 			<property name="thickness" type="UnsignedInteger" value="2"/>
@@ -360,6 +370,7 @@
 				<value>0</value>
 				<value>255</value>
                         </property>
+			<property name="maxMatches" type="UnsignedInteger" value="-1"/>																  
 		</configure>
 		<configure component="SolARMatchesOverlayOpencv">
 			<property name="thickness" type="UnsignedInteger" value="1"/>

@@ -292,7 +292,7 @@
             <property name="minMeanDistanceIsKeyframe" type="Float" value="0.02"/>
         </configure>
         <configure component="SolARKeyframeRetrieverFBOW">
-            <property name="VOCpath" type="String" value="C:\B-com\Dev\data\fbow_voc\akaze.fbow"/>
+            <property name="VOCpath" type="String" value=""/>
             <property name="threshold" type="Float" value="0.01"/>
             <property name="level" type="Integer" value="3"/>
             <property name="matchingDistanceRatio" type="Float" value="0.8"/>

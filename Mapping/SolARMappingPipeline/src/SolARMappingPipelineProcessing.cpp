@@ -180,8 +180,11 @@ namespace MAPPINGPIPELINE {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::mappingProcessRequest");
 
+        // Correct pose
+        Transform3Df poseCorrected = m_T_M_W * pose;
+
         // Add pair (image, pose) to input drop buffer for mapping
-        m_inputImagePoseBuffer.push(std::make_pair(image, pose));
+        m_inputImagePoseBuffer.push(std::make_pair(image, poseCorrected));
 
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 
@@ -196,6 +199,7 @@ namespace MAPPINGPIPELINE {
         if (isBootstrapFinished()) {
 
             std::vector<SRef<Keyframe>> allKeyframes;
+            keyframePoses.clear();
 
             if (m_keyframesManager->getAllKeyframes(allKeyframes) == FrameworkReturnCode::_SUCCESS)
             {
@@ -235,13 +239,10 @@ namespace MAPPINGPIPELINE {
             }
         }
 
-        // Correct pose
-        Transform3Df pose2 = m_T_M_W * pose;
-
         LOG_DEBUG("3D transformation found: do bootstrap");
 
         SRef<Image> view;
-        if (m_bootstrapper->process(image, view, pose2) == FrameworkReturnCode::_SUCCESS) {
+        if (m_bootstrapper->process(image, view, pose) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
 
             double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -321,9 +322,6 @@ namespace MAPPINGPIPELINE {
                 // Mapping
 
                 LOG_DEBUG("Reference keyframe id: {}", m_refKeyframe->getId());
-
-                // Correct pose
-                pose = m_T_M_W * pose;
 
                 // feature extraction image
                 std::vector<Keypoint> keypoints;

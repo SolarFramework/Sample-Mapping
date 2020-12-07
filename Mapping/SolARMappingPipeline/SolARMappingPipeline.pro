@@ -81,6 +81,7 @@ OTHER_FILES += \
     packagedependencies.txt
 
 DISTFILES += \
+    README.md \
     bcom-SolARMappingPipeline.pc.in
 
 #NOTE : Must be placed at the end of the .pro

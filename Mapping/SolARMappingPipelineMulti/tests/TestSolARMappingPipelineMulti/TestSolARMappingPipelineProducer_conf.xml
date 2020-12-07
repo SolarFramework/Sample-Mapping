@@ -27,8 +27,8 @@
       <property name="filePath" type="string" value="fiducialMarker.yml" description="Path of the .yml file describing the fiducial marker."/>
     </configure>
     <configure component="SolARDeviceDataLoader">
-      <property name="calibrationFile" type="string" value="C:\B-com\Dev\data\data_hololens\hololens_calibration.yml"/>
-      <property name="pathToData" type="string" value="C:\B-com\Dev\data\data_hololens\three_room_scale_24092020_090023"/>
+      <property name="calibrationFile" type="string" value=""/>
+      <property name="pathToData" type="string" value=""/>
       <property name="delayTime" type="Integer" value="200"/>
     </configure>
     <configure component="SolARImageViewerOpencv">

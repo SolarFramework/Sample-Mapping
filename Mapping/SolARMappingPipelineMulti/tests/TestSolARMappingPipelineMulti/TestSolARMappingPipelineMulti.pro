@@ -72,6 +72,7 @@ OTHER_FILES += \
 DISTFILES += \
     .gitignore \
     FiducialMarker.gif \
+    README.md \
     TestSolARMappingPipelineProducer_conf.xml \
     TestSolARMappingPipelineViewer_conf.xml \
     camera_calibration.yml \

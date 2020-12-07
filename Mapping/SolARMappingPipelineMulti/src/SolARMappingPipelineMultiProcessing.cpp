@@ -276,6 +276,7 @@ namespace MAPPINGPIPELINE {
         if (isBootstrapFinished()) {
 
             std::vector<SRef<Keyframe>> allKeyframes;
+            keyframePoses.clear();
 
             LOG_DEBUG("Bootstrap finished");
 
@@ -362,7 +363,7 @@ namespace MAPPINGPIPELINE {
             // Data to store ?
             if (m_dataToStore) {
 
-                // Test if all drop buffers are empty
+                // Test if all drop buffers are empty => no (image, pose) to process
                 if (m_dropBufferKeypointsEmpty &&
                     m_dropBufferFrameDescriptorsEmpty &&
                     m_dropBufferAddKeyframeEmpty &&
@@ -578,6 +579,11 @@ namespace MAPPINGPIPELINE {
 
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::loopClosure");
 
+        if (m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) {
+            xpcf::DelegateTask::yield();
+            return;
+        }
+
         SRef<Keyframe> lastKeyframe;
 
         // Images to process ?
@@ -590,19 +596,14 @@ namespace MAPPINGPIPELINE {
 
         m_dropBufferNewKeyframeLoopEmpty = false;
 
-        if (m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) {
-            xpcf::DelegateTask::yield();
-            return;
-        }
-
         SRef<Keyframe> detectedLoopKeyframe;
         Transform3Df sim3Transform;
         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
         if (m_loopDetector->detect(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
             // detected loop keyframe
-            LOG_DEBUG("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-            LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-            LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
+            LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
+            LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+            LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
             // performs loop correction
             {
                 std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);

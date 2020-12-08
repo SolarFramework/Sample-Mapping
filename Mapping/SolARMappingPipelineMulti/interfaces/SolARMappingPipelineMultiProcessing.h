@@ -140,7 +140,6 @@ namespace MAPPINGPIPELINE {
         SRef<api::loop::ILoopClosureDetector> m_loopDetector;
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
 
-        bool m_dataToStore;                 // indicates if new data to store
         bool m_isFoundTransform;            // indicates if the 3D transformation as been found
         bool m_isStopMapping;               // indicates if the mapping task is stopped
         Transform3Df m_T_M_W;               // 3D transformation matrix
@@ -165,12 +164,6 @@ namespace MAPPINGPIPELINE {
         xpcf::DropBuffer<SRef<Frame>>                           m_dropBufferAddKeyframe;
         xpcf::DropBuffer<SRef<Keyframe>>                        m_dropBufferNewKeyframe;
         xpcf::DropBuffer<SRef<Keyframe>>                        m_dropBufferNewKeyframeLoop;
-
-        // Indicators for empty buffers
-        bool m_dropBufferKeypointsEmpty;
-        bool m_dropBufferFrameDescriptorsEmpty;
-        bool m_dropBufferAddKeyframeEmpty;
-        bool m_dropBufferNewKeyframeLoopEmpty;
 
         /// @brief Correct pose and do bootstrap using an image and the associated pose
         /// This method must be called with successive pairs of (image, pose)
@@ -208,7 +201,6 @@ namespace MAPPINGPIPELINE {
         /// (the m_isBootstrapFinished variable value)
         /// @param status: true (finished) or false (not finished)
         void setBootstrapSatus(const bool status);
-
     };
 
 }

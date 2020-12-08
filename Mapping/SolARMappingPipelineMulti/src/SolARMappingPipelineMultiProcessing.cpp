@@ -63,15 +63,9 @@ namespace MAPPINGPIPELINE {
             m_countNewKeyframes = 0;
 
             m_T_M_W = Transform3Df::Identity();
-            m_dataToStore = false;
             m_isFoundTransform = false;
             m_isStopMapping = false;
             m_minWeightNeighbor = 0;
-
-            m_dropBufferKeypointsEmpty = false;
-            m_dropBufferFrameDescriptorsEmpty = false;
-            m_dropBufferAddKeyframeEmpty = false;
-            m_dropBufferNewKeyframeLoopEmpty = false;
 
             // Initial bootstrap status
             m_isBootstrapFinished = false;
@@ -233,6 +227,9 @@ namespace MAPPINGPIPELINE {
 
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::stop");
 
+        LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
+        globalBundleAdjustment();
+
         LOG_DEBUG("Stop processing tasks");
 
         m_loopClosureTask->stop();
@@ -306,7 +303,8 @@ namespace MAPPINGPIPELINE {
         std::pair<SRef<Image>, Transform3Df> imagePose;
 
         // Try to get next (image, pose) if bootstrap is not finished
-        if (m_isBootstrapFinished || !m_dropBufferCamImagePoseCaptureBootstrap.tryPop(imagePose)) {
+        if (m_isBootstrapFinished ||
+           !m_dropBufferCamImagePoseCaptureBootstrap.tryPop(imagePose)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -352,32 +350,8 @@ namespace MAPPINGPIPELINE {
         std::pair<SRef<Image>, Transform3Df> imagePose;
 
         // Bootstrap finished?
-        if (!isBootstrapFinished() ) {
-            xpcf::DelegateTask::yield();
-            return;
-        }
-
-        // Images to process?
-        if (!m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
-
-            // Data to store ?
-            if (m_dataToStore) {
-
-                // Test if all drop buffers are empty => no (image, pose) to process
-                if (m_dropBufferKeypointsEmpty &&
-                    m_dropBufferFrameDescriptorsEmpty &&
-                    m_dropBufferAddKeyframeEmpty &&
-                    m_dropBufferNewKeyframeLoopEmpty) {
-
-                    m_dataToStore = false;
-
-                    LOG_INFO("No more (image, pose) pair to process => save map");
-
-                    // Bundle adjustment, map pruning and global map udate
-                    globalBundleAdjustment();
-                }
-            }
-
+        if (!isBootstrapFinished() ||
+            !m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -400,13 +374,9 @@ namespace MAPPINGPIPELINE {
 
         // Images to process ?
         if (!m_dropBufferKeypoints.tryPop(frame)) {
-            m_dropBufferKeypointsEmpty = true;
-
             xpcf::DelegateTask::yield();
             return;
         }
-
-        m_dropBufferKeypointsEmpty = false;
 
         SRef<DescriptorBuffer> descriptors;
         m_descriptorExtractor->extract(frame->getView(), frame->getKeypoints(), descriptors);
@@ -423,13 +393,9 @@ namespace MAPPINGPIPELINE {
 
         // Frame to process?
         if (!m_dropBufferFrameDescriptors.tryPop(frame)) {
-            m_dropBufferFrameDescriptorsEmpty = true;
-
             xpcf::DelegateTask::yield();
             return;
         }
-
-        m_dropBufferFrameDescriptorsEmpty = false;
 
         // Protect from concurrent access
         std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
@@ -543,16 +509,7 @@ namespace MAPPINGPIPELINE {
         SRef<Frame> frame;
 
         // Images to process ?
-        if (!m_dropBufferAddKeyframe.tryPop(frame)) {
-            m_dropBufferAddKeyframeEmpty = true;
-
-            xpcf::DelegateTask::yield();
-            return;
-        }
-
-        m_dropBufferAddKeyframeEmpty = false;
-
-        if (m_isStopMapping) {
+        if (m_isStopMapping || !m_dropBufferAddKeyframe.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -569,6 +526,7 @@ namespace MAPPINGPIPELINE {
             m_countNewKeyframes++;
             m_dropBufferNewKeyframeLoop.push(keyframe);
         }
+
         if (keyframe) {
             m_isStopMapping = true;
             m_dropBufferNewKeyframe.push(keyframe);
@@ -579,22 +537,14 @@ namespace MAPPINGPIPELINE {
 
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::loopClosure");
 
-        if (m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) {
-            xpcf::DelegateTask::yield();
-            return;
-        }
-
         SRef<Keyframe> lastKeyframe;
 
-        // Images to process ?
-        if (!m_dropBufferNewKeyframeLoop.tryPop(lastKeyframe)) {
-            m_dropBufferNewKeyframeLoopEmpty = true;
-
+        if ((m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) ||
+            !m_dropBufferNewKeyframeLoop.tryPop(lastKeyframe))
+        {
             xpcf::DelegateTask::yield();
             return;
         }
-
-        m_dropBufferNewKeyframeLoopEmpty = false;
 
         SRef<Keyframe> detectedLoopKeyframe;
         Transform3Df sim3Transform;
@@ -631,9 +581,6 @@ namespace MAPPINGPIPELINE {
     void SolARMappingPipelineMultiProcessing::updateLocalMap(const SRef<Keyframe> & keyframe) {
         m_localMap.clear();
         m_mapper->getLocalPointCloud(keyframe, m_minWeightNeighbor, m_localMap);
-
-        // New data to store
-        m_dataToStore = true;
     }
 
     void SolARMappingPipelineMultiProcessing::globalBundleAdjustment() {

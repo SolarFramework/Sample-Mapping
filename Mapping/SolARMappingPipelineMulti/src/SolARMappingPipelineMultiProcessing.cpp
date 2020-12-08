@@ -494,35 +494,36 @@ namespace MAPPINGPIPELINE {
             }
         }
         LOG_DEBUG("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
-
-        // Find more visibilities by projecting the rest of local map
-        //  projection points
+        
+		// find unseen local map from current frame
         std::vector<SRef<CloudPoint>> localMapUnseen;
         for (auto &it_cp : m_localMap)
             if (idxCPSeen.find(it_cp->getId()) == idxCPSeen.end())
                 localMapUnseen.push_back(it_cp);
-        std::vector< Point2Df > projected2DPts;
-        m_projector->project(localMapUnseen, projected2DPts, frame->getPose());
-
-        // find more inlier matches
-        std::vector<SRef<DescriptorBuffer>> desAllLocalMapUnseen;
-        for (auto &it_cp : localMapUnseen) {
-            desAllLocalMapUnseen.push_back(it_cp->getDescriptor());
-        }
-        std::vector<DescriptorMatch> allMatches;
-        m_matcher->matchInRegion(projected2DPts, desAllLocalMapUnseen, frame, allMatches, 0, maxMatchDistance * 1.5);
-
-        // find visibility of new frame
-        const std::vector<Keypoint>& keypoints = frame->getKeypoints();
-        for (auto &it_match : allMatches) {
-            int idx_2d = it_match.getIndexInDescriptorB();
-            int idx_3d = it_match.getIndexInDescriptorA();
-            auto it2d = newMapVisibility.find(idx_2d);
-            if (it2d == newMapVisibility.end()) {
-                pts2d_inliers.push_back(Point2Df(keypoints[idx_2d].getX(), keypoints[idx_2d].getY()));
-                newMapVisibility[idx_2d] = localMapUnseen[idx_3d]->getId();
-            }
-        }
+		// Find more visibilities by projecting the rest of local map
+		if (localMapUnseen.size() > 0) {
+			//  projection points
+			std::vector< Point2Df > projected2DPts;
+			m_projector->project(localMapUnseen, projected2DPts, frame->getPose());
+			// find more inlier matches
+			std::vector<SRef<DescriptorBuffer>> desAllLocalMapUnseen;
+			for (auto &it_cp : localMapUnseen) {
+				desAllLocalMapUnseen.push_back(it_cp->getDescriptor());
+			}
+			std::vector<DescriptorMatch> allMatches;
+			m_matcher->matchInRegion(projected2DPts, desAllLocalMapUnseen, frame, allMatches, 0, maxMatchDistance * 1.5);
+			// find visibility of new frame
+			const std::vector<Keypoint>& keypoints = frame->getKeypoints();
+			for (auto &it_match : allMatches) {
+				int idx_2d = it_match.getIndexInDescriptorB();
+				int idx_3d = it_match.getIndexInDescriptorA();
+				auto it2d = newMapVisibility.find(idx_2d);
+				if (it2d == newMapVisibility.end()) {
+					pts2d_inliers.push_back(Point2Df(keypoints[idx_2d].getX(), keypoints[idx_2d].getY()));
+					newMapVisibility[idx_2d] = localMapUnseen[idx_3d]->getId();
+				}
+			}
+		}
 
         // Add visibilities to current frame
         frame->addVisibilities(newMapVisibility);

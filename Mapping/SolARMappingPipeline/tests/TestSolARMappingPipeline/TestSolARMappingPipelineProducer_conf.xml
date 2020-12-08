@@ -29,13 +29,13 @@
     <configure component="SolARDeviceDataLoader">
       <property name="calibrationFile" type="string" value=""/>
       <property name="pathToData" type="string" value=""/>
-      <property name="delayTime" type="Integer" value="200"/>
+      <property name="delayTime" type="int" value="200"/>
     </configure>
     <configure component="SolARImageViewerOpencv">
       <property name="title" type="string" value="AR device mapping. Green = inliers, Red = outliers"/>
-      <property name="exitKey" type="Integer" value="27"/>
-      <property name="width" type="Integer" value="700"/>
-      <property name="height" type="Integer" value="400"/>
+      <property name="exitKey" type="int" value="27"/>
+      <property name="width" type="int" value="700"/>
+      <property name="height" type="int" value="400"/>
     </configure>
   </properties>
 

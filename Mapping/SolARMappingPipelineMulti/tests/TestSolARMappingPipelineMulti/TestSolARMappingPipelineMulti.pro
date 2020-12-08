@@ -58,8 +58,8 @@ win32 {
 }
 
 config_files.path = $${TARGETDEPLOYDIR}
-config_files.files= $$files($${PWD}/TestSolARMappingPipelineProducer_conf.xml)\
-                    $$files($${PWD}/TestSolARMappingPipelineViewer_conf.xml)\
+config_files.files= $$files($${PWD}/TestSolARMappingPipelineProducerMulti_conf.xml)\
+                    $$files($${PWD}/TestSolARMappingPipelineViewerMulti_conf.xml)\
                     $$files($${PWD}/xpcf_SolARMappingPipelineMulti_registry.xml)\
                     $$files($${PWD}/camera_calibration.yml)\
                     $$files($${PWD}/fiducialMarker.yml)\
@@ -73,8 +73,8 @@ DISTFILES += \
     .gitignore \
     FiducialMarker.gif \
     README.md \
-    TestSolARMappingPipelineProducer_conf.xml \
-    TestSolARMappingPipelineViewer_conf.xml \
+    TestSolARMappingPipelineProducerMulti_conf.xml \
+    TestSolARMappingPipelineViewerMulti_conf.xml \
     camera_calibration.yml \
     fiducialMarker.yml \
     xpcf_SolARMappingPipelineMulti_registry.xml

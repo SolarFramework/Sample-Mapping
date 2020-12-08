@@ -466,6 +466,7 @@ namespace MAPPINGPIPELINE {
         for (auto &it_cp : m_localMap)
             if (idxCPSeen.find(it_cp->getId()) == idxCPSeen.end())
                 localMapUnseen.push_back(it_cp);
+
 		// Find more visibilities by projecting the rest of local map
 		if (localMapUnseen.size() > 0) {
 			//  projection points

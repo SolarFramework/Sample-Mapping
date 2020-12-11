@@ -180,8 +180,11 @@ namespace MAPPINGPIPELINE {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::mappingProcessRequest");
 
+        // Correct pose
+        Transform3Df poseCorrected = m_T_M_W * pose;
+
         // Add pair (image, pose) to input drop buffer for mapping
-        m_inputImagePoseBuffer.push(std::make_pair(image, pose));
+        m_inputImagePoseBuffer.push(std::make_pair(image, poseCorrected));
 
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 
@@ -196,6 +199,7 @@ namespace MAPPINGPIPELINE {
         if (isBootstrapFinished()) {
 
             std::vector<SRef<Keyframe>> allKeyframes;
+            keyframePoses.clear();
 
             if (m_keyframesManager->getAllKeyframes(allKeyframes) == FrameworkReturnCode::_SUCCESS)
             {
@@ -235,13 +239,10 @@ namespace MAPPINGPIPELINE {
             }
         }
 
-        // Correct pose
-        Transform3Df pose2 = m_T_M_W * pose;
-
         LOG_DEBUG("3D transformation found: do bootstrap");
 
         SRef<Image> view;
-        if (m_bootstrapper->process(image, view, pose2) == FrameworkReturnCode::_SUCCESS) {
+        if (m_bootstrapper->process(image, view, pose) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
 
             double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -322,9 +323,6 @@ namespace MAPPINGPIPELINE {
 
                 LOG_DEBUG("Reference keyframe id: {}", m_refKeyframe->getId());
 
-                // Correct pose
-                pose = m_T_M_W * pose;
-
                 // feature extraction image
                 std::vector<Keypoint> keypoints;
                 m_keypointsDetector->detect(image, keypoints);
@@ -381,33 +379,35 @@ namespace MAPPINGPIPELINE {
                 }
                 LOG_DEBUG("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
 
-                // Find more visibilities by projecting the rest of local map
-                //  projection points
+				// find unseen local map from current frame                
                 std::vector<SRef<CloudPoint>> localMapUnseen;
                 for (auto &it_cp : m_localMap)
                     if (idxCPSeen.find(it_cp->getId()) == idxCPSeen.end())
                         localMapUnseen.push_back(it_cp);
-                std::vector< Point2Df > projected2DPts;
-                m_projector->project(localMapUnseen, projected2DPts, pose);
 
-                // find more inlier matches
-                std::vector<SRef<DescriptorBuffer>> desAllLocalMapUnseen;
-                for (auto &it_cp : localMapUnseen) {
-                    desAllLocalMapUnseen.push_back(it_cp->getDescriptor());
-                }
-                std::vector<DescriptorMatch> allMatches;
-                m_matcher->matchInRegion(projected2DPts, desAllLocalMapUnseen, frame, allMatches, 0, maxMatchDistance * 1.5);
-
-                // find visibility of new frame
-                for (auto &it_match : allMatches) {
-                    int idx_2d = it_match.getIndexInDescriptorB();
-                    int idx_3d = it_match.getIndexInDescriptorA();
-                    auto it2d = newMapVisibility.find(idx_2d);
-                    if (it2d == newMapVisibility.end()) {
-                        pts2d_inliers.push_back(Point2Df(keypoints[idx_2d].getX(), keypoints[idx_2d].getY()));
-                        newMapVisibility[idx_2d] = localMapUnseen[idx_3d]->getId();
-                    }
-                }
+				// Find more visibilities by projecting the rest of local map
+				if (localMapUnseen.size() > 0) {
+					//  projection points
+					std::vector< Point2Df > projected2DPts;
+					m_projector->project(localMapUnseen, projected2DPts, pose);
+					// find more inlier matches
+					std::vector<SRef<DescriptorBuffer>> desAllLocalMapUnseen;
+					for (auto &it_cp : localMapUnseen) {
+						desAllLocalMapUnseen.push_back(it_cp->getDescriptor());
+					}
+					std::vector<DescriptorMatch> allMatches;
+					m_matcher->matchInRegion(projected2DPts, desAllLocalMapUnseen, frame, allMatches, 0, maxMatchDistance * 1.5);
+					// find visibility of new frame
+					for (auto &it_match : allMatches) {
+						int idx_2d = it_match.getIndexInDescriptorB();
+						int idx_3d = it_match.getIndexInDescriptorA();
+						auto it2d = newMapVisibility.find(idx_2d);
+						if (it2d == newMapVisibility.end()) {
+							pts2d_inliers.push_back(Point2Df(keypoints[idx_2d].getX(), keypoints[idx_2d].getY()));
+							newMapVisibility[idx_2d] = localMapUnseen[idx_3d]->getId();
+						}
+					}
+				}
 
                 // Add visibilities to current frame
                 frame->addVisibilities(newMapVisibility);

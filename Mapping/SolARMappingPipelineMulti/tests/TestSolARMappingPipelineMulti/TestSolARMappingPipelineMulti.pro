@@ -13,13 +13,13 @@ CONFIG += console
 include(findremakenrules.pri)
 
 CONFIG(debug,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/bin/Debug
+    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
 
 CONFIG(release,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/bin/Release
+    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Release
     DEFINES += _NDEBUG=1
     DEFINES += NDEBUG=1
 }
@@ -58,8 +58,8 @@ win32 {
 }
 
 config_files.path = $${TARGETDEPLOYDIR}
-config_files.files= $$files($${PWD}/TestSolARMappingPipelineProducer_conf.xml)\
-                    $$files($${PWD}/TestSolARMappingPipelineViewer_conf.xml)\
+config_files.files= $$files($${PWD}/TestSolARMappingPipelineProducerMulti_conf.xml)\
+                    $$files($${PWD}/TestSolARMappingPipelineViewerMulti_conf.xml)\
                     $$files($${PWD}/xpcf_SolARMappingPipelineMulti_registry.xml)\
                     $$files($${PWD}/camera_calibration.yml)\
                     $$files($${PWD}/fiducialMarker.yml)\
@@ -72,8 +72,9 @@ OTHER_FILES += \
 DISTFILES += \
     .gitignore \
     FiducialMarker.gif \
-    TestSolARMappingPipelineProducer_conf.xml \
-    TestSolARMappingPipelineViewer_conf.xml \
+    README.md \
+    TestSolARMappingPipelineProducerMulti_conf.xml \
+    TestSolARMappingPipelineViewerMulti_conf.xml \
     camera_calibration.yml \
     fiducialMarker.yml \
     xpcf_SolARMappingPipelineMulti_registry.xml

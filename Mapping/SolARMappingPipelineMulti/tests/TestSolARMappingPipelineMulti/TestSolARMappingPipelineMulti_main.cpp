@@ -173,7 +173,7 @@ int main(int argc, char ** argv)
             }
 
             // Manage producer client thread
-            if (gXpcfComponentManager->load("TestSolARMappingPipelineProducer_conf.xml") == org::bcom::xpcf::_SUCCESS)
+            if (gXpcfComponentManager->load("TestSolARMappingPipelineProducerMulti_conf.xml") == org::bcom::xpcf::_SUCCESS)
             {
                 LOG_INFO("Producer client configuration file loaded");
 
@@ -233,7 +233,7 @@ int main(int argc, char ** argv)
             }
 
             // Manage viewer client thread
-            if (gXpcfComponentManager->load("TestSolARMappingPipelineViewer_conf.xml") == org::bcom::xpcf::_SUCCESS)
+            if (gXpcfComponentManager->load("TestSolARMappingPipelineViewerMulti_conf.xml") == org::bcom::xpcf::_SUCCESS)
             {
                 LOG_INFO("Viewer client configuration file loaded");
 

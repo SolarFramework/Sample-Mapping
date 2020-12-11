@@ -13,13 +13,13 @@ CONFIG += console
 include(findremakenrules.pri)
 
 CONFIG(debug,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/bin/Debug
+    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
 
 CONFIG(release,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/bin/Release
+    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Release
     DEFINES += _NDEBUG=1
     DEFINES += NDEBUG=1
 }
@@ -73,6 +73,7 @@ OTHER_FILES += \
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/remaken_install_target.pri)))) # Shell_quote & shell_path required for visual on windows
 
 DISTFILES += \
+    README.md \
     TestSolARMappingPipelineProducer_conf.xml \
     TestSolARMappingPipelineViewer_conf.xml \
     xpcf_SolARMappingPipeline_registry.xml

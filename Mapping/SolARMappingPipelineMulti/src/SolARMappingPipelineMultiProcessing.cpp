@@ -34,8 +34,8 @@ namespace MAPPINGPIPELINE {
 
             LOG_DEBUG("Components injection declaration");
 
-            declareInjectable<solver::pose::IFiducialMarkerPose>(m_fiducialMarkerPoseEstimator);
-            declareInjectable<slam::IBootstrapper>(m_bootstrapper);
+            declareInjectable<api::solver::pose::IFiducialMarkerPose>(m_fiducialMarkerPoseEstimator);
+            declareInjectable<api::slam::IBootstrapper>(m_bootstrapper);
             declareInjectable<api::solver::map::IBundler>(m_bundler, "BundleFixedKeyframes");
             declareInjectable<api::solver::map::IBundler>(m_globalBundler);
             declareInjectable<api::solver::map::IMapper>(m_mapper);
@@ -48,7 +48,7 @@ namespace MAPPINGPIPELINE {
             declareInjectable<api::features::IMatchesFilter>(m_matchesFilter);
             declareInjectable<api::solver::pose::I2D3DCorrespondencesFinder>(m_corr2D3DFinder);
             declareInjectable<api::geom::IProject>(m_projector);
-            declareInjectable<api::ICovisibilityGraph>(m_covisibilityGraph);
+            declareInjectable<api::storage::ICovisibilityGraph>(m_covisibilityGraph);
             declareInjectable<api::loop::ILoopClosureDetector>(m_loopDetector);
             declareInjectable<api::loop::ILoopCorrector>(m_loopCorrector);
 

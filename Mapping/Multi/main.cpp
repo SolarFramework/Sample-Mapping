@@ -48,6 +48,8 @@
 using namespace SolAR;
 using namespace SolAR::datastructure;
 using namespace SolAR::api;
+using namespace SolAR::api::storage;
+using namespace SolAR::api::reloc;
 namespace xpcf  = org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0

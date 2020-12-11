@@ -51,8 +51,6 @@
 
 
 namespace SolAR {
-using namespace datastructure;
-using namespace SolAR::api;
 namespace PIPELINES {
 namespace MAPPINGPIPELINE {
 
@@ -82,12 +80,12 @@ namespace MAPPINGPIPELINE {
         /// @brief Set the camera parameters
         /// @param[in] cameraParams: the camera parameters (its resolution and its focal)
         /// @return FrameworkReturnCode::_SUCCESS if the camera parameters are correctly set, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode setCameraParameters(const CameraParameters & cameraParams) override;
+        FrameworkReturnCode setCameraParameters(const datastructure::CameraParameters & cameraParams) override;
 
         /// @brief Set the object to track during mapping
         /// @param[in] trackableObject: the trackable object
         /// @return FrameworkReturnCode::_SUCCESS if the trackable object is correctly set, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode setObjectToTrack(const SRef<Trackable> & trackableObject) override;
+        FrameworkReturnCode setObjectToTrack(const SRef<datastructure::Trackable> & trackableObject) override;
 
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
@@ -103,23 +101,23 @@ namespace MAPPINGPIPELINE {
         /// @param[in] image: the input image to process
         /// @param[in] pose: the input pose to process
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode mappingProcessRequest(const SRef<Image> & image, const Transform3Df & pose) override;
+        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> & image, const datastructure::Transform3Df & pose) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization
         /// (resulting from all mapping processing since the start of the pipeline)
         /// @param[out] outputPointClouds: pipeline current point clouds
         /// @param[out] keyframePoses: pipeline current keyframe poses
         /// @return FrameworkReturnCode::_SUCCESS if data are available, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode getDataForVisualization(std::vector<SRef<CloudPoint>> & outputPointClouds,
-                                                            std::vector<Transform3Df> & keyframePoses) const override;
+        FrameworkReturnCode getDataForVisualization(std::vector<SRef<datastructure::CloudPoint>> & outputPointClouds,
+                                                            std::vector<datastructure::Transform3Df> & keyframePoses) const override;
 
     private:
 
         bool m_isBootstrapFinished; // indicates if the bootstrap step is finished
         mutable std::shared_mutex m_bootstrap_mutex;  // Mutex used for bootstrap state
 
-        CameraParameters m_cameraParams;        // camera parameters
-        SRef<FiducialMarker> m_fiducialMarker;  // fiducial marker description
+        datastructure::CameraParameters m_cameraParams;        // camera parameters
+        SRef<datastructure::FiducialMarker> m_fiducialMarker;  // fiducial marker description
 
         // Components used
         SRef<api::solver::pose::IFiducialMarkerPose> m_fiducialMarkerPoseEstimator;
@@ -135,23 +133,23 @@ namespace MAPPINGPIPELINE {
         SRef<api::features::IMatchesFilter> m_matchesFilter;
         SRef<api::solver::pose::I2D3DCorrespondencesFinder> m_corr2D3DFinder;
         SRef<api::geom::IProject> m_projector;
-        SRef<api::ICovisibilityGraph> m_covisibilityGraph;
+        SRef<api::storage::ICovisibilityGraph> m_covisibilityGraph;
         SRef<api::loop::ILoopClosureDetector> m_loopDetector;
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
 
         bool m_dataToStore;                 // indicates if new data to store
         bool m_isFoundTransform;            // indicates if the 3D transformation as been found
-        Transform3Df m_T_M_W;               // 3D transformation matrix
-        std::vector<SRef<CloudPoint>> m_localMap; // Local map
+        datastructure::Transform3Df m_T_M_W;               // 3D transformation matrix
+        std::vector<SRef<datastructure::CloudPoint>> m_localMap; // Local map
         float m_minWeightNeighbor, m_reprojErrorThreshold;
-        SRef<Keyframe> m_refKeyframe;
+        SRef<datastructure::Keyframe> m_refKeyframe;
         int m_countNewKeyframes;
 
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_mappingTask = nullptr;
 
         // Drop buffer containing (image,pose) pairs sent by client
-        xpcf::SharedFifo<std::pair<SRef<Image>, Transform3Df>> m_inputImagePoseBuffer;
+        xpcf::SharedFifo<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_inputImagePoseBuffer;
 
         /// @brief Correct pose and do bootstrap using an image and the associated pose
         /// This method must be called with successive pairs of (image, pose)
@@ -159,11 +157,11 @@ namespace MAPPINGPIPELINE {
         /// @param[in] image: the input image to process
         /// @param[in] pose: the input pose to process
         /// @return true if bootstrap is finished
-        bool correctPoseAndBootstrap(const SRef<Image> & image, const Transform3Df & pose);
+        bool correctPoseAndBootstrap(const SRef<datastructure::Image> & image, const datastructure::Transform3Df & pose);
 
         /// @brief Update local map
         /// @param[in] keyframe: reference key frame
-        void updateLocalMap(const SRef<Keyframe> & keyframe);
+        void updateLocalMap(const SRef<datastructure::Keyframe> & keyframe);
 
         /// @brief Process to bundle adjustment, map pruning
         /// and update global map

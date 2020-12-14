@@ -1,0 +1,61 @@
+node("master") {
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="MapExtension/StandAlone"
+    android=false
+} 
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="MapFusion/floatingMapFusionStandAlone"
+    android=false
+}    
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="MapFusion/localMapFusionStandAlone"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="Mapping/Multi"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="Mapping/SolARMappingPipeline"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="Mapping/SolARMappingPipelineMulti"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="Mapping/StandAlone"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="MapViz"
+    android=false
+}
+
+}
+
+

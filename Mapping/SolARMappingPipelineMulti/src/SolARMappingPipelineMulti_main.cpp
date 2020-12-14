@@ -35,9 +35,7 @@ XPCF_DECLARE_MODULE("{e7b8c768-a14a-4841-8700-6112697cf599}","SolARMappingPipeli
  */
 extern "C" XPCF_MODULEHOOKS_API xpcf::XPCFErrorCode XPCF_getComponent(const xpcf::uuids::uuid& componentUUID,SRef<xpcf::IComponentIntrospect>& interfaceRef)
 {
-    xpcf::XPCFErrorCode errCode = xpcf::XPCFErrorCode::_FAIL;
-
-    errCode = xpcf::tryCreateComponent<SolAR::PIPELINES::MAPPINGPIPELINE::SolARMappingPipelineMultiProcessing>(componentUUID,interfaceRef);
+    xpcf::XPCFErrorCode errCode = xpcf::tryCreateComponent<SolAR::PIPELINES::MAPPINGPIPELINE::SolARMappingPipelineMultiProcessing>(componentUUID,interfaceRef);
 
     return errCode;
 }

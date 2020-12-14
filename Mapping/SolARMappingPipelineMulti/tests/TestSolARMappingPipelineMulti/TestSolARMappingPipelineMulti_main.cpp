@@ -58,6 +58,15 @@ bool gImageToSend = true;
 // Nb of images sent by producer client
 int gNbImages = 0;
 
+// Metrics global var
+LARGE_INTEGER frequency;
+LARGE_INTEGER start_time;
+LARGE_INTEGER end_time;
+double interval;
+int nb_keyframePoses = 0;
+int count_keyframePosesChanged = 0;
+
+
 // Fonction for producer client thread
 auto fnClientProducer = [&]() {
 
@@ -70,8 +79,8 @@ auto fnClientProducer = [&]() {
         // Get data from hololens files
         if (gArDevice->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
 
-//            gNbImages ++;
-//            LOG_INFO("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
+            gNbImages ++;
+            LOG_DEBUG("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
 
             SRef<Image> image = images[INDEX_USE_CAMERA];
             Transform3Df pose = poses[INDEX_USE_CAMERA];
@@ -102,6 +111,21 @@ auto fnClientViewer = [&]() {
 
         // Display new data
         gViewer3D->display(gPointClouds, gKeyframePoses[gKeyframePoses.size()-1], gKeyframePoses, {}, {});
+
+        if (gKeyframePoses.size() > nb_keyframePoses) {
+            nb_keyframePoses = gKeyframePoses.size();
+            count_keyframePosesChanged = 0;
+        }
+        else {
+            count_keyframePosesChanged ++;
+
+            if (count_keyframePosesChanged == 100) {
+                // End of processing
+                QueryPerformanceCounter(&end_time);
+                interval = (double) (end_time.QuadPart - start_time.QuadPart) / frequency.QuadPart;
+                LOG_INFO("\nProcessing time = {}\n", interval);
+            }
+        }
     }
 };
 
@@ -142,6 +166,10 @@ int main(int argc, char ** argv)
 #if NDEBUG
     boost::log::core::get()->set_logging_enabled(false);
 #endif
+
+    // Processing start time
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&start_time);
 
     LOG_ADD_LOG_TO_CONSOLE();
 
@@ -251,8 +279,9 @@ int main(int argc, char ** argv)
 
             // Wait for interruption
             while (true);
+
         }
-        catch (xpcf::Exception e) {
+        catch (xpcf::Exception & e) {
             LOG_ERROR("The following exception has been caught {}", e.what());
             return -1;
         }

@@ -126,7 +126,7 @@ namespace MAPPINGPIPELINE {
                 m_loopClosureTask = new xpcf::DelegateTask(fnLoopClosureProcessing);
             }
         }
-        catch (xpcf::Exception e) {
+        catch (xpcf::Exception & e) {
             LOG_ERROR("The following exception has been caught {}", e.what());
         }
     }
@@ -203,7 +203,7 @@ namespace MAPPINGPIPELINE {
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::start");
 
         // Check members initialization
-        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.width > 0)
+        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)
                 && (m_fiducialMarker != nullptr) && (m_fiducialMarker->getWidth() > 0) && (m_fiducialMarker->getHeight() > 0)) {
 
             LOG_DEBUG("Start processing tasks");
@@ -227,8 +227,10 @@ namespace MAPPINGPIPELINE {
 
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::stop");
 
-        LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
-        globalBundleAdjustment();
+        if (isBootstrapFinished()){
+            LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
+            globalBundleAdjustment();
+        }
 
         LOG_DEBUG("Stop processing tasks");
 
@@ -291,7 +293,6 @@ namespace MAPPINGPIPELINE {
         else {
             return FrameworkReturnCode::_ERROR_;
         }
-
     }
 
 // Private methods
@@ -323,6 +324,7 @@ namespace MAPPINGPIPELINE {
             else {
                 LOG_DEBUG("3D transformation not found");
             }
+
             return;
         }
 
@@ -363,7 +365,6 @@ namespace MAPPINGPIPELINE {
         if (keypoints.size() > 0) {
             m_dropBufferKeypoints.push(xpcf::utils::make_shared<Frame>(keypoints, nullptr, imagePose.first, imagePose.second));
         }
-
     }
 
     void SolARMappingPipelineMultiProcessing::featureExtraction() {
@@ -382,7 +383,6 @@ namespace MAPPINGPIPELINE {
         m_descriptorExtractor->extract(frame->getView(), frame->getKeypoints(), descriptors);
         frame->setDescriptors(descriptors);
         m_dropBufferFrameDescriptors.push(frame);
-
     }
 
     void SolARMappingPipelineMultiProcessing::updateVisibility() {
@@ -396,9 +396,6 @@ namespace MAPPINGPIPELINE {
             xpcf::DelegateTask::yield();
             return;
         }
-
-        // Protect from concurrent access
-        std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
 
         SRef<Keyframe> newKeyframe;
 
@@ -473,24 +470,24 @@ namespace MAPPINGPIPELINE {
 			std::vector< Point2Df > projected2DPts;
 			m_projector->project(localMapUnseen, projected2DPts, frame->getPose());
 			// find more inlier matches
-			std::vector<SRef<DescriptorBuffer>> desAllLocalMapUnseen;
-			for (auto &it_cp : localMapUnseen) {
+            std::vector<SRef<DescriptorBuffer>> desAllLocalMapUnseen;
+            for (auto &it_cp : localMapUnseen) {
 				desAllLocalMapUnseen.push_back(it_cp->getDescriptor());
 			}
 			std::vector<DescriptorMatch> allMatches;
 			m_matcher->matchInRegion(projected2DPts, desAllLocalMapUnseen, frame, allMatches, 0, maxMatchDistance * 1.5);
 			// find visibility of new frame
 			const std::vector<Keypoint>& keypoints = frame->getKeypoints();
-			for (auto &it_match : allMatches) {
+            for (auto &it_match : allMatches) {
 				int idx_2d = it_match.getIndexInDescriptorB();
 				int idx_3d = it_match.getIndexInDescriptorA();
 				auto it2d = newMapVisibility.find(idx_2d);
 				if (it2d == newMapVisibility.end()) {
-					pts2d_inliers.push_back(Point2Df(keypoints[idx_2d].getX(), keypoints[idx_2d].getY()));
+                    pts2d_inliers.push_back(Point2Df(keypoints[idx_2d].getX(), keypoints[idx_2d].getY()));
 					newMapVisibility[idx_2d] = localMapUnseen[idx_3d]->getId();
 				}
 			}
-		}
+        }
 
         // Add visibilities to current frame
         frame->addVisibilities(newMapVisibility);
@@ -501,11 +498,10 @@ namespace MAPPINGPIPELINE {
 
         // send frame to mapping task
         m_dropBufferAddKeyframe.push(frame);
-
     }
 
-    void SolARMappingPipelineMultiProcessing::mapping()
-    {
+    void SolARMappingPipelineMultiProcessing::mapping() {
+
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::mapping");
 
         SRef<Frame> frame;
@@ -553,12 +549,11 @@ namespace MAPPINGPIPELINE {
         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
         if (m_loopDetector->detect(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
             // detected loop keyframe
-            LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-            LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-            LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
+            LOG_DEBUG("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
+            LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+            LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
             // performs loop correction
             {
-                std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
                 m_loopCorrector->correct(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
                 m_countNewKeyframes = 0;
                 Eigen::Matrix3f scale;
@@ -581,11 +576,16 @@ namespace MAPPINGPIPELINE {
     }
 
     void SolARMappingPipelineMultiProcessing::updateLocalMap(const SRef<Keyframe> & keyframe) {
+
+        // Protect from concurrent access
+        std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
+
         m_localMap.clear();
         m_mapper->getLocalPointCloud(keyframe, m_minWeightNeighbor, m_localMap);
     }
 
     void SolARMappingPipelineMultiProcessing::globalBundleAdjustment() {
+
         LOG_DEBUG("SolARMappingPipelineMultiProcessing::globalBundleAdjustment");
 
         // Global bundle adjustment
@@ -593,7 +593,7 @@ namespace MAPPINGPIPELINE {
         // Map pruning
         m_mapper->pruning();
 
-        LOG_DEBUG("Nb of keyframes / cloud points: {} / {}",
+        LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 
         LOG_DEBUG("Update global map");
@@ -602,18 +602,12 @@ namespace MAPPINGPIPELINE {
 
     bool SolARMappingPipelineMultiProcessing::isBootstrapFinished() const {
 
-        // Protect variable access with mutex
-        std::shared_lock lock(m_bootstrap_mutex);
-
         return m_isBootstrapFinished;
     }
 
     void SolARMappingPipelineMultiProcessing::setBootstrapSatus(const bool status) {
 
         LOG_DEBUG("Set bootstrap status to: {}", status);
-
-        // Protect variable access with mutex
-        std::unique_lock lock(m_bootstrap_mutex);
 
         m_isBootstrapFinished = status;
     }

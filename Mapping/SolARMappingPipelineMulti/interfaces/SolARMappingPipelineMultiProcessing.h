@@ -116,7 +116,6 @@ namespace MAPPINGPIPELINE {
     private:
 
         bool m_isBootstrapFinished; // indicates if the bootstrap step is finished
-        mutable std::shared_mutex m_bootstrap_mutex;  // Mutex used for bootstrap state
         std::mutex m_mutexUseLocalMap; // Mutex used for mapping task
 
         CameraParameters m_cameraParams;        // camera parameters

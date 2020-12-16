@@ -127,7 +127,7 @@ namespace MAPPINGPIPELINE {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode SolARMappingPipelineProcessing::setObjectToTrack(const SRef<Trackable> & trackableObject) {
+    FrameworkReturnCode SolARMappingPipelineProcessing::setObjectToTrack(const SRef<Trackable> trackableObject) {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::setObjectToTrack");
 
@@ -176,7 +176,7 @@ namespace MAPPINGPIPELINE {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode SolARMappingPipelineProcessing::mappingProcessRequest(const SRef<Image> & image, const Transform3Df & pose) {
+    FrameworkReturnCode SolARMappingPipelineProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::mappingProcessRequest");
 

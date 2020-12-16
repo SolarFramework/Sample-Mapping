@@ -85,7 +85,7 @@ namespace MAPPINGPIPELINE {
         /// @brief Set the object to track during mapping
         /// @param[in] trackableObject: the trackable object
         /// @return FrameworkReturnCode::_SUCCESS if the trackable object is correctly set, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode setObjectToTrack(const SRef<datastructure::Trackable> & trackableObject) override;
+        FrameworkReturnCode setObjectToTrack(const SRef<datastructure::Trackable> trackableObject) override;
 
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
@@ -101,7 +101,7 @@ namespace MAPPINGPIPELINE {
         /// @param[in] image: the input image to process
         /// @param[in] pose: the input pose to process
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> & image, const datastructure::Transform3Df & pose) override;
+        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> image, const datastructure::Transform3Df & pose) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization
         /// (resulting from all mapping processing since the start of the pipeline)

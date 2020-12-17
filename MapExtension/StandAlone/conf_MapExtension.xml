@@ -211,7 +211,7 @@
 			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" />
 			<bind interface="IKeyframeSelector" to="SolARKeyframeSelector"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O" />
-			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>
+            <bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" range="default|all" properties="BundleFixedKeyframesProperties"/>
 			<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
 			<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Blue" properties="BlueProperties"/>
 			<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Red" properties="RedProperties"/>
@@ -233,8 +233,8 @@
 	
     <properties>
         <configure component="SolARDeviceDataLoader">			
-			<property name="calibrationFile" type="string" value="\\filer.b-com.local\share\project\ARTWIN\Data\CALIBRATION_FILES\hololens_calibration.yml"/>
-			<property name="pathToData" type="string" value="\\filer.b-com.local\share\project\ARTWIN\Data\SOLAR_DEVICE_RECORDINGS\three_room_scale_24092020_090023"/>
+            <property name="calibrationFile" type="string" value=""/>
+            <property name="pathToData" type="string" value=""/>
 			<property name="delayTime" type="Integer" value="1"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
@@ -315,7 +315,7 @@
 			<property name="minMeanDistanceIsKeyframe" type="Float" value="0.02"/>			
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
-			<property name="VOCpath" type="String" value="akaze.fbow"/>
+            <property name="VOCpath" type="String" value=""/>
 			<property name="threshold" type="Float" value="0.01"/>
 			<property name="level" type="Integer" value="3"/>
 			<property name="matchingDistanceRatio" type="Float" value="0.8"/>

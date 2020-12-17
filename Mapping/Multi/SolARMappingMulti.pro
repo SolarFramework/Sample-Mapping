@@ -64,8 +64,8 @@ win32 {
 }
 
 configfile.path = $${TARGETDEPLOYDIR}/
-configfile.files = $$files($${PWD}/conf_MappingMulti.xml)\
-					$$files($${PWD}/fiducialMarker.yml)
+configfile.files = $$files($${PWD}/conf_MappingMulti.xml)
+
 INSTALLS += configfile
 
 DISTFILES += \

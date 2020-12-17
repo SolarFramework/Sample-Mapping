@@ -221,7 +221,7 @@
 	
     <properties>
 		<configure component="SolARDeviceDataLoader">
-			<property name="calibrationFile" type="string" value="hololens_calibration.yml"/>
+                        <property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
 			<property name="pathToData" type="string" value=""/>
 			<property name="delayTime" type="Integer" value="1"/>
 		</configure>
@@ -303,7 +303,7 @@
 			<property name="minMeanDistanceIsKeyframe" type="Float" value="0.05"/>			
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
-			<property name="VOCpath" type="String" value="akaze.fbow"/>
+                        <property name="VOCpath" type="String" value="../../data/fbow_voc/akaze.fbow"/>
 			<property name="threshold" type="Float" value="0.02"/>
 			<property name="level" type="Integer" value="3"/>
 			<property name="matchingDistanceRatio" type="Float" value="0.8"/>
@@ -452,7 +452,7 @@
 			<property name="maxThreshold" type="Integer" value="220"/>
 		</configure>
 		<configure component="SolARMarker2DSquaredBinaryOpencv">
-				<property name="filePath" type="string" value="fiducialMarker.yml" description="Path of the .yml file describing the fiducial marker."/>
+                                <property name="filePath" type="string" value="../../data/data_hololens/fiducialMarkerA.yml" description="Path of the .yml file describing the fiducial marker."/>
 		</configure>	
 		<configure component="SolARImageFilterBinaryOpencv">
 			<property name="min" type="Integer" value="-1" description="minimum threshold (-1 to automatically compute it on the global image"/>

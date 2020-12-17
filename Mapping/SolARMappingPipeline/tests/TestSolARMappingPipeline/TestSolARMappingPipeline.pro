@@ -60,10 +60,7 @@ win32 {
 config_files.path = $${TARGETDEPLOYDIR}
 config_files.files= $$files($${PWD}/TestSolARMappingPipelineProducer_conf.xml)\
                     $$files($${PWD}/TestSolARMappingPipelineViewer_conf.xml)\
-                    $$files($${PWD}/xpcf_SolARMappingPipeline_registry.xml)\
-                    $$files($${PWD}/camera_calibration.yml)\
-                    $$files($${PWD}/fiducialMarker.yml)\
-                    $$files($${PWD}/FiducialMarker.gif)
+                    $$files($${PWD}/xpcf_SolARMappingPipeline_registry.xml)
 INSTALLS += config_files
 
 OTHER_FILES += \

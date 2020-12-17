@@ -60,10 +60,7 @@ win32 {
 config_files.path = $${TARGETDEPLOYDIR}
 config_files.files= $$files($${PWD}/TestSolARMappingPipelineProducerMulti_conf.xml)\
                     $$files($${PWD}/TestSolARMappingPipelineViewerMulti_conf.xml)\
-                    $$files($${PWD}/xpcf_SolARMappingPipelineMulti_registry.xml)\
-                    $$files($${PWD}/camera_calibration.yml)\
-                    $$files($${PWD}/fiducialMarker.yml)\
-                    $$files($${PWD}/FiducialMarker.gif)
+                    $$files($${PWD}/xpcf_SolARMappingPipelineMulti_registry.xml)
 INSTALLS += config_files
 
 OTHER_FILES += \
@@ -71,12 +68,9 @@ OTHER_FILES += \
 
 DISTFILES += \
     .gitignore \
-    FiducialMarker.gif \
     README.md \
     TestSolARMappingPipelineProducerMulti_conf.xml \
     TestSolARMappingPipelineViewerMulti_conf.xml \
-    camera_calibration.yml \
-    fiducialMarker.yml \
     xpcf_SolARMappingPipelineMulti_registry.xml
 
 #NOTE : Must be placed at the end of the .pro

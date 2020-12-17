@@ -148,117 +148,115 @@ int main(int argc, char ** argv)
     // Signal interruption function (Ctrl + C)
     signal(SIGINT, SigInt);
 
+    // Default configuration file
+    char * config_file = (char *)"xpcf_SolARMappingPipeline_registry.xml";
+
     if (argc > 1) {
-
         // Get mapping pipeline configuration file path and name from main args
-        char * config_file = argv[1];
+        config_file = argv[1];
+    }
 
-        try {
-            LOG_INFO("Get Component Manager instance");
+    try {
+        LOG_INFO("Get Component Manager instance");
 
-            gXpcfComponentManager = xpcf::getComponentManagerInstance();
+        gXpcfComponentManager = xpcf::getComponentManagerInstance();
 
-            LOG_INFO("Load Mapping Pipeline configuration file");
+        LOG_INFO("Load Mapping Pipeline configuration file");
 
-            if (gXpcfComponentManager->load(config_file) == org::bcom::xpcf::_SUCCESS)
-            {
-                // Create Mapping Pipeline component
-                gMappingPipeline = gXpcfComponentManager->resolve<pipeline::IMappingPipeline>();
+        if (gXpcfComponentManager->load(config_file) == org::bcom::xpcf::_SUCCESS)
+        {
+            // Create Mapping Pipeline component
+            gMappingPipeline = gXpcfComponentManager->resolve<pipeline::IMappingPipeline>();
 
-                LOG_INFO("Mapping pipeline component created");
-            }
-            else {
-                LOG_ERROR("Failed to load the configuration file {}", config_file);
-                return -1;
-            }
+            LOG_INFO("Mapping pipeline component created");
+        }
+        else {
+            LOG_ERROR("Failed to load the configuration file {}", config_file);
+            return -1;
+        }
 
-            // Manage producer client thread
-            if (gXpcfComponentManager->load("TestSolARMappingPipelineProducer_conf.xml") == org::bcom::xpcf::_SUCCESS)
-            {
-                LOG_INFO("Producer client configuration file loaded");
+        // Manage producer client thread
+        if (gXpcfComponentManager->load("TestSolARMappingPipelineProducer_conf.xml") == org::bcom::xpcf::_SUCCESS)
+        {
+            LOG_INFO("Producer client configuration file loaded");
 
-                gArDevice = gXpcfComponentManager->resolve<input::devices::IARDevice>();
-                LOG_INFO("Producer client: AR device component created");
+            gArDevice = gXpcfComponentManager->resolve<input::devices::IARDevice>();
+            LOG_INFO("Producer client: AR device component created");
 
-                auto trackableLoader = gXpcfComponentManager->resolve<input::files::ITrackableLoader>();
-                LOG_INFO("Producer client: Trackable loader component created");
+            auto trackableLoader = gXpcfComponentManager->resolve<input::files::ITrackableLoader>();
+            LOG_INFO("Producer client: Trackable loader component created");
 
-                gImageViewer = gXpcfComponentManager->resolve<display::IImageViewer>();
-                LOG_INFO("Producer client: Image viewer component created");
+            gImageViewer = gXpcfComponentManager->resolve<display::IImageViewer>();
+            LOG_INFO("Producer client: Image viewer component created");
 
-                // Connect remotely to the HoloLens streaming app
-                if (gArDevice->start() == FrameworkReturnCode::_SUCCESS) {
+            // Connect remotely to the HoloLens streaming app
+            if (gArDevice->start() == FrameworkReturnCode::_SUCCESS) {
 
-                    // Load camera intrinsics parameters
-                    CameraParameters camParams;
-                    camParams = gArDevice->getParameters(0);
+                // Load camera intrinsics parameters
+                CameraParameters camParams;
+                camParams = gArDevice->getParameters(0);
 
-                    LOG_INFO("Producer client: Set mapping pipeline camera parameters");
-                    gMappingPipeline->setCameraParameters(camParams);
+                LOG_INFO("Producer client: Set mapping pipeline camera parameters");
+                gMappingPipeline->setCameraParameters(camParams);
 
-                    LOG_INFO("Producer client: Load fiducial marker description file");
-                    SRef<Trackable> trackableObject = trackableLoader->loadTrackable();
+                LOG_INFO("Producer client: Load fiducial marker description file");
+                SRef<Trackable> trackableObject = trackableLoader->loadTrackable();
 
-                    if (trackableObject != 0) {
-                        LOG_INFO("Producer client: Fiducial marker created: url = {}", trackableObject->getURL());
+                if (trackableObject != 0) {
+                    LOG_INFO("Producer client: Fiducial marker created: url = {}", trackableObject->getURL());
 
-                        LOG_INFO("Producer client: Set mapping pipeline fiducial marker");
-                        gMappingPipeline->setObjectToTrack(trackableObject);
+                    LOG_INFO("Producer client: Set mapping pipeline fiducial marker");
+                    gMappingPipeline->setObjectToTrack(trackableObject);
 
-                        LOG_INFO("Producer client: Start mapping pipeline");
+                    LOG_INFO("Producer client: Start mapping pipeline");
 
-                        if (gMappingPipeline->start() == FrameworkReturnCode::_SUCCESS) {
-                            LOG_INFO("Start producer client thread");
+                    if (gMappingPipeline->start() == FrameworkReturnCode::_SUCCESS) {
+                        LOG_INFO("Start producer client thread");
 
-                            gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
-                            gClientProducerTask->start();
-                        }
-                        else {
-                            LOG_ERROR("Cannot start mapping pipeline");
-                        }
+                        gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
+                        gClientProducerTask->start();
                     }
                     else {
-                        LOG_ERROR("Error while loading fiducial marker");
-                        return -1;
+                        LOG_ERROR("Cannot start mapping pipeline");
                     }
                 }
                 else {
-                    LOG_ERROR("Cannot start AR device loader");
+                    LOG_ERROR("Error while loading fiducial marker");
                     return -1;
                 }
             }
             else {
-                LOG_ERROR("Failed to load the producer client configuration file");
+                LOG_ERROR("Cannot start AR device loader");
                 return -1;
             }
-
-            // Manage viewer client thread
-            if (gXpcfComponentManager->load("TestSolARMappingPipelineViewer_conf.xml") == org::bcom::xpcf::_SUCCESS)
-            {
-                LOG_INFO("Viewer client configuration file loaded");
-
-                LOG_INFO("Start viewer client thread");
-
-                gClientViewerTask  = new xpcf::DelegateTask(fnClientViewer);
-                gClientViewerTask->start();
-            }
-            else {
-                LOG_ERROR("Failed to load the viewer client configuration file");
-                return -1;
-            }
-
-            LOG_INFO("\n\n***** Control+C to stop *****\n");
-
-            // Wait for interruption
-            while (true);
         }
-        catch (xpcf::Exception & e) {
-            LOG_ERROR("The following exception has been caught {}", e.what());
+        else {
+            LOG_ERROR("Failed to load the producer client configuration file");
             return -1;
         }
+
+        // Manage viewer client thread
+        if (gXpcfComponentManager->load("TestSolARMappingPipelineViewer_conf.xml") == org::bcom::xpcf::_SUCCESS)
+        {
+            LOG_INFO("Viewer client configuration file loaded");
+
+            LOG_INFO("Start viewer client thread");
+
+            gClientViewerTask  = new xpcf::DelegateTask(fnClientViewer);
+            gClientViewerTask->start();
+        }
+        else {
+            LOG_ERROR("Failed to load the viewer client configuration file");
+            return -1;
+        }
+
+        LOG_INFO("\n\n***** Control+C to stop *****\n");
+
+        // Wait for interruption
+        while (true);
     }
-    else {
-        LOG_ERROR("No configuration file given in arguments");
+    catch (xpcf::Exception & e) {
+        LOG_ERROR("The following exception has been caught {}", e.what());
         return -1;
     }
 

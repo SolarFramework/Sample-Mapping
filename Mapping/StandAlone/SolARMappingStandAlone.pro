@@ -64,12 +64,10 @@ win32 {
 }
 
 configfile.path = $${TARGETDEPLOYDIR}/
-configfile.files = $$files($${PWD}/conf_Mapping.xml)\
-					$$files($${PWD}/fiducialMarker.yml)
+configfile.files = $$files($${PWD}/conf_Mapping.xml)
 INSTALLS += configfile
 
 DISTFILES += \
-    fiducialMarker2.yml \
     packagedependencies.txt
 
 #NOTE : Must be placed at the end of the .pro

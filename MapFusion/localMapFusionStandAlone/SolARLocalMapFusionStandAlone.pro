@@ -65,7 +65,6 @@ win32 {
 
 configfile.path = $${TARGETDEPLOYDIR}/
 configfile.files = $$files($${PWD}/conf_LocalMapFusion.xml) \
-					$$files($${PWD}/hololens_calibration.yml) \
 					$$files($${PWD}/TransformLocalToGlobal.txt)
 INSTALLS += configfile
 

@@ -80,7 +80,7 @@ namespace MAPPINGPIPELINE {
                 m_mappingTask = new xpcf::DelegateTask(fnMappingProcessing);
             }
         }
-        catch (xpcf::Exception e) {
+        catch (xpcf::Exception & e) {
             LOG_ERROR("The following exception has been caught {}", e.what());
         }
     }
@@ -127,7 +127,7 @@ namespace MAPPINGPIPELINE {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode SolARMappingPipelineProcessing::setObjectToTrack(const SRef<Trackable> & trackableObject) {
+    FrameworkReturnCode SolARMappingPipelineProcessing::setObjectToTrack(const SRef<Trackable> trackableObject) {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::setObjectToTrack");
 
@@ -152,7 +152,7 @@ namespace MAPPINGPIPELINE {
         LOG_DEBUG("SolARMappingPipelineProcessing::start");
 
         // Check members initialization
-        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.width > 0)
+        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)
                 && (m_fiducialMarker != nullptr) && (m_fiducialMarker->getWidth() > 0) && (m_fiducialMarker->getHeight() > 0)) {
 
             LOG_DEBUG("Start mapping processing task");
@@ -176,7 +176,7 @@ namespace MAPPINGPIPELINE {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode SolARMappingPipelineProcessing::mappingProcessRequest(const SRef<Image> & image, const Transform3Df & pose) {
+    FrameworkReturnCode SolARMappingPipelineProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
 
         LOG_DEBUG("SolARMappingPipelineProcessing::mappingProcessRequest");
 
@@ -245,7 +245,7 @@ namespace MAPPINGPIPELINE {
         if (m_bootstrapper->process(image, view, pose) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
 
-            double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+            m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
 
             // Prepare mapping process
             m_keyframesManager->getKeyframe(1, m_refKeyframe);
@@ -424,7 +424,7 @@ namespace MAPPINGPIPELINE {
                     m_covisibilityGraph->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx);
                     bestIdx.push_back(keyframe->getId());
                     LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
-                    double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
+                    m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
                     // map pruning
                     updateLocalMap(keyframe);
                     m_mapper->pruning(m_localMap);

@@ -64,7 +64,7 @@ LARGE_INTEGER start_time;
 LARGE_INTEGER end_time;
 double interval;
 int nb_keyframePoses = 0;
-int count_keyframePosesChanged = 0;
+bool display_metric = false;
 
 
 // Fonction for producer client thread
@@ -112,18 +112,18 @@ auto fnClientViewer = [&]() {
         // Display new data
         gViewer3D->display(gPointClouds, gKeyframePoses[gKeyframePoses.size()-1], gKeyframePoses, {}, {});
 
+        // For time processing calculation
         if (gKeyframePoses.size() > nb_keyframePoses) {
             nb_keyframePoses = gKeyframePoses.size();
-            count_keyframePosesChanged = 0;
+            display_metric = true;
         }
         else {
-            count_keyframePosesChanged ++;
-
-            if (count_keyframePosesChanged == 100) {
+            if ((!gImageToSend) && (display_metric)) {
                 // End of processing
                 QueryPerformanceCounter(&end_time);
                 interval = (double) (end_time.QuadPart - start_time.QuadPart) / frequency.QuadPart;
-                LOG_INFO("\nProcessing time = {}\n", interval);
+                LOG_INFO("Processing time = {}\n", interval);
+                display_metric = false;
             }
         }
     }

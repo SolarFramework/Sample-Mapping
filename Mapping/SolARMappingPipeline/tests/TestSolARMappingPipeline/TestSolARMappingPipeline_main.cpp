@@ -252,7 +252,7 @@ int main(int argc, char ** argv)
             // Wait for interruption
             while (true);
         }
-        catch (xpcf::Exception e) {
+        catch (xpcf::Exception & e) {
             LOG_ERROR("The following exception has been caught {}", e.what());
             return -1;
         }

@@ -217,20 +217,20 @@
 		<bindings>			
 			<bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv" />
 			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" />		
-			<bind interface="IBundler" to="SolAROptimizationG2O" />
-			<bind interface="IMapper" to="SolARMapper" name="globalMapper" properties="globalMapper"/>
-			<bind interface="IMapper" to="SolARMapper" name="floatingMapper" properties="floatingMapper"/>
+            <bind interface="IBundler" range="default|all" to="SolAROptimizationG2O" />
+            <bind interface="IMapper" to="SolARMapper" name="globalMapper" range="default|all" properties="globalMapper"/>
+            <bind interface="IMapper" to="SolARMapper" name="floatingMapper" range="default|all" properties="floatingMapper"/>
 		</bindings>
 	</factory>
 	
     <properties>
         <configure component="SolARDeviceDataLoader">
-			<property name="calibrationFile" type="string" value="hololens_calibration.yml"/>
+            <property name="calibrationFile" type="string" value="hololens_calibration.yml"/>
 			<property name="pathToData" type="string" value=""/>
 			<property name="delayTime" type="Integer" value="1"/>
 		</configure>
 		<configure component="SolARMapper" name="globalMapper">
-			<property name="directory" type="string" value="mapA"/>
+            <property name="directory" type="string" value="mapA"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
@@ -310,7 +310,7 @@
 			<property name="minMeanDistanceIsKeyframe" type="Float" value="0.05"/>			
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
-			<property name="VOCpath" type="String" value="akaze.fbow"/>
+            <property name="VOCpath" type="String" value="akaze.fbow"/>
 			<property name="threshold" type="Float" value="0.03"/>
 			<property name="level" type="Integer" value="3"/>
 			<property name="matchingDistanceRatio" type="Float" value="0.8"/>

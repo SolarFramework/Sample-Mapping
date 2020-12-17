@@ -209,14 +209,14 @@
 		<bindings>			
 			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" />		
 			<bind interface="IBundler" to="SolAROptimizationG2O" />
-			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" properties="BundleFixedKeyframesProperties"/>			
-			<bind interface="IMapper" to="SolARMapper" name="mapViz" properties="mapViz"/>
+            <bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" range="default|all" properties="BundleFixedKeyframesProperties"/>
+            <bind interface="IMapper" to="SolARMapper" range="default|all" name="mapViz" properties="mapViz"/>
 		</bindings>
 	</factory>
 	
     <properties>
         <configure component="SolARDeviceDataLoader">
-			<property name="calibrationFile" type="string" value="hololens_calibration.yml"/>
+            <property name="calibrationFile" type="string" value="hololens_calibration.yml"/>
 			<property name="pathToData" type="string" value=""/>
 			<property name="delayTime" type="Integer" value="1"/>
 		</configure>
@@ -298,7 +298,7 @@
 			<property name="minMeanDistanceIsKeyframe" type="Float" value="0.03"/>			
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
-			<property name="VOCpath" type="String" value="akaze.fbow"/>
+            <property name="VOCpath" type="String" value="akaze.fbow"/>
 			<property name="threshold" type="Float" value="0.02"/>
 			<property name="level" type="Integer" value="3"/>
 			<property name="matchingDistanceRatio" type="Float" value="0.8"/>

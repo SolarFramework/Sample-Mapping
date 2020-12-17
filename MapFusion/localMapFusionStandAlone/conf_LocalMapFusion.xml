@@ -213,9 +213,9 @@
 		<bindings>			
 			<bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv" />
 			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv" />		
-			<bind interface="IBundler" to="SolAROptimizationG2O" />			
-			<bind interface="IMapper" to="SolARMapper" name="Global" properties="Global"/>
-			<bind interface="IMapper" to="SolARMapper" name="Local" properties="Local"/>
+            <bind interface="IBundler" to="SolAROptimizationG2O" range="default|all" />
+            <bind interface="IMapper" to="SolARMapper" name="Global" range="default|all" properties="Global"/>
+            <bind interface="IMapper" to="SolARMapper" name="Local" range="default|all" properties="Local"/>
 		</bindings>
 	</factory>
 	

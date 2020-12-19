@@ -17,13 +17,9 @@
 #include <boost/log/core.hpp>
 #include "xpcf/xpcf.h"
 #include "core/Log.h"
-#include "api/input/devices/IARDevice.h"
-#include "api/display/IImageViewer.h"
 #include "api/display/I3DPointsViewer.h"
 #include "api/solver/map/IMapper.h"
 #include "api/storage/IPointCloudManager.h"
-#include "api/slam/IMapping.h"
-
 
 using namespace SolAR;
 using namespace SolAR::datastructure;
@@ -46,7 +42,7 @@ int main(int argc, char *argv[])
 		/* this is needed in dynamic mode */
 		SRef<xpcf::IComponentManager> xpcfComponentManager = xpcf::getComponentManagerInstance();
 
-		std::string configxml = std::string("conf_mapViz.xml");
+        std::string configxml = std::string("SolARSample_Mapping_MapVisualizer_conf.xml");
 		if (argc == 2)
 			configxml = std::string(argv[1]);
 
@@ -58,14 +54,9 @@ int main(int argc, char *argv[])
 
 		// declare and create components
 		LOG_INFO("Start creating components");
-		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
 		auto mapper = xpcfComponentManager->resolve<solver::map::IMapper>("mapViz");
 		LOG_INFO("Components created!");
-
-		// Load camera intrinsics parameters
-		CameraParameters camParams;
-		camParams = arDevice->getParameters(0);
 
 		if (mapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("Load map done!");

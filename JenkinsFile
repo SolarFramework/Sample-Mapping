@@ -31,7 +31,42 @@ SolArModulePipeline {
 SolArModulePipeline {
     moduleName="Mapping"
     dirName="SolARBuild"
-    buildDir="Mapping/SolARMappingPipeline"
+    buildDir="Mapping/SolARSample_Mapping_Mono"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="Mapping/SolARSample_Mapping_Multi"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="Mapping/SolARPipeline_Mapping_Mono"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="Mapping/SolARPipeline_Mapping_Mono/tests/SolARPipelineTest_Mapping_Mono"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="Mapping/SolARPipeline_Mapping_Multi"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi"
     android=false
 }
 
@@ -45,7 +80,7 @@ SolArModulePipeline {
 SolArModulePipeline {
     moduleName="Mapping"
     dirName="SolARBuild"
-    buildDir="Mapping/StandAlone"
+    buildDir="Extension/Mono"
     android=false
 }
 
@@ -53,6 +88,20 @@ SolArModulePipeline {
     moduleName="Mapping"
     dirName="SolARBuild"
     buildDir="MapViz"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="MapFusion/localMapFusionMono"
+    android=false
+}
+
+SolArModulePipeline {
+    moduleName="Mapping"
+    dirName="SolARBuild"
+    buildDir="MapFusion/floatingMapFusionMono"
     android=false
 }
 

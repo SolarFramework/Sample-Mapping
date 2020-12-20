@@ -19,7 +19,7 @@ namespace xpcf  = org::bcom::xpcf;
 namespace SolAR {
     using namespace datastructure;
 namespace PIPELINES {
-namespace MAPPINGPIPELINE {
+namespace MAPPING {
 
 #define NB_NEWKEYFRAMES_LOOP 10
 
@@ -614,4 +614,4 @@ namespace MAPPINGPIPELINE {
 
 }
 }
-} // SolAR::PIPELINES::MAPPINGPIPELINE
+} // SolAR::PIPELINES::MAPPING

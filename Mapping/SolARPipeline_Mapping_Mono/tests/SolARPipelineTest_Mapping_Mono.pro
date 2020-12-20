@@ -3,7 +3,7 @@ QT       -= core gui
 CONFIG -= qt
 
 ## global defintions : target lib name, version
-TARGET = SolARPipelineTest_Mapping_Multi
+TARGET = SolARPipelineTest_Mapping_Mono
 VERSION=0.9.0
 
 DEFINES += MYVERSION=$${VERSION}
@@ -13,13 +13,13 @@ CONFIG += console
 include(findremakenrules.pri)
 
 CONFIG(debug,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Debug
+    TARGETDEPLOYDIR = $${PWD}/../../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
 
 CONFIG(release,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Release
+    TARGETDEPLOYDIR = $${PWD}/../../../bin/Release
     DEFINES += _NDEBUG=1
     DEFINES += NDEBUG=1
 }
@@ -34,7 +34,7 @@ include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/templateappconf
 HEADERS += \
 
 SOURCES += \
-    SolARPipelineTestMappingMulti_main.cpp
+    SolARPipelineTestMappingMono_main.cpp
 
 unix {
     LIBS += -ldl
@@ -58,21 +58,17 @@ win32 {
 }
 
 config_files.path = $${TARGETDEPLOYDIR}
-config_files.files= $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Producer_conf.xml)\
-                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Viewer_conf.xml)\
-                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Processing_conf.xml)
+config_files.files= $$files($${PWD}/SolARPipelineTest_Mapping_Mono_Producer_conf.xml)\
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Mono_Viewer_conf.xml)\
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Mono_Processing_conf.xml)
 INSTALLS += config_files
 
 OTHER_FILES += \
     packagedependencies.txt
 
-DISTFILES += \
-    .gitignore \
-    README.md \
-    SolARPipelineTest_Mapping_Multi_Producer_conf.xml \
-    SolARPipelineTest_Mapping_Multi_Viewer_conf.xml \
-    SolARPipelineTest_Mapping_Multi_Processing_conf.xml
-
 #NOTE : Must be placed at the end of the .pro
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/remaken_install_target.pri)))) # Shell_quote & shell_path required for visual on windows
+
+DISTFILES += \
+    README.md
 

@@ -61,7 +61,7 @@
 
 namespace SolAR {
 namespace PIPELINES {
-namespace MAPPINGPIPELINE {
+namespace MAPPING {
 
     /**
      * @class PipelineMappingMultiProcessing
@@ -213,7 +213,7 @@ namespace MAPPINGPIPELINE {
 }
 } // SolAR::PIPELINES::MAPPINGPIPELINE
 
-XPCF_DEFINE_COMPONENT_TRAITS(SolAR::PIPELINES::MAPPINGPIPELINE::PipelineMappingMultiProcessing,
+XPCF_DEFINE_COMPONENT_TRAITS(SolAR::PIPELINES::MAPPING::PipelineMappingMultiProcessing,
                              "dc734eb4-fcc6-4178-8452-7429939f04bd",
                              "PipelineMappingMultiProcessing",
                              "PipelineMappingMultiProcessing implements api::pipeline::IMappingPipeline interface");

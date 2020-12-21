@@ -33,7 +33,7 @@ XPCF_DECLARE_MODULE("{43a3f181-99ba-4cc4-a926-8db6fab74454}","PipelineMappingMon
  */
 extern "C" XPCF_MODULEHOOKS_API xpcf::XPCFErrorCode XPCF_getComponent(const xpcf::uuids::uuid& componentUUID,SRef<xpcf::IComponentIntrospect>& interfaceRef)
 {
-    xpcf::XPCFErrorCode errCode = xpcf::tryCreateComponent<SolAR::PIPELINES::MAPPINGPIPELINE::PipelineMappingMonoProcessing>(componentUUID,interfaceRef);
+    xpcf::XPCFErrorCode errCode = xpcf::tryCreateComponent<SolAR::PIPELINES::MAPPING::PipelineMappingMonoProcessing>(componentUUID,interfaceRef);
 
     return errCode;
 }
@@ -43,5 +43,5 @@ extern "C" XPCF_MODULEHOOKS_API xpcf::XPCFErrorCode XPCF_getComponent(const xpcf
   * XPCF uses this index to introspect the components available in a module, providing the ability to generate the configuration file skeleton from the code.
   */
 XPCF_BEGIN_COMPONENTS_DECLARATION
-XPCF_ADD_COMPONENT(SolAR::PIPELINES::MAPPINGPIPELINE::PipelineMappingMonoProcessing)
+XPCF_ADD_COMPONENT(SolAR::PIPELINES::MAPPING::PipelineMappingMonoProcessing)
 XPCF_END_COMPONENTS_DECLARATION

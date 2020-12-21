@@ -19,7 +19,7 @@ namespace xpcf  = org::bcom::xpcf;
 namespace SolAR {
 using namespace datastructure;
 namespace PIPELINES {
-namespace MAPPINGPIPELINE {
+namespace MAPPING {
 
 
 // Public methods
@@ -504,4 +504,4 @@ namespace MAPPINGPIPELINE {
 
 }
 }
-} // SolAR::PIPELINES::MAPPINGPIPELINE
+} // SolAR::PIPELINES::MAPPING

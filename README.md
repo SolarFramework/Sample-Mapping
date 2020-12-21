@@ -11,7 +11,7 @@ Some sample require external data which must be downloaded before executing them
 
 ### Bag Of Word Vocabulary
 
-This vocabulary is required for keyframe retrieval. Download the vocabularies required for the bag of words available on the [GitHub](https://github.com/SolarFramework/SolARModuleFBOW/releases/download/fbowVocabulary/fbow_voc.zip), and extract the `akaze.fbow` file and copy it in the `./data` folder.
+This vocabulary is required for keyframe retrieval. Download the vocabularies required for the bag of words available on the [GitHub](https://github.com/SolarFramework/SolARModuleFBOW/releases/download/fbowVocabulary/fbow_voc.zip), and extract the `akaze.fbow` file and copy it in the `./data/fbow_voc` folder.
 
 ### AR device captures
 
@@ -21,7 +21,9 @@ The mapping samples create maps from AR device captures containing both an image
 
 * <strong>Loop_Dekstop_B</strong>: A video sequence captured with a Hololens 1 within an open-space starting and finishing with the fiducial Marker B with a loop trajectory. A part of the trajectory is common to the `Loop_Desktop_A` trajectory to test map overlap detection and map fusion.
 
-Download the video sequences [loopDesktopA.zip](https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/loopDesktopA.zip) and [loopDesktopB.zip](https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/loopDesktopB.zip), and extract the `./loop_desktop_A` and `./loop_desktop_B` folders into the `./data` folder.
+Download the video sequences [loopDesktopA.zip](https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/loopDesktopA.zip) and [loopDesktopB.zip](https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/loopDesktopB.zip), and extract the `./loop_desktop_A` and `./loop_desktop_B` folders into the `./data/data_hololens` folder.
+
+Extract also the `fiducialMarkerA.yml`, `fiducialMarkerB.yml` and `hololens_calibration.yml` files into the `./data/data_hololens` folder.
 
 ### Maps
 
@@ -29,7 +31,7 @@ The map visualization, and fusion samples use one or two maps. You can create th
 * [loopDesktopA.zip](https://artifact.b-com.com/solar-generic-local/maps/hololens/bcomLab/loopDesktopA.zip)
 * [loopDesktopB.zip](https://artifact.b-com.com/solar-generic-local/maps/hololens/bcomLab/loopDesktopB.zip)  
 
-Extract the `./mapA` and `./mapB` folders and respective `fiducialMarkerA.yml` and `fiducialMarkerB.yml` files into the `./data` folder.
+Extract the `./mapA` and `./mapB` folders and respective `fiducialMarkerA.yml` and `fiducialMarkerB.yml` files into the `./data/map_hololens` folder.
 
 ### Required modules
 

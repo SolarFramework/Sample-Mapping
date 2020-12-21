@@ -68,7 +68,6 @@ OTHER_FILES += \
 
 DISTFILES += \
     .gitignore \
-    README.md \
     SolARPipelineTest_Mapping_Multi_Producer_conf.xml \
     SolARPipelineTest_Mapping_Multi_Viewer_conf.xml \
     SolARPipelineTest_Mapping_Multi_Processing_conf.xml

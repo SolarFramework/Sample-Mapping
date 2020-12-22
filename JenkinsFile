@@ -3,28 +3,21 @@ node("master") {
 SolArModulePipeline {
     moduleName="Mapping"
     dirName="SolARBuild"
-    buildDir="MapExtension/StandAlone"
+    buildDir="MapExtension/SolARSample_Mapping_MapExtension_Mono"
     android=false
 } 
 
 SolArModulePipeline {
     moduleName="Mapping"
     dirName="SolARBuild"
-    buildDir="MapFusion/floatingMapFusionStandAlone"
+    buildDir="MapFusion/SolARSample_Mapping_FloatingMapFusion_Mono"
     android=false
 }    
 
 SolArModulePipeline {
     moduleName="Mapping"
     dirName="SolARBuild"
-    buildDir="MapFusion/localMapFusionStandAlone"
-    android=false
-}
-
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="Mapping/Multi"
+    buildDir="MapFusion/SolARSample_Mapping_LocalMapFusion_Mono"
     android=false
 }
 
@@ -73,35 +66,7 @@ SolArModulePipeline {
 SolArModulePipeline {
     moduleName="Mapping"
     dirName="SolARBuild"
-    buildDir="Mapping/SolARMappingPipelineMulti"
-    android=false
-}
-
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="Extension/Mono"
-    android=false
-}
-
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
     buildDir="MapViz"
-    android=false
-}
-
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="MapFusion/localMapFusionMono"
-    android=false
-}
-
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="MapFusion/floatingMapFusionMono"
     android=false
 }
 

@@ -351,7 +351,7 @@
             <property name="fixedKeyframes" type="int" value="1"/>
         </configure>
         <configure component="SolARFiducialMarkerPoseEstimator">
-            <property name="nbThreshold" type="int" value="3"/>
+            <property name="nbThreshold" type="int" value="8"/>
             <property name="minThreshold" type="int" value="-1"/>
             <property name="maxThreshold" type="int" value="220"/>
         </configure>

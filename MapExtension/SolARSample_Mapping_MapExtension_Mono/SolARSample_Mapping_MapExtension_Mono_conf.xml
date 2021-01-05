@@ -234,7 +234,7 @@
     <properties>
         <configure component="SolARDeviceDataLoader">			
             <property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
-            <property name="pathToData" type="string" value="../../data/data_hololens/loopDesktopB"/>
+            <property name="pathToData" type="string" value="../../data/data_hololens/loop_Desktop_B"/>
             <property name="delayTime" type="int" value="1"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
@@ -459,7 +459,7 @@
             <property name="exitKey" type="int" value="27"/>
 		</configure>
 		<configure component="SolARFiducialMarkerPoseEstimator">
-            <property name="nbThreshold" type="int" value="3"/>
+            <property name="nbThreshold" type="int" value="8"/>
             <property name="minThreshold" type="int" value="-1"/>
             <property name="maxThreshold" type="int" value="220"/>
 		</configure>

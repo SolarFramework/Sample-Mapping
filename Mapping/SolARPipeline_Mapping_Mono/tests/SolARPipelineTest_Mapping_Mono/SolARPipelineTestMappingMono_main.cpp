@@ -59,7 +59,7 @@ bool gImageToSend = true;
 int gNbImages = 0;
 
 // Fonction for producer client thread
-auto fnClientProducer = [&]() {
+auto fnClientProducer = []() {
 
     std::vector<SRef<Image>> images;
     std::vector<Transform3Df> poses;
@@ -90,7 +90,7 @@ auto fnClientProducer = [&]() {
 };
 
 // Fonction for viewer client thread
-auto fnClientViewer = [&]() {
+auto fnClientViewer = []() {
 
     // Try to get point clouds and key frame poses to display
     if (gMappingPipeline->getDataForVisualization(gPointClouds, gKeyframePoses) == FrameworkReturnCode::_SUCCESS) {

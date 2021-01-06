@@ -364,7 +364,7 @@ namespace MAPPING {
                 std::vector< Point2Df > refCPSeenProj;
                 m_projector->project(pts3d, refCPSeenProj, pose); // Project ref cloud point seen to current frame to define inliers/outliers
                 std::vector<Point2Df> pts2d_inliers, pts2d_outliers;
-                for (int i = 0; i < refCPSeenProj.size(); ++i) {
+                for (unsigned long i = 0; i < refCPSeenProj.size(); ++i) {
                     float dis = (pts2d[i] - refCPSeenProj[i]).norm();
                     LOG_DEBUG("dis / m_reprojErrorThreshold: {} / {}", dis, m_reprojErrorThreshold);
                     if (dis < m_reprojErrorThreshold) {
@@ -381,9 +381,10 @@ namespace MAPPING {
 
 				// find unseen local map from current frame                
                 std::vector<SRef<CloudPoint>> localMapUnseen;
-                for (auto &it_cp : m_localMap)
+                for (auto &it_cp : m_localMap) {
                     if (idxCPSeen.find(it_cp->getId()) == idxCPSeen.end())
                         localMapUnseen.push_back(it_cp);
+                }
 
 				// Find more visibilities by projecting the rest of local map
 				if (localMapUnseen.size() > 0) {

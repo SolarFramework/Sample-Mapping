@@ -58,14 +58,6 @@ bool gImageToSend = true;
 // Nb of images sent by producer client
 int gNbImages = 0;
 
-// Metrics global var
-LARGE_INTEGER frequency;
-LARGE_INTEGER start_time;
-LARGE_INTEGER end_time;
-double interval;
-int nb_keyframePoses = 0;
-bool display_metric = false;
-
 
 // Fonction for producer client thread
 auto fnClientProducer = [&]() {
@@ -112,20 +104,6 @@ auto fnClientViewer = [&]() {
         // Display new data
         gViewer3D->display(gPointClouds, gKeyframePoses[gKeyframePoses.size()-1], gKeyframePoses, {}, {});
 
-        // For time processing calculation
-        if (gKeyframePoses.size() > nb_keyframePoses) {
-            nb_keyframePoses = gKeyframePoses.size();
-            display_metric = true;
-        }
-        else {
-            if ((!gImageToSend) && (display_metric)) {
-                // End of processing
-                QueryPerformanceCounter(&end_time);
-                interval = (double) (end_time.QuadPart - start_time.QuadPart) / frequency.QuadPart;
-                LOG_INFO("Processing time = {}\n", interval);
-                display_metric = false;
-            }
-        }
     }
 };
 
@@ -166,10 +144,6 @@ int main(int argc, char ** argv)
 #if NDEBUG
     boost::log::core::get()->set_logging_enabled(false);
 #endif
-
-    // Processing start time
-    QueryPerformanceFrequency(&frequency);
-    QueryPerformanceCounter(&start_time);
 
     LOG_ADD_LOG_TO_CONSOLE();
 

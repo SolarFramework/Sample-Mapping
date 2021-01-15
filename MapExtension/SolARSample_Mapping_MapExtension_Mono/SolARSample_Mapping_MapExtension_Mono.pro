@@ -63,6 +63,10 @@ win32 {
     INCLUDEPATH += $$(WINDOWSSDKDIR)lib/winv6.3/um/x64
 }
 
+android {
+    ANDROID_ABIS="arm64-v8a"
+}
+
 configfile.path = $${TARGETDEPLOYDIR}/
 configfile.files = $$files($${PWD}/SolARSample_Mapping_MapExtension_Mono_conf.xml)
 INSTALLS += configfile

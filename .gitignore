@@ -5,7 +5,7 @@ build/
 *-Debug
 
 *-Release
-
+**/build
 
 # Prerequisites
 *.d
@@ -94,9 +94,9 @@ data*
 *.sln
 *aps
 bin/conf_LocalMapFusion.xml
-MapFusion/data/mapA/*
-MapFusion/data/mapB/*
-MapFusion/data/FiducialMarker*
+MapFusion/data/data_hololens/*
+MapFusion/data/map_hololens/*
+MapFusion/data/fbow_voc/*
 
 MapFusion/floatingMapFusionStandAlone/conf_floatingMapFusion_original.xml
 MapFusion/floatingMapFusionStandAlone/TransformLocalToGlobal.txt

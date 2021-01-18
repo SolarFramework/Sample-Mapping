@@ -25,6 +25,6 @@ unzip -o mapB.zip -d ./data
 rm mapB.zip
 
 # Install required external modules
-remaken install packagedependencies_modules.txt
-remaken install packagedependencies_modules.txt -c debug
+remaken install packagedependencies.txt
+remaken install packagedependencies.txt -c debug
 

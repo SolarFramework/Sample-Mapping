@@ -26,5 +26,5 @@ powershell Expand-Archive mapB.zip -DestinationPath .\data\map_hololens -F
 del mapB.zip
 
 :: Install required external modules
-remaken install packagedependencies_modules.txt
-remaken install packagedependencies_modules.txt -c debug
+remaken install packagedependencies.txt
+remaken install packagedependencies.txt -c debug

@@ -82,9 +82,8 @@ namespace MAPPING {
         void unloadComponent() override final {}
 
         /// @brief Initialization of the pipeline
-        /// Initialize the pipeline by providing a reference to the component manager loaded by the PipelineManager.
-        /// @param[in] componentManager a shared reference to the component manager which has loaded the components and configuration in the pipleine manager
-        FrameworkReturnCode init(SRef<xpcf::IComponentManager> componentManager) override;
+        /// @return FrameworkReturnCode::_SUCCESS if the init succeed, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode init() override;
 
         /// @brief Set the camera parameters
         /// @param[in] cameraParams: the camera parameters (its resolution and its focal)

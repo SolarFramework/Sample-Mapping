@@ -152,7 +152,7 @@ namespace MAPPING {
         delete m_loopClosureTask;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::init(SRef<xpcf::IComponentManager> componentManager) {
+    FrameworkReturnCode PipelineMappingMultiProcessing::init() {
 
         LOG_DEBUG("PipelineMappingMultiProcessing");
 

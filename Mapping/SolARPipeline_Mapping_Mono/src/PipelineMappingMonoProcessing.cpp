@@ -101,7 +101,7 @@ namespace MAPPING {
         delete m_mappingTask;
     }
 
-    FrameworkReturnCode PipelineMappingMonoProcessing::init(SRef<xpcf::IComponentManager> componentManager) {
+    FrameworkReturnCode PipelineMappingMonoProcessing::init() {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::setCameraParameters");
 

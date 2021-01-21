@@ -25,10 +25,6 @@
    "None"
   ],
   [
-   "boost:fPIC",
-   "True"
-  ],
-  [
    "boost:filesystem_no_deprecated",
    "False"
   ],
@@ -66,7 +62,7 @@
   ],
   [
    "boost:numa",
-   "True"
+   "False"
   ],
   [
    "boost:pch",
@@ -222,10 +218,6 @@
   ],
   [
    "eigen:shared",
-   "True"
-  ],
-  [
-   "libiconv:fPIC",
    "True"
   ],
   [

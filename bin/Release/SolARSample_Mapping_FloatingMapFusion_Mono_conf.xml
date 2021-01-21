@@ -283,7 +283,7 @@
             <property name="distanceRatio" type="float" value="0.9"/>
 		</configure>
 		<configure component="SolARDescriptorMatcherRadiusOpencv">
-            <property name="distanceRatio" type="float" value="0.9"/>
+            <property name="maxDistance" type="float" value="0.9"/>
 		</configure>
 		<configure component="SolARGeometricMatchesFilterOpencv">
             <property name="confidence" type="float" value="0.99"/>

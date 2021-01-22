@@ -222,8 +222,6 @@
 	<properties>
 		<configure component="SolARDeviceDataLoader">
 			<property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
-			<property name="pathToData" type="string" value=""/>
-			<property name="delayTime" type="int" value="1"/>
 		</configure>
 		<configure component="SolARMapper" name="Global">
 			<property name="directory" type="string" value="../../data/map_hololens/mapA"/>

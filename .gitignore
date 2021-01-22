@@ -81,8 +81,8 @@ Release/
 *.vcxproj
 *.vcxproj.filters
 *.sln
-*/debug/
-*/release/
+**/debug/
+**/release/
 *.vcxproj
 *.vcxproj.filters
 *-packagedependencies.txt

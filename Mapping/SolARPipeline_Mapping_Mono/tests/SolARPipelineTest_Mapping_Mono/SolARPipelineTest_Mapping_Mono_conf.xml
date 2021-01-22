@@ -1,12 +1,12 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xpcf-registry autoAlias="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-  <module uuid="43a3f181-99ba-4cc4-a926-8db6fab74454" name="SolARMappingPipeline" description="Mapping vision pipeline based on SolAR Framework" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARMappingPipeline/0.9.0/lib/x86_64/shared">
-    <component uuid="54b93f91-1628-4e63-b4d9-c8735b768b8b" name="SolARMappingPipelineProcessing" description="SolARMappingPipelineProcessing implements api::pipeline::IMappingPipeline interface">
-      <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-      <interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>
-    </component>
-  </module>
+	<module uuid="43a3f181-99ba-4cc4-a926-8db6fab74454" name="SolARMappingPipeline" description="Mapping vision pipeline based on SolAR Framework" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARMappingPipeline/0.9.0/lib/x86_64/shared">
+		<component uuid="54b93f91-1628-4e63-b4d9-c8735b768b8b" name="SolARMappingPipelineProcessing" description="SolARMappingPipelineProcessing implements api::pipeline::IMappingPipeline interface">
+			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+			<interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>
+		</component>
+	</module>
 
   <module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" description="SolARModuleOpenCV" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenCV/0.9.3/lib/x86_64/shared">
     <component uuid="d0116ed2-45d7-455d-8011-57959da1b0fa" name="SolARFiducialMarkerLoaderOpencv" description="Loads a fiducial marker from a description file.">
@@ -30,68 +30,68 @@
     </component>
   </module>
 
-  <factory>
-    <bindings>
-      <bind interface="IMappingPipeline" to="SolARMappingPipelineProcessing" scope="Singleton"/>
-      <bind interface="ITrackableLoader" to="SolARFiducialMarkerLoaderOpencv" />
-    </bindings>
-  </factory>
+	<factory>
+		<bindings>
+			<bind interface="IMappingPipeline" to="SolARMappingPipelineProcessing" scope="Singleton"/>
+			<bind interface="ITrackableLoader" to="SolARFiducialMarkerLoaderOpencv"/>
+		</bindings>
+	</factory>
 
-  <properties>
-    <configure component="SolARFiducialMarkerLoaderOpencv">
-      <property name="filePath" type="string" value="fiducialMarker.yml" description="Path of the .yml file describing the fiducial marker."/>
-    </configure>
-    <configure component="SolARDeviceDataLoader">
-      <property name="calibrationFile" type="string" value="C:\B-com\Dev\data\data_hololens\hololens_calibration.yml"/>
-      <property name="pathToData" type="string" value="C:\B-com\Dev\data\data_hololens\three_room_scale_24092020_090023"/>
-      <property name="delayTime" type="Integer" value="1"/>
-    </configure>
-    <configure component="SolARImageViewerOpencv">
-      <property name="title" type="string" value="AR device mapping. Green = inliers, Red = outliers"/>
-      <property name="exitKey" type="Integer" value="27"/>
-      <property name="width" type="Integer" value="700"/>
-      <property name="height" type="Integer" value="400"/>
-    </configure>
-    <configure component="SolAR3DPointsViewerOpengl">
-      <property name="title" type="string" value="Points Cloud (press esc to exit)"/>
-      <property name="width" type="UnsignedInteger" value="1280"/>
-      <property name="height" type="UnsignedInteger" value="960"/>
-      <property name="backgroundColor" type="UnsignedInteger">
-        <value>0</value>
-        <value>0</value>
-        <value>0</value>
-      </property>
-      <property name="fixedPointsColor" type="UnsignedInteger" value="1"/>
-      <property name="pointsColor" type="UnsignedInteger">
-        <value>0</value>
-        <value>255</value>
-        <value>0</value>
-      </property>
-      <property name="cameraColor" type="UnsignedInteger">
-        <value>255</value>
-        <value>255</value>
-        <value>255</value>
-      </property>
-      <property name="drawCameraAxis" type="UnsignedInteger" value="1"/>
-      <property name="drawSceneAxis" type="UnsignedInteger" value="0"/>
-      <property name="drawWorldAxis" type="UnsignedInteger" value="1"/>
-      <property name="axisScale" type="Float" value="1.0"/>
-      <property name="pointSize" type="Float" value="1.0"/>
-      <property name="cameraScale" type="Float" value="1.0"/>
-      <property name="keyframeAsCamera" type="UnsignedInteger" value="1"/>
-      <property name="framesColor" type="UnsignedInteger">
-        <value>128</value>
-        <value>0</value>
-        <value>255</value>
-      </property>
-      <property name="keyframesColor" type="UnsignedInteger">
-        <value>0</value>
-        <value>0</value>
-        <value>255</value>
-      </property>
-      <property name="zoomSensitivity" type="Float" value="10.0"/>
-      <property name="exitKey" type="Integer" value="27"/>
-    </configure>
-  </properties>
+	<properties>
+		<configure component="SolARFiducialMarkerLoaderOpencv">
+			<property name="filePath" type="string" value="fiducialMarker.yml" description="Path of the .yml file describing the fiducial marker."/>
+		</configure>
+		<configure component="SolARDeviceDataLoader">
+			<property name="calibrationFile" type="string" value="C:\B-com\Dev\data\data_hololens\hololens_calibration.yml"/>
+			<property name="pathToData" type="string" value="C:\B-com\Dev\data\data_hololens\three_room_scale_24092020_090023"/>
+			<property name="delayTime" type="Integer" value="1"/>
+		</configure>
+		<configure component="SolARImageViewerOpencv">
+			<property name="title" type="string" value="AR device mapping. Green = inliers, Red = outliers"/>
+			<property name="exitKey" type="Integer" value="27"/>
+			<property name="width" type="Integer" value="700"/>
+			<property name="height" type="Integer" value="400"/>
+		</configure>
+		<configure component="SolAR3DPointsViewerOpengl">
+			<property name="title" type="string" value="Points Cloud (press esc to exit)"/>
+			<property name="width" type="UnsignedInteger" value="1280"/>
+			<property name="height" type="UnsignedInteger" value="960"/>
+			<property name="backgroundColor" type="UnsignedInteger">
+				<value>0</value>
+				<value>0</value>
+				<value>0</value>
+			</property>
+			<property name="fixedPointsColor" type="UnsignedInteger" value="1"/>
+			<property name="pointsColor" type="UnsignedInteger">
+				<value>0</value>
+				<value>255</value>
+				<value>0</value>
+			</property>
+			<property name="cameraColor" type="UnsignedInteger">
+				<value>255</value>
+				<value>255</value>
+				<value>255</value>
+			</property>
+			<property name="drawCameraAxis" type="UnsignedInteger" value="1"/>
+			<property name="drawSceneAxis" type="UnsignedInteger" value="0"/>
+			<property name="drawWorldAxis" type="UnsignedInteger" value="1"/>
+			<property name="axisScale" type="Float" value="1.0"/>
+			<property name="pointSize" type="Float" value="1.0"/>
+			<property name="cameraScale" type="Float" value="1.0"/>
+			<property name="keyframeAsCamera" type="UnsignedInteger" value="1"/>
+			<property name="framesColor" type="UnsignedInteger">
+				<value>128</value>
+				<value>0</value>
+				<value>255</value>
+			</property>
+			<property name="keyframesColor" type="UnsignedInteger">
+				<value>0</value>
+				<value>0</value>
+				<value>255</value>
+			</property>
+			<property name="zoomSensitivity" type="Float" value="10.0"/>
+			<property name="exitKey" type="Integer" value="27"/>
+		</configure>
+	</properties>
 
 </xpcf-registry>

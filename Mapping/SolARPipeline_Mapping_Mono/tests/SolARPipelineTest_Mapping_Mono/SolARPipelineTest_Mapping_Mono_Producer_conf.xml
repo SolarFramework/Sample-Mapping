@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xpcf-registry autoAlias="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" description="SolARModuleOpenCV" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenCV/0.9.3/lib/x86_64/shared">
@@ -16,27 +16,27 @@
     </component>
   </module>
 
-  <factory>
-    <bindings>
-      <bind interface="ITrackableLoader" to="SolARFiducialMarkerLoaderOpencv" />
-    </bindings>
-  </factory>
+	<factory>
+		<bindings>
+			<bind interface="ITrackableLoader" to="SolARFiducialMarkerLoaderOpencv"/>
+		</bindings>
+	</factory>
 
-  <properties>
-    <configure component="SolARFiducialMarkerLoaderOpencv">
-      <property name="filePath" type="string" value="../../data/data_hololens/fiducialMarkerA.yml" description="Path of the .yml file describing the fiducial marker."/>
-    </configure>
-    <configure component="SolARDeviceDataLoader">
-      <property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
-      <property name="pathToData" type="string" value="../../data/data_hololens/loop_Desktop_A"/>
-      <property name="delayTime" type="int" value="200"/>
-    </configure>
-    <configure component="SolARImageViewerOpencv">
-      <property name="title" type="string" value="AR device mapping. Green = inliers, Red = outliers"/>
-      <property name="exitKey" type="int" value="27"/>
-      <property name="width" type="int" value="700"/>
-      <property name="height" type="int" value="400"/>
-    </configure>
-  </properties>
+	<properties>
+		<configure component="SolARFiducialMarkerLoaderOpencv">
+			<property name="filePath" type="string" value="../../data/data_hololens/fiducialMarkerA.yml" description="Path of the .yml file describing the fiducial marker."/>
+		</configure>
+		<configure component="SolARDeviceDataLoader">
+			<property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
+			<property name="pathToData" type="string" value="../../data/data_hololens/loop_Desktop_A"/>
+			<property name="delayTime" type="int" value="200"/>
+		</configure>
+		<configure component="SolARImageViewerOpencv">
+			<property name="title" type="string" value="AR device mapping. Green = inliers, Red = outliers"/>
+			<property name="exitKey" type="int" value="27"/>
+			<property name="width" type="int" value="700"/>
+			<property name="height" type="int" value="400"/>
+		</configure>
+	</properties>
 
 </xpcf-registry>

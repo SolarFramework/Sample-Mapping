@@ -67,6 +67,27 @@ namespace MAPPING {
      * @class PipelineMappingMonoProcessing
      * @brief Implementation of a mapping vision pipeline
      * <TT>UUID: 54b93f91-1628-4e63-b4d9-c8735b768b8b</TT>
+     *
+     * @SolARComponentInjectablesBegin
+     * @SolARComponentInjectable{SolAR::api::solver::pose::IFiducialMarkerPose}
+     * @SolARComponentInjectable{SolAR::api::slam::IBootstrapper}
+     * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}
+     * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}
+     * @SolARComponentInjectable{SolAR::api::solver::map::IMapper}
+     * @SolARComponentInjectable{SolAR::api::slam::IMapping}
+     * @SolARComponentInjectable{SolAR::api::storage::IKeyframesManager}
+     * @SolARComponentInjectable{SolAR::api::storage::IPointCloudManager}
+     * @SolARComponentInjectable{SolAR::api::features::IKeypointDetector}
+     * @SolARComponentInjectable{SolAR::api::features::IDescriptorsExtractor}
+     * @SolARComponentInjectable{SolAR::api::features::IDescriptorMatcher}
+     * @SolARComponentInjectable{SolAR::api::features::IMatchesFilter}
+     * @SolARComponentInjectable{SolAR::api::solver::pose::I2D3DCorrespondencesFinder}
+     * @SolARComponentInjectable{SolAR::api::geom::IProject}
+     * @SolARComponentInjectable{SolAR::api::storage::ICovisibilityGraph}
+     * @SolARComponentInjectable{SolAR::api::loop::ILoopClosureDetector}
+     * @SolARComponentInjectable{SolAR::api::loop::ILoopCorrector}
+     * @SolARComponentInjectablesEnd
+     *
      */
 
     class SolARPipelineMappingMono_EXPORT_API PipelineMappingMonoProcessing : public org::bcom::xpcf::ConfigurableBase,

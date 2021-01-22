@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xpcf-registry autoAlias="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <module uuid="6e960df6-9a36-11e8-9eb6-529269fb1459" name="SolARModuleOpenGL" description="SolARModuleOpenGL" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenGL/0.9.3/lib/x86_64/shared">
@@ -8,47 +8,47 @@
     </component>
   </module>
 
-  <properties>
-    <configure component="SolAR3DPointsViewerOpengl">
-      <property name="title" type="string" value="Points Cloud (press esc to exit)"/>
-      <property name="width" type="uint" value="1280"/>
-      <property name="height" type="uint" value="960"/>
-      <property name="backgroundColor" type="uint">
-        <value>0</value>
-        <value>0</value>
-        <value>0</value>
-      </property>
-      <property name="fixedPointsColor" type="uint" value="1"/>
-      <property name="pointsColor" type="uint">
-        <value>0</value>
-        <value>255</value>
-        <value>0</value>
-      </property>
-      <property name="cameraColor" type="uint">
-        <value>255</value>
-        <value>255</value>
-        <value>255</value>
-      </property>
-      <property name="drawCameraAxis" type="uint" value="1"/>
-      <property name="drawSceneAxis" type="uint" value="0"/>
-      <property name="drawWorldAxis" type="uint" value="1"/>
-      <property name="axisScale" type="float" value="1.0"/>
-      <property name="pointSize" type="float" value="1.0"/>
-      <property name="cameraScale" type="float" value="1.0"/>
-      <property name="keyframeAsCamera" type="uint" value="1"/>
-      <property name="framesColor" type="uint">
-        <value>128</value>
-        <value>0</value>
-        <value>255</value>
-      </property>
-      <property name="keyframesColor" type="uint">
-        <value>0</value>
-        <value>0</value>
-        <value>255</value>
-      </property>
-      <property name="zoomSensitivity" type="float" value="10.0"/>
-      <property name="exitKey" type="int" value="27"/>
-    </configure>
-  </properties>
+	<properties>
+		<configure component="SolAR3DPointsViewerOpengl">
+			<property name="title" type="string" value="Points Cloud (press esc to exit)"/>
+			<property name="width" type="uint" value="1280"/>
+			<property name="height" type="uint" value="960"/>
+			<property name="backgroundColor" type="uint">
+				<value>0</value>
+				<value>0</value>
+				<value>0</value>
+			</property>
+			<property name="fixedPointsColor" type="uint" value="1"/>
+			<property name="pointsColor" type="uint">
+				<value>0</value>
+				<value>255</value>
+				<value>0</value>
+			</property>
+			<property name="cameraColor" type="uint">
+				<value>255</value>
+				<value>255</value>
+				<value>255</value>
+			</property>
+			<property name="drawCameraAxis" type="uint" value="1"/>
+			<property name="drawSceneAxis" type="uint" value="0"/>
+			<property name="drawWorldAxis" type="uint" value="1"/>
+			<property name="axisScale" type="float" value="1.0"/>
+			<property name="pointSize" type="float" value="1.0"/>
+			<property name="cameraScale" type="float" value="1.0"/>
+			<property name="keyframeAsCamera" type="uint" value="1"/>
+			<property name="framesColor" type="uint">
+				<value>128</value>
+				<value>0</value>
+				<value>255</value>
+			</property>
+			<property name="keyframesColor" type="uint">
+				<value>0</value>
+				<value>0</value>
+				<value>255</value>
+			</property>
+			<property name="zoomSensitivity" type="float" value="10.0"/>
+			<property name="exitKey" type="int" value="27"/>
+		</configure>
+	</properties>
 
 </xpcf-registry>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <xpcf-registry autoAlias="true">
 
-    <module uuid="e7b8c768-a14a-4841-8700-6112697cf599" name="SolARPipelineMappingMulti" description="Multi threads mapping vision pipeline based on SolAR Framework" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/PipelineMappingMulti/0.9.0/lib/x86_64/shared">
+    <module uuid="e7b8c768-a14a-4841-8700-6112697cf599" name="SolARPipelineMappingMulti" description="Multi threads mapping vision pipeline based on SolAR Framework" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/PipelineMappingMulti/0.9.3/lib/x86_64/shared">
         <component uuid="dc734eb4-fcc6-4178-8452-7429939f04bd" name="SolARMappingPipelineMultiProcessing" description="SolARMappingPipelineMultiProcessing implements api::pipeline::IMappingPipeline interface">
             <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
             <interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>

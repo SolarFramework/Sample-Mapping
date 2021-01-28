@@ -2,10 +2,11 @@ build/
 
 *.pro.user
 
-*-Debug
-
-*-Release
-
+*-Debug*
+*-Release*
+*_Debug*
+*_Release*
+**/build
 
 # Prerequisites
 *.d
@@ -69,7 +70,6 @@ x64*
 *vcxproj.*
 x64/
 .vs/
-*.bat
 *remakeninfo.txt
 Debug/
 Release/
@@ -82,11 +82,10 @@ Release/
 *.vcxproj
 *.vcxproj.filters
 *.sln
-*/debug/
-*/release/
+**/debug/
+**/release/
 *.vcxproj
 *.vcxproj.filters
-*.bat
 *-packagedependencies.txt
 data*
 *-packagedependencies-win.txt
@@ -94,9 +93,9 @@ data*
 *.sln
 *aps
 bin/conf_LocalMapFusion.xml
-MapFusion/data/mapA/*
-MapFusion/data/mapB/*
-MapFusion/data/FiducialMarker*
+MapFusion/data/data_hololens/*
+MapFusion/data/map_hololens/*
+MapFusion/data/fbow_voc/*
 
 MapFusion/floatingMapFusionStandAlone/conf_floatingMapFusion_original.xml
 MapFusion/floatingMapFusionStandAlone/TransformLocalToGlobal.txt

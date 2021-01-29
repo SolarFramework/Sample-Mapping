@@ -1,11 +1,11 @@
 [settings]
     arch=x86_64
     build_type=Release
-    compiler=gcc
+    compiler=Visual Studio
     compiler.cppstd=17
-    compiler.libcxx=libstdc++11
-    compiler.version=7
-    os=Linux
+    compiler.runtime=MD
+    compiler.version=15
+    os=Windows
 
 [requires]
     boost/1.Y.Z
@@ -18,27 +18,24 @@
     arch=x86_64
     arch_build=x86_64
     build_type=Release
-    compiler=gcc
+    compiler=Visual Studio
     compiler.cppstd=17
-    compiler.libcxx=libstdc++11
-    compiler.version=7
-    os=Linux
-    os_build=Linux
+    compiler.runtime=MD
+    compiler.version=15
+    os=Windows
+    os_build=Windows
 
 [full_requires]
-    boost/1.74.0@conan-solar/stable:9514eca35afaabe08579707b1b6f41fd4e55531e
+    boost/1.74.0@conan-solar/stable:fabccb8ca07bb7e9f34ddaa9589dbb39fc6200a5
     common/1.0.2@conan-solar/stable:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9
-    eigen/3.3.7@conan-solar/stable:2583cd9327eede6717fdd74080cf52dc6e19b386
-    libiconv/1.16@conan-solar/stable:d50a0d523d98c15bb147b18fa7d203887c38be8b
+    eigen/3.3.7@conan-solar/stable:9479d42f0d7f4cd951a8e0425133d62aefe5261b
 
 [full_options]
     boost:asio_no_deprecated=False
     boost:bzip2=False
     boost:debug_level=0
-    boost:diagnostic_definitions=False
     boost:error_code_header_only=False
     boost:extra_b2_flags=None
-    boost:fPIC=True
     boost:filesystem_no_deprecated=False
     boost:header_only=False
     boost:i18n_backend=iconv
@@ -48,7 +45,6 @@
     boost:multithreading=True
     boost:namespace=boost
     boost:namespace_alias=False
-    boost:numa=True
     boost:pch=True
     boost:python_executable=None
     boost:python_version=None
@@ -66,13 +62,12 @@
     boost:without_fiber=False
     boost:without_filesystem=False
     boost:without_graph=False
-    boost:without_graph_parallel=True
+    boost:without_graph_parallel=False
     boost:without_iostreams=False
     boost:without_locale=False
     boost:without_log=False
     boost:without_math=False
-    boost:without_mpi=True
-    boost:without_nowide=False
+    boost:without_mpi=False
     boost:without_program_options=False
     boost:without_python=True
     boost:without_random=False
@@ -88,8 +83,6 @@
     boost:zlib=False
     boost:zstd=False
     eigen:shared=True
-    libiconv:fPIC=True
-    libiconv:shared=False
 
 [recipe_hash]
 

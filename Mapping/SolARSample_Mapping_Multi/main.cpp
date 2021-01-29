@@ -34,6 +34,7 @@
 #include "api/solver/map/IKeyframeSelector.h"
 #include "api/solver/map/IMapFilter.h"
 #include "api/solver/map/IBundler.h"
+#include "api/geom/IUndistortPoints.h"
 #include "api/geom/IProject.h"
 #include "api/reloc/IKeyframeRetriever.h"
 #include "api/storage/ICovisibilityGraph.h"
@@ -102,6 +103,7 @@ int main(int argc, char *argv[])
 		auto mapFilter = xpcfComponentManager->resolve<api::solver::map::IMapFilter>();
 		auto bundler = xpcfComponentManager->resolve<api::solver::map::IBundler>("BundleFixedKeyframes");
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
+		auto undistortKeypoints = xpcfComponentManager->resolve<api::geom::IUndistortPoints>();
 		auto matchesFilter = xpcfComponentManager->resolve<features::IMatchesFilter>();
 		auto loopDetector = xpcfComponentManager->resolve<loop::ILoopClosureDetector>();
 		auto loopCorrector = xpcfComponentManager->resolve<loop::ILoopCorrector>();
@@ -128,6 +130,7 @@ int main(int argc, char *argv[])
 		mapping->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		projector->setCameraParameters(camParams.intrinsic, camParams.distortion);
+		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
 
 		// get properties
@@ -243,10 +246,11 @@ int main(int argc, char *argv[])
 				xpcf::DelegateTask::yield();
 				return;
 			}
-			std::vector<Keypoint> keypoints;
+			std::vector<Keypoint> keypoints, undistortedKeypoints;
 			keypointsDetector->detect(imagePose.first, keypoints);
+			undistortKeypoints->undistort(keypoints, undistortedKeypoints);
 			if (keypoints.size() > 0)
-				m_dropBufferKeypoints.push(xpcf::utils::make_shared<Frame>(keypoints, nullptr, imagePose.first, imagePose.second));
+				m_dropBufferKeypoints.push(xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, nullptr, imagePose.first, nullptr, imagePose.second));
 		};
 
 		// Feature extraction task

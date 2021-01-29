@@ -13,10 +13,6 @@
    "0"
   ],
   [
-   "boost:diagnostic_definitions",
-   "False"
-  ],
-  [
    "boost:error_code_header_only",
    "False"
   ],
@@ -58,10 +54,6 @@
   ],
   [
    "boost:namespace_alias",
-   "False"
-  ],
-  [
-   "boost:numa",
    "False"
   ],
   [
@@ -134,7 +126,7 @@
   ],
   [
    "boost:without_graph_parallel",
-   "True"
+   "False"
   ],
   [
    "boost:without_iostreams",
@@ -154,10 +146,6 @@
   ],
   [
    "boost:without_mpi",
-   "True"
-  ],
-  [
-   "boost:without_nowide",
    "False"
   ],
   [
@@ -219,10 +207,6 @@
   [
    "eigen:shared",
    "True"
-  ],
-  [
-   "libiconv:shared",
-   "False"
   ]
  ],
  "root": {

@@ -38,6 +38,7 @@
 #include "api/solver/pose/IFiducialMarkerPose.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/solver/map/IBundler.h"
+#include "api/geom/IUndistortPoints.h"
 #include "api/solver/map/IMapper.h"
 #include "api/slam/IMapping.h"
 #include "api/storage/IKeyframesManager.h"
@@ -86,6 +87,7 @@ namespace MAPPING {
      * @SolARComponentInjectable{SolAR::api::storage::ICovisibilityGraph}
      * @SolARComponentInjectable{SolAR::api::loop::ILoopClosureDetector}
      * @SolARComponentInjectable{SolAR::api::loop::ILoopCorrector}
+     * @SolARComponentInjectable{SolAR::api::geom::IUndistortPoints}
      * @SolARComponentInjectablesEnd
      *
      */
@@ -166,6 +168,7 @@ namespace MAPPING {
         SRef<api::storage::ICovisibilityGraph> m_covisibilityGraph;
         SRef<api::loop::ILoopClosureDetector> m_loopDetector;
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
+		SRef<api::geom::IUndistortPoints> m_undistortKeypoints;
 
         bool m_isFoundTransform;            // indicates if the 3D transformation as been found
         bool m_isStopMapping;               // indicates if the mapping task is stopped

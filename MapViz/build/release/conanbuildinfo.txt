@@ -1,36 +1,48 @@
 [includedirs]
-C:/.conan/677d07/1/include
-C:/.conan/677d07/1/include/eigen3
-C:/.conan/f8cd9a/1/include
-C:/Users/jroyan/.conan/data/libiconv/1.16/conan-solar/stable/package/6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7/include
+C:/.conan/d97b85/1/include
+C:/.conan/d97b85/1/include/eigen3
+C:/.conan/bdd45f/1/include
 
 [libdirs]
-C:/.conan/f8cd9a/1/lib
-C:/Users/jroyan/.conan/data/libiconv/1.16/conan-solar/stable/package/6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7/lib
+C:/.conan/bdd45f/1/lib
 
 [bindirs]
-C:/.conan/f8cd9a/1/bin
-C:/Users/jroyan/.conan/data/libiconv/1.16/conan-solar/stable/package/6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7/bin
+C:/.conan/bdd45f/1/lib
 
 [resdirs]
 
 
 [builddirs]
-C:/.conan/677d07/1/
-C:/.conan/f8cd9a/1/
-C:/Users/jroyan/.conan/data/common/1.0.2/conan-solar/stable/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/
-C:/Users/jroyan/.conan/data/libiconv/1.16/conan-solar/stable/package/6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7/
+C:/.conan/d97b85/1/
+C:/.conan/bdd45f/1/
+C:/Users/nduong/.conan/data/common/1.0.2/conan-solar/stable/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/
 
 [libs]
+boost_wave
+boost_container
 boost_contract
+libboost_exception
+boost_graph
+boost_iostreams
+boost_locale
+boost_log
+boost_program_options
+boost_random
+boost_regex
+boost_serialization
+boost_wserialization
 boost_coroutine
 boost_fiber
 boost_context
-boost_graph
-boost_iostreams
+boost_timer
+boost_thread
+boost_chrono
+boost_date_time
+boost_atomic
+boost_filesystem
+boost_system
+boost_type_erasure
 boost_log_setup
-boost_log
-boost_locale
 boost_math_c99
 boost_math_c99f
 boost_math_c99l
@@ -38,37 +50,17 @@ boost_math_tr1
 boost_math_tr1f
 boost_math_tr1l
 boost_nowide
-boost_program_options
-boost_random
-boost_regex
 boost_stacktrace_noop
 boost_stacktrace_windbg
 boost_stacktrace_windbg_cached
-boost_timer
-boost_type_erasure
-boost_thread
-boost_atomic
-boost_chrono
-boost_container
-boost_date_time
 boost_unit_test_framework
-boost_prg_exec_monitor
-libboost_test_exec_monitor
-libboost_exception
-boost_wave
-boost_filesystem
-boost_system
-boost_wserialization
-boost_serialization
-iconv
-charset
 
 [system_libs]
 bcrypt
 
 [defines]
-BOOST_ALL_NO_LIB
 BOOST_ALL_DYN_LINK
+BOOST_ALL_NO_LIB
 
 [cppflags]
 
@@ -96,8 +88,8 @@ BOOST_ALL_DYN_LINK
 
 
 [includedirs_eigen]
-C:/.conan/677d07/1/include
-C:/.conan/677d07/1/include/eigen3
+C:/.conan/d97b85/1/include
+C:/.conan/d97b85/1/include/eigen3
 
 [libdirs_eigen]
 
@@ -109,7 +101,7 @@ C:/.conan/677d07/1/include/eigen3
 
 
 [builddirs_eigen]
-C:/.conan/677d07/1/
+C:/.conan/d97b85/1/
 
 [libs_eigen]
 
@@ -145,7 +137,7 @@ C:/.conan/677d07/1/
 
 
 [rootpath_eigen]
-C:/.conan/677d07/1
+C:/.conan/d97b85/1
 
 [name_eigen]
 eigen
@@ -161,30 +153,46 @@ eigen
 
 
 [includedirs_boost]
-C:/.conan/f8cd9a/1/include
+C:/.conan/bdd45f/1/include
 
 [libdirs_boost]
-C:/.conan/f8cd9a/1/lib
+C:/.conan/bdd45f/1/lib
 
 [bindirs_boost]
-C:/.conan/f8cd9a/1/bin
+C:/.conan/bdd45f/1/lib
 
 [resdirs_boost]
 
 
 [builddirs_boost]
-C:/.conan/f8cd9a/1/
+C:/.conan/bdd45f/1/
 
 [libs_boost]
+boost_wave
+boost_container
 boost_contract
+libboost_exception
+boost_graph
+boost_iostreams
+boost_locale
+boost_log
+boost_program_options
+boost_random
+boost_regex
+boost_serialization
+boost_wserialization
 boost_coroutine
 boost_fiber
 boost_context
-boost_graph
-boost_iostreams
+boost_timer
+boost_thread
+boost_chrono
+boost_date_time
+boost_atomic
+boost_filesystem
+boost_system
+boost_type_erasure
 boost_log_setup
-boost_log
-boost_locale
 boost_math_c99
 boost_math_c99f
 boost_math_c99l
@@ -192,35 +200,17 @@ boost_math_tr1
 boost_math_tr1f
 boost_math_tr1l
 boost_nowide
-boost_program_options
-boost_random
-boost_regex
 boost_stacktrace_noop
 boost_stacktrace_windbg
 boost_stacktrace_windbg_cached
-boost_timer
-boost_type_erasure
-boost_thread
-boost_atomic
-boost_chrono
-boost_container
-boost_date_time
 boost_unit_test_framework
-boost_prg_exec_monitor
-libboost_test_exec_monitor
-libboost_exception
-boost_wave
-boost_filesystem
-boost_system
-boost_wserialization
-boost_serialization
 
 [system_libs_boost]
 bcrypt
 
 [defines_boost]
-BOOST_ALL_NO_LIB
 BOOST_ALL_DYN_LINK
+BOOST_ALL_NO_LIB
 
 [cppflags_boost]
 
@@ -247,7 +237,7 @@ BOOST_ALL_DYN_LINK
 
 
 [rootpath_boost]
-C:/.conan/f8cd9a/1
+C:/.conan/bdd45f/1
 
 [name_boost]
 boost
@@ -260,8 +250,7 @@ cmake_find_package=Boost
 cmake_find_package_multi=Boost
 
 [generatorfilenames_boost]
-cmake_find_package=Boost
-cmake_find_package_multi=Boost
+
 
 
 [includedirs_common]
@@ -277,7 +266,7 @@ cmake_find_package_multi=Boost
 
 
 [builddirs_common]
-C:/Users/jroyan/.conan/data/common/1.0.2/conan-solar/stable/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/
+C:/Users/nduong/.conan/data/common/1.0.2/conan-solar/stable/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/
 
 [libs_common]
 
@@ -313,7 +302,7 @@ C:/Users/jroyan/.conan/data/common/1.0.2/conan-solar/stable/package/5ab84d6acfe1
 
 
 [rootpath_common]
-C:/Users/jroyan/.conan/data/common/1.0.2/conan-solar/stable/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9
+C:/Users/nduong/.conan/data/common/1.0.2/conan-solar/stable/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9
 
 [name_common]
 common
@@ -328,80 +317,11 @@ common
 
 
 
-[includedirs_libiconv]
-C:/Users/jroyan/.conan/data/libiconv/1.16/conan-solar/stable/package/6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7/include
-
-[libdirs_libiconv]
-C:/Users/jroyan/.conan/data/libiconv/1.16/conan-solar/stable/package/6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7/lib
-
-[bindirs_libiconv]
-C:/Users/jroyan/.conan/data/libiconv/1.16/conan-solar/stable/package/6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7/bin
-
-[resdirs_libiconv]
-
-
-[builddirs_libiconv]
-C:/Users/jroyan/.conan/data/libiconv/1.16/conan-solar/stable/package/6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7/
-
-[libs_libiconv]
-iconv
-charset
-
-[system_libs_libiconv]
-
-
-[defines_libiconv]
-
-
-[cppflags_libiconv]
-
-
-[cxxflags_libiconv]
-
-
-[cflags_libiconv]
-
-
-[sharedlinkflags_libiconv]
-
-
-[exelinkflags_libiconv]
-
-
-[sysroot_libiconv]
-
-
-[frameworks_libiconv]
-
-
-[frameworkdirs_libiconv]
-
-
-[rootpath_libiconv]
-C:/Users/jroyan/.conan/data/libiconv/1.16/conan-solar/stable/package/6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7
-
-[name_libiconv]
-libiconv
-
-[version_libiconv]
-1.16
-
-[generatornames_libiconv]
-cmake_find_package=Iconv
-cmake_find_package_multi=Iconv
-
-[generatorfilenames_libiconv]
-
-
-
 [USER_boost]
 [USER_common]
 [USER_eigen]
-[USER_libiconv]
 [ENV_eigen]
 [ENV_boost]
-BOOST_ROOT=C:\.conan\f8cd9a\1
+BOOST_ROOT=C:\.conan\bdd45f\1
 [ENV_common]
-PYTHONPATH=["C:\Users\jroyan\.conan\data\common\1.0.2\conan-solar\stable\package\5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9"]
-[ENV_libiconv]
-PATH=["C:\Users\jroyan\.conan\data\libiconv\1.16\conan-solar\stable\package\6cc50b139b9c3d27b3e9042d5f5372d327b3a9f7\bin"]
+PYTHONPATH=["C:\Users\nduong\.conan\data\common\1.0.2\conan-solar\stable\package\5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9"]

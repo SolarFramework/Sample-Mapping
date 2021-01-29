@@ -37,6 +37,7 @@ namespace MAPPING {
             declareInjectable<api::slam::IBootstrapper>(m_bootstrapper);
             declareInjectable<api::solver::map::IBundler>(m_bundler, "BundleFixedKeyframes");
             declareInjectable<api::solver::map::IBundler>(m_globalBundler);
+            declareInjectable<api::geom::IUndistortPoints>(m_undistortKeypoints);
             declareInjectable<api::solver::map::IMapper>(m_mapper);
             declareInjectable<api::slam::IMapping>(m_mapping);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
@@ -120,6 +121,7 @@ namespace MAPPING {
         m_projector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_loopDetector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_loopCorrector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
+		m_undistortKeypoints->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
                   m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
@@ -324,13 +326,14 @@ namespace MAPPING {
                 LOG_DEBUG("Reference keyframe id: {}", m_refKeyframe->getId());
 
                 // feature extraction image
-                std::vector<Keypoint> keypoints;
+                std::vector<Keypoint> keypoints, undistortedKeypoints;
                 m_keypointsDetector->detect(image, keypoints);
+				m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
                 LOG_DEBUG("Keypoints size = {}", keypoints.size());
 
                 SRef<DescriptorBuffer> descriptors;
                 m_descriptorExtractor->extract(image, keypoints, descriptors);
-                SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, descriptors, image, m_refKeyframe, pose);
+                SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, m_refKeyframe, pose);
 
                 // feature matching to reference keyframe
                 std::vector<DescriptorMatch> matches;

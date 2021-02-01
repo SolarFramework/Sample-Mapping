@@ -107,6 +107,10 @@
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="a345a1d2-c3f3-497f-948b-cd1a199e6657" name="IUndistortPoints" description="IUndistortPoints"/>
 		</component>
+		<component uuid="cc51d685-9797-4ffd-a9dd-cec4f367fa6a" name="SolAR2DOverlayOpencv" description="SolAR2DOverlayOpencv">
+			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+			<interface uuid="62b8b0b5-9344-40e6-a288-e609eb3ff0f1" name="I2DOverlay" description="I2DOverlay"/>
+		</component>
 	</module>
 
 	<module uuid="28b89d39-41bd-451d-b19e-d25a3d7c5797" name="SolARModuleTools" description="SolARModuleTools" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleTools/0.9.1/lib/x86_64/shared">
@@ -222,6 +226,11 @@
 			<property name="hasPose" type="int" value="1"/>
 			<property name="nbMinInitPointCloud" type="int" value="50"/>
 			<property name="angleThres" type="float" value="0.05"/>
+		</configure>
+		<configure component="SolARSLAMTracking">
+            <property name="minWeightNeighbor" type="float" value="50.0"/>
+            <property name="displayTrackedPoints" type="int" value="1"/>
+            <property name="thresAngleViewDirection" type="float" value="0.8"/>
 		</configure>
 		<configure component="SolARSLAMMapping">
 			<property name="minWeightNeighbor" type="float" value="1.0"/>

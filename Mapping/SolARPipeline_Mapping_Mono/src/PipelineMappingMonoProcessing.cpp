@@ -39,6 +39,7 @@ namespace MAPPING {
             declareInjectable<api::solver::map::IBundler>(m_globalBundler);
             declareInjectable<api::geom::IUndistortPoints>(m_undistortKeypoints);
             declareInjectable<api::solver::map::IMapper>(m_mapper);
+            declareInjectable<api::slam::ITracking>(m_tracking);
             declareInjectable<api::slam::IMapping>(m_mapping);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
@@ -122,6 +123,7 @@ namespace MAPPING {
         m_loopDetector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_loopCorrector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 		m_undistortKeypoints->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
+		m_tracking->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
                   m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
@@ -250,8 +252,9 @@ namespace MAPPING {
             m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
 
             // Prepare mapping process
-            m_keyframesManager->getKeyframe(1, m_refKeyframe);
-            updateLocalMap(m_refKeyframe);
+			SRef<Keyframe> keyframe2;
+			m_keyframesManager->getKeyframe(1, keyframe2);
+			m_tracking->updateReferenceKeyframe(keyframe2);
 
             LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
 
@@ -264,14 +267,6 @@ namespace MAPPING {
         }
 
         return true;
-    }
-
-    void PipelineMappingMonoProcessing::updateLocalMap(const SRef<Keyframe> & keyframe) {
-        m_localMap.clear();
-        m_mapper->getLocalPointCloud(keyframe, m_minWeightNeighbor, m_localMap);
-
-        // New data to store
-        m_dataToStore = true;
     }
 
     void PipelineMappingMonoProcessing::globalBundleAdjustment() {
@@ -313,17 +308,12 @@ namespace MAPPING {
         }
         else {
             // Process mapping;
-
             if (!m_inputImagePoseBuffer.empty()) {
 
                 m_inputImagePoseBuffer.pop(image_pose_pair);
 
                 SRef<Image> image = image_pose_pair.first;
                 Transform3Df pose = image_pose_pair.second;
-
-                // Mapping
-
-                LOG_DEBUG("Reference keyframe id: {}", m_refKeyframe->getId());
 
                 // feature extraction image
                 std::vector<Keypoint> keypoints, undistortedKeypoints;
@@ -333,91 +323,16 @@ namespace MAPPING {
 
                 SRef<DescriptorBuffer> descriptors;
                 m_descriptorExtractor->extract(image, keypoints, descriptors);
-                SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, m_refKeyframe, pose);
+                SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
 
-                // feature matching to reference keyframe
-                std::vector<DescriptorMatch> matches;
-                m_matcher->match(m_refKeyframe->getDescriptors(), descriptors, matches);
-                m_matchesFilter->filter(matches, matches, m_refKeyframe->getKeypoints(), keypoints);
-                float maxMatchDistance = -FLT_MAX;
-                for (const auto &it : matches) {
-                    float score = it.getMatchingScore();
-                    if (score > maxMatchDistance)
-                        maxMatchDistance = score;
-                }
-
-                LOG_DEBUG("maxMatchDistance = {}", maxMatchDistance);
-
-                // find 2D-3D point correspondences
-                std::vector<Point2Df> pts2d;
-                std::vector<Point3Df> pts3d;
-                std::vector < std::pair<uint32_t, SRef<CloudPoint>>> corres2D3D;
-                std::vector<DescriptorMatch> foundMatches;
-                std::vector<DescriptorMatch> remainingMatches;
-                m_corr2D3DFinder->find(m_refKeyframe, frame, matches, pts3d, pts2d, corres2D3D, foundMatches, remainingMatches);
-                if (corres2D3D.size() == 0)
-                    xpcf::DelegateTask::yield();
-                std::set<uint32_t> idxCPSeen;					// Index of CP seen
-                for (const auto & itCorr : corres2D3D) {
-                    idxCPSeen.insert(itCorr.second->getId());
-                }
-
-                // Find map visibilities of the current frame
-                std::map<uint32_t, uint32_t> newMapVisibility;	// map visibilities
-                std::vector< Point2Df > refCPSeenProj;
-                m_projector->project(pts3d, refCPSeenProj, pose); // Project ref cloud point seen to current frame to define inliers/outliers
-                std::vector<Point2Df> pts2d_inliers, pts2d_outliers;
-                for (unsigned long i = 0; i < refCPSeenProj.size(); ++i) {
-                    float dis = (pts2d[i] - refCPSeenProj[i]).norm();
-                    LOG_DEBUG("dis / m_reprojErrorThreshold: {} / {}", dis, m_reprojErrorThreshold);
-                    if (dis < m_reprojErrorThreshold) {
-                        corres2D3D[i].second->updateConfidence(true);
-                        newMapVisibility[corres2D3D[i].first] = corres2D3D[i].second->getId();
-                        pts2d_inliers.push_back(pts2d[i]);
-                    }
-                    else {
-                        corres2D3D[i].second->updateConfidence(false);
-                        pts2d_outliers.push_back(pts2d[i]);
-                    }
-                }
-                LOG_DEBUG("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
-
-				// find unseen local map from current frame                
-                std::vector<SRef<CloudPoint>> localMapUnseen;
-                for (auto &it_cp : m_localMap) {
-                    if (idxCPSeen.find(it_cp->getId()) == idxCPSeen.end())
-                        localMapUnseen.push_back(it_cp);
-                }
-
-				// Find more visibilities by projecting the rest of local map
-				if (localMapUnseen.size() > 0) {
-					//  projection points
-					std::vector< Point2Df > projected2DPts;
-					m_projector->project(localMapUnseen, projected2DPts, pose);
-					// find more inlier matches
-					std::vector<SRef<DescriptorBuffer>> desAllLocalMapUnseen;
-					for (auto &it_cp : localMapUnseen) {
-						desAllLocalMapUnseen.push_back(it_cp->getDescriptor());
-					}
-					std::vector<DescriptorMatch> allMatches;
-					m_matcher->matchInRegion(projected2DPts, desAllLocalMapUnseen, frame, allMatches, 0, maxMatchDistance * 1.5);
-					// find visibility of new frame
-					for (auto &it_match : allMatches) {
-						int idx_2d = it_match.getIndexInDescriptorB();
-						int idx_3d = it_match.getIndexInDescriptorA();
-						auto it2d = newMapVisibility.find(idx_2d);
-						if (it2d == newMapVisibility.end()) {
-							pts2d_inliers.push_back(Point2Df(keypoints[idx_2d].getX(), keypoints[idx_2d].getY()));
-							newMapVisibility[idx_2d] = localMapUnseen[idx_3d]->getId();
-						}
-					}
+				// update visibility for the current frame
+				SRef<Image> displayImage;
+				m_tracking->process(frame, displayImage);
+                LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
+				if (frame->getVisibility().size() < m_minWeightNeighbor) {
+					xpcf::DelegateTask::yield();
+					return;
 				}
-
-                // Add visibilities to current frame
-                frame->addVisibilities(newMapVisibility);
-                LOG_DEBUG("Number of tracked points: {}", newMapVisibility.size());
-                if (newMapVisibility.size() < m_minWeightNeighbor)
-                    xpcf::DelegateTask::yield();;
 
                 // mapping
                 SRef<Keyframe> keyframe;
@@ -430,12 +345,13 @@ namespace MAPPING {
                     LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
                     m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
                     // map pruning
-                    updateLocalMap(keyframe);
-                    m_mapper->pruning(m_localMap);
+					std::vector<SRef<CloudPoint>> localMap;
+					m_mapper->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
+                    m_mapper->pruning(localMap);
                     // try to loop detection
                     m_countNewKeyframes++;
                     // loop closure
-                    if (m_countNewKeyframes >= 10) {
+                    if (m_countNewKeyframes >= 20) {
                         SRef<Keyframe> detectedLoopKeyframe;
                         Transform3Df sim3Transform;
                         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
@@ -457,22 +373,14 @@ namespace MAPPING {
                             m_T_M_W = transform * m_T_M_W;
                         }
                     }
+					// New data to store
+					m_dataToStore = true;
                 }
 
                 // update reference keyframe
                 if (keyframe) {
-                    m_refKeyframe = keyframe;
-                    updateLocalMap(m_refKeyframe);
+					m_tracking->updateReferenceKeyframe(keyframe);
                 }
-
-                // get all keyframes and point cloud
-                std::vector<Transform3Df> keyframePoses;
-                std::vector<SRef<Keyframe>> allKeyframes;
-                m_keyframesManager->getAllKeyframes(allKeyframes);
-                for (auto const &it : allKeyframes)
-                    keyframePoses.push_back(it->getPose());
-                std::vector<SRef<CloudPoint>> pointCloud;
-                m_pointCloudManager->getAllPoints(pointCloud);
             }
             else {
                 LOG_DEBUG("***** No (image, pose) pair to process *****");

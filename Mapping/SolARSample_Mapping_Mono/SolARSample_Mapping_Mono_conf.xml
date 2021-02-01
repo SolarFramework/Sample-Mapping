@@ -216,9 +216,6 @@
 			<bind interface="IKeyframeSelector" to="SolARKeyframeSelector"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" range="default|all" properties="BundleFixedKeyframesProperties"/>
-			<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
-			<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Blue" properties="BlueProperties"/>
-			<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Red" properties="RedProperties"/>
 			<bind interface="IMapper" to="SolARMapper" scope="Singleton"/>
 			<bind interface="IPointCloudManager" to="SolARPointCloudManager" scope="Singleton"/>
 			<bind interface="IKeyframesManager" to="SolARKeyframesManager" scope="Singleton"/>
@@ -245,6 +242,11 @@
 			<property name="hasPose" type="int" value="1"/>
 			<property name="nbMinInitPointCloud" type="int" value="50"/>
 			<property name="angleThres" type="float" value="0.05"/>
+		</configure>
+		<configure component="SolARSLAMTracking">
+            <property name="minWeightNeighbor" type="float" value="50.0"/>
+            <property name="displayTrackedPoints" type="int" value="1"/>
+            <property name="thresAngleViewDirection" type="float" value="0.8"/>
 		</configure>
 		<configure component="SolARSLAMMapping">
 			<property name="minWeightNeighbor" type="float" value="1.0"/>
@@ -346,31 +348,13 @@
 		<configure component="SolARLoopClosureDetector">
 			<property name="minNbInliers" type="int" value="30"/>
 		</configure>
-		<configure component="SolAR2DOverlayOpencv" name="GreenProperties">
+		<configure component="SolAR2DOverlayOpencv">
 			<property name="thickness" type="uint" value="2"/>
 			<property name="radius" type="uint" value="2"/>
 			<property name="color" type="uint">
 				<value>0</value>
 				<value>255</value>
 				<value>0</value>
-			</property>
-		</configure>
-		<configure component="SolAR2DOverlayOpencv" name="BlueProperties">
-			<property name="thickness" type="uint" value="2"/>
-			<property name="radius" type="uint" value="2"/>
-			<property name="color" type="uint">
-				<value>255</value>
-				<value>0</value>
-				<value>0</value>
-			</property>
-		</configure>
-		<configure component="SolAR2DOverlayOpencv" name="RedProperties">
-			<property name="thickness" type="uint" value="2"/>
-			<property name="radius" type="uint" value="2"/>
-			<property name="color" type="uint">
-				<value>0</value>
-				<value>0</value>
-				<value>255</value>
 			</property>
 		</configure>
 		<configure component="SolARMatchesOverlayOpencv">

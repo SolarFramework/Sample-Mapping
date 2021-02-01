@@ -40,6 +40,7 @@
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
 #include "api/solver/map/IMapper.h"
+#include "api/slam/ITracking.h"
 #include "api/slam/IMapping.h"
 #include "api/storage/IKeyframesManager.h"
 #include "api/storage/IPointCloudManager.h"
@@ -156,6 +157,7 @@ namespace MAPPING {
         SRef<api::slam::IBootstrapper> m_bootstrapper;
         SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;
         SRef<api::solver::map::IMapper> m_mapper;
+        SRef<api::slam::ITracking> m_tracking;
         SRef<api::slam::IMapping> m_mapping;
         SRef<api::storage::IKeyframesManager> m_keyframesManager;
         SRef<api::storage::IPointCloudManager> m_pointCloudManager;
@@ -173,9 +175,7 @@ namespace MAPPING {
         bool m_isFoundTransform;            // indicates if the 3D transformation as been found
         bool m_isStopMapping;               // indicates if the mapping task is stopped
         datastructure::Transform3Df m_T_M_W;               // 3D transformation matrix
-        std::vector<SRef<datastructure::CloudPoint>> m_localMap; // Local map
         float m_minWeightNeighbor, m_reprojErrorThreshold;
-        SRef<datastructure::Keyframe> m_refKeyframe;
         int m_countNewKeyframes;
 
         // Delegate task dedicated to asynchronous mapping processing
@@ -214,10 +214,6 @@ namespace MAPPING {
 
         /// @bried Loop closure detection
         void loopClosure();
-
-        /// @brief Update local map
-        /// @param[in] keyframe: reference key frame
-        void updateLocalMap(const SRef<datastructure::Keyframe> & keyframe);
 
         /// @brief Process to bundle adjustment, map pruning
         /// and update global map

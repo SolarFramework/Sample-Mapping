@@ -72,6 +72,19 @@ configfile.files = $$files($${PWD}/SolARSample_Mapping_LocalMapFusion_Mono_conf.
 					$$files($${PWD}/TransformLocalToGlobal.txt)
 INSTALLS += configfile
 
+linux {
+  run_install.path = $${TARGETDEPLOYDIR}
+  run_install.files = $${PWD}/../../run.sh
+  CONFIG(release,debug|release) {
+    run_install.extra = cp $$files($${PWD}/../../runRelease.sh) $${PWD}/../../run.sh
+  }
+  CONFIG(debug,debug|release) {
+    run_install.extra = cp $$files($${PWD}/../../runDebug.sh) $${PWD}/../../run.sh
+  }
+  INSTALLS += run_install
+}
+
+
 DISTFILES += \
     packagedependencies.txt
 

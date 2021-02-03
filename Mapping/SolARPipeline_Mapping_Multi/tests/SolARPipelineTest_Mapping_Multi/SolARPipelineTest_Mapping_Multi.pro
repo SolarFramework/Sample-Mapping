@@ -65,7 +65,7 @@ INSTALLS += config_files
 
 linux {
   run_install.path = $${TARGETDEPLOYDIR}
-  run_install.files = $${PWD}/../run.sh
+  run_install.files = $${PWD}/../../../run.sh
   CONFIG(release,debug|release) {
     run_install.extra = cp $$files($${PWD}/../../../runRelease.sh) $${PWD}/../../../run.sh
   }

@@ -239,8 +239,8 @@ int main(int argc, char *argv[])
 					if (loopDetector->detect(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
 						// detected loop keyframe
 						LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-						LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-						LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
+						LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+						LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
 						// performs loop correction 						
 						Transform3Df keyframeOldPose = keyframe->getPose();
 						loopCorrector->correct(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);

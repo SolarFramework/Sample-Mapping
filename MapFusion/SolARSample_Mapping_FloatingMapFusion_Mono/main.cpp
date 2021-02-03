@@ -84,6 +84,7 @@ int main(int argc, char *argv[])
 		auto viewerImage = xpcfComponentManager->resolve<display::IImageViewer>("viewerImage");
 		auto globalMapper = xpcfComponentManager->resolve<solver::map::IMapper>("globalMapper");
 		auto floatingMapper = xpcfComponentManager->resolve<solver::map::IMapper>("floatingMapper");
+		auto fusionMapper = xpcfComponentManager->resolve<solver::map::IMapper>("fusionMapper");
 		auto mapOverlapDetector = xpcfComponentManager->resolve<loop::IOverlapDetector>();
 		auto mapFusion = xpcfComponentManager->resolve<solver::map::IMapFusion>();
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
@@ -105,7 +106,7 @@ int main(int argc, char *argv[])
 		// detect overlap from global/floating map and extract sim3
 		LOG_INFO("Overlap detection: ");
 		if (mapOverlapDetector->detect(globalMapper, floatingMapper, sim3Transform, overlapsIndices) == FrameworkReturnCode::_SUCCESS) {
-			LOG_INFO("	->overlap sim3: \n{}", sim3Transform.matrix());
+			LOG_INFO("	->overlap sim3 from {} overlap cloud points: \n{}", overlapsIndices.size(), sim3Transform.matrix());
 
 			// get overlap keyframe to visualize latter
 			std::vector<SRef<Keyframe>> overlapFltKeyframes;
@@ -155,6 +156,10 @@ int main(int argc, char *argv[])
 				if (viewer3D->display(globalPointCloud, {}, overlapFltKfPoses, {}, {}, globalKeyframesPoses) == FrameworkReturnCode::_STOP)
 					break;
 			}
+
+			// save the fusion map
+			fusionMapper->set(globalMapper);
+			fusionMapper->saveToFile();
 		}
 		else {
 			LOG_INFO(" no overlaps detected")

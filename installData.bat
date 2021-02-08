@@ -24,7 +24,3 @@ del mapA.zip
 curl https://artifact.b-com.com/solar-generic-local/maps/hololens/bcomLab/loopDesktopB.zip -L -o mapB.zip
 powershell Expand-Archive mapB.zip -DestinationPath .\data\map_hololens -F
 del mapB.zip
-
-:: Install required external modules
-remaken install packagedependencies.txt
-remaken install packagedependencies.txt -c debug

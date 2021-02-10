@@ -63,6 +63,19 @@ config_files.files= $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Producer_con
                     $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Processing_conf.xml)
 INSTALLS += config_files
 
+linux {
+  run_install.path = $${TARGETDEPLOYDIR}
+  run_install.files = $${PWD}/../../../run.sh
+  CONFIG(release,debug|release) {
+    run_install.extra = cp $$files($${PWD}/../../../runRelease.sh) $${PWD}/../../../run.sh
+  }
+  CONFIG(debug,debug|release) {
+    run_install.extra = cp $$files($${PWD}/../../../runDebug.sh) $${PWD}/../../../run.sh
+  }
+  INSTALLS += run_install
+}
+
+
 OTHER_FILES += \
     packagedependencies.txt
 

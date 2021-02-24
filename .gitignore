@@ -6,7 +6,7 @@ bin/
 *-Debug
 
 *-Release
-**/build
+**/build*
 
 # Prerequisites
 *.d

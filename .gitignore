@@ -91,7 +91,8 @@ data*
 *.pc
 *.sln
 *aps
-bin/conf_LocalMapFusion.xml
+bin/*
+*/build*
 MapFusion/data/data_hololens/*
 MapFusion/data/map_hololens/*
 MapFusion/data/fbow_voc/*

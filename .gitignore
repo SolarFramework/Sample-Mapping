@@ -3,11 +3,13 @@ bin/
 
 *.pro.user
 
-*-Debug*
-*-Release*
-*_Debug*
-*_Release*
-**/build
+*-Debug
+*-Release
+*-debug.bat
+*-release.bat
+*_debug.bat
+*_release.bat
+**/build*
 
 # Prerequisites
 *.d
@@ -95,7 +97,8 @@ data*
 *.pc
 *.sln
 *aps
-bin/conf_LocalMapFusion.xml
+bin/*
+*/build*
 MapFusion/data/data_hololens/*
 MapFusion/data/map_hololens/*
 MapFusion/data/fbow_voc/*

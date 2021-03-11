@@ -239,7 +239,7 @@
 	<properties>
 		<configure component="SolARDeviceDataLoader">
 			<property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
-			<property name="pathToData" type="string" value="../../data/data_hololens/loop_Desktop_A"/>
+                        <property name="pathToData" type="string" value="../../data/data_hololens/loop_desktop_A"/>
 			<property name="delayTime" type="int" value="1"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
@@ -258,7 +258,7 @@
 			<property name="minTrackedPoints" type="int" value="100"/>
 		</configure>
 		<configure component="SolARMapper">
-			<property name="directory" type="string" value="../../data/mapA"/>
+                        <property name="directory" type="string" value="../../data/map_local/mapA"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>

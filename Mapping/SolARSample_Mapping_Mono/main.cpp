@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
 
 		// Load camera intrinsics parameters
 		CameraParameters camParams;
-		camParams = arDevice->getParameters(0);
+        camParams = arDevice->getParameters(INDEX_USE_CAMERA);
 		overlay3D->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);

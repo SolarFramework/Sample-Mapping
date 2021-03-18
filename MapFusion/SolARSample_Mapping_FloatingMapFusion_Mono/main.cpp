@@ -107,11 +107,6 @@ int main(int argc, char *argv[])
 		LOG_INFO("Overlap detection: ");
 		if (mapOverlapDetector->detect(globalMapper, floatingMapper, sim3Transform, overlapsIndices) == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("	->overlap sim3 from {} overlap cloud points: \n{}", overlapsIndices.size(), sim3Transform.matrix());
-
-			// get overlap keyframe to visualize latter
-			std::vector<SRef<Keyframe>> overlapFltKeyframes;
-			SRef<IKeyframesManager> fltKeyframeMananger;
-			floatingMapper->getKeyframesManager(fltKeyframeMananger);
 			// map fusion
 			uint32_t nbMatches;
 			float error;
@@ -135,25 +130,20 @@ int main(int argc, char *argv[])
 			// get global map
 			SRef<IPointCloudManager> globalPointCloudManager;
 			SRef<IKeyframesManager> globalKeyframesManager;
-
 			globalMapper->getPointCloudManager(globalPointCloudManager);
 			globalMapper->getKeyframesManager(globalKeyframesManager);
 
 			std::vector<SRef<Keyframe>> globalKeyframes;
 			std::vector<SRef<CloudPoint>> globalPointCloud;
-
 			globalKeyframesManager->getAllKeyframes(globalKeyframes);
 			globalPointCloudManager->getAllPoints(globalPointCloud);
 
 			std::vector<Transform3Df> globalKeyframesPoses;
 			for (const auto &it : globalKeyframes)
 				globalKeyframesPoses.push_back(it->getPose());
-			// get overlap floating keyframe poses
-			std::vector<Transform3Df> overlapFltKfPoses;
-			for (const auto &it : overlapFltKeyframes)
-				overlapFltKfPoses.push_back(it->getPose());
+
 			while (true) {
-				if (viewer3D->display(globalPointCloud, {}, overlapFltKfPoses, {}, {}, globalKeyframesPoses) == FrameworkReturnCode::_STOP)
+                if (viewer3D->display(globalPointCloud, {}, {}, {}, {}, globalKeyframesPoses) == FrameworkReturnCode::_STOP)
 					break;
 			}
 

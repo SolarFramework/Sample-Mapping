@@ -42,7 +42,7 @@
 #include "api/loop/ILoopCorrector.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/slam/IMapping.h"
-#include "api/solver/pose/IFiducialMarkerPose.h"
+
 
 using namespace SolAR;
 using namespace SolAR::datastructure;
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
         // declare and create components
         LOG_INFO("Start creating components");
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
-		auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
+        auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
 		auto overlay3D = xpcfComponentManager->resolve<display::I3DOverlay>();
 		auto overlay2DGreen = xpcfComponentManager->resolve<display::I2DOverlay>("Green");
 		auto overlay2DRed = xpcfComponentManager->resolve<display::I2DOverlay>("Red");
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 		auto keyframesManager = xpcfComponentManager->resolve<IKeyframesManager>();
 		auto covisibilityGraph = xpcfComponentManager->resolve<ICovisibilityGraph>();
 		auto keyframeRetriever = xpcfComponentManager->resolve<IKeyframeRetriever>();
-		auto mapper = xpcfComponentManager->resolve<solver::map::IMapper>();
+        auto mapper = xpcfComponentManager->resolve<solver::map::IMapper>();
 		auto keypointsDetector = xpcfComponentManager->resolve<features::IKeypointDetector>();
 		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractor>();
 		auto matcher = xpcfComponentManager->resolve<features::IDescriptorMatcher>();
@@ -106,7 +106,6 @@ int main(int argc, char *argv[])
 		auto loopCorrector = xpcfComponentManager->resolve<loop::ILoopCorrector>();
 		auto bootstrapper = xpcfComponentManager->resolve<slam::IBootstrapper>();
 		auto mapping = xpcfComponentManager->resolve<slam::IMapping>();
-		auto fiducialMarkerPoseEstimator = xpcfComponentManager->resolve<solver::pose::IFiducialMarkerPose>();
 		LOG_INFO("Components created!");
 		LOG_INFO("Start AR device loader");
 		// Connect remotely to the HoloLens streaming app
@@ -125,7 +124,6 @@ int main(int argc, char *argv[])
 		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		mapping->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		projector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		pnpRansac->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);

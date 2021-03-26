@@ -43,7 +43,6 @@
 #include "api/slam/IBootstrapper.h"
 #include "api/slam/IMapping.h"
 #include "api/loop/IOverlapDetector.h"
-#include "api/solver/pose/IFiducialMarkerPose.h"
 #include "api/solver/map/IMapFusion.h"
 
 using namespace SolAR;

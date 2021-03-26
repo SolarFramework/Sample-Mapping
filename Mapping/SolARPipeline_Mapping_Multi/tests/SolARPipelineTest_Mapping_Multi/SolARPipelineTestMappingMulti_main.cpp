@@ -202,7 +202,12 @@ int main(int argc, char ** argv)
                 gMappingPipelineMulti->setCameraParameters(camParams);
 
                 LOG_INFO("Producer client: Load fiducial marker description file");
-                SRef<Trackable> trackableObject = trackableLoader->loadTrackable();
+                SRef<Trackable> trackableObject;
+                if (trackableLoader->loadTrackable(trackableObject) != FrameworkReturnCode::_SUCCESS)
+                {
+                    LOG_ERROR("Cannot load fiducial marker");
+                    return -1;
+                }
 
                 if (trackableObject != 0) {
                     LOG_INFO("Producer client: Fiducial marker created: url = {}", trackableObject->getURL());

@@ -35,7 +35,7 @@
 #include <shared_mutex>
 
 #include "api/pipeline/IMappingPipeline.h"
-#include "api/solver/pose/IFiducialMarkerPose.h"
+#include "api/solver/pose/ITrackablePose.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/solver/map/IBundler.h"
 #include "api/solver/map/IMapper.h"
@@ -69,7 +69,7 @@ namespace MAPPING {
      * <TT>UUID: 54b93f91-1628-4e63-b4d9-c8735b768b8b</TT>
      *
      * @SolARComponentInjectablesBegin
-     * @SolARComponentInjectable{SolAR::api::solver::pose::IFiducialMarkerPose}
+     * @SolARComponentInjectable{SolAR::api::solver::pose::ITrackablePose}
      * @SolARComponentInjectable{SolAR::api::slam::IBootstrapper}
      * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}
      * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}
@@ -146,10 +146,10 @@ namespace MAPPING {
         mutable std::shared_mutex m_bootstrap_mutex;  // Mutex used for bootstrap state
 
         datastructure::CameraParameters m_cameraParams;        // camera parameters
-        SRef<datastructure::FiducialMarker> m_fiducialMarker;  // fiducial marker description
+        SRef<datastructure::Trackable> m_trackable;  // fiducial marker description
 
         // Components used
-        SRef<api::solver::pose::IFiducialMarkerPose> m_fiducialMarkerPoseEstimator;
+        SRef<api::solver::pose::ITrackablePose> m_fiducialMarkerPoseEstimator;
         SRef<api::slam::IBootstrapper> m_bootstrapper;
         SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;
         SRef<api::solver::map::IMapper> m_mapper;

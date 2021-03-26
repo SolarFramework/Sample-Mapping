@@ -34,7 +34,7 @@ namespace MAPPING {
 
             LOG_DEBUG("Components injection declaration");
 
-            declareInjectable<api::solver::pose::IFiducialMarkerPose>(m_fiducialMarkerPoseEstimator);
+            declareInjectable<api::solver::pose::ITrackablePose>(m_fiducialMarkerPoseEstimator);
             declareInjectable<api::slam::IBootstrapper>(m_bootstrapper);
             declareInjectable<api::solver::map::IBundler>(m_bundler, "BundleFixedKeyframes");
             declareInjectable<api::solver::map::IBundler>(m_globalBundler);
@@ -59,7 +59,7 @@ namespace MAPPING {
             // Initialize private members
             m_cameraParams.resolution.width = 0;
             m_cameraParams.resolution.height = 0;
-            m_fiducialMarker = nullptr;
+            m_trackable = nullptr;
             m_countNewKeyframes = 0;
 
             m_T_M_W = Transform3Df::Identity();
@@ -181,21 +181,8 @@ namespace MAPPING {
     FrameworkReturnCode PipelineMappingMultiProcessing::setObjectToTrack(const SRef<Trackable> trackableObject) {
 
         LOG_DEBUG("PipelineMappingMultiProcessing::setObjectToTrack");
-
-        if ((trackableObject != 0) && (trackableObject->getType() == FIDUCIAL_MARKER)) {
-
-            m_fiducialMarker = xpcf::utils::dynamic_pointer_cast<FiducialMarker>(trackableObject);
-
-            m_fiducialMarkerPoseEstimator->setMarker(m_fiducialMarker);
-
-            LOG_DEBUG("Fiducial marker url / width / height = {} / {} / {}",
-                     m_fiducialMarker->getURL(), m_fiducialMarker->getWidth(), m_fiducialMarker->getHeight());
-
-            return FrameworkReturnCode::_SUCCESS;
-        }
-        else {
-            return FrameworkReturnCode::_ERROR_;
-        }
+        m_trackable = trackableObject;
+        return (m_fiducialMarkerPoseEstimator->setTrackable(m_trackable));
     }
 
     FrameworkReturnCode PipelineMappingMultiProcessing::start() {
@@ -203,8 +190,7 @@ namespace MAPPING {
         LOG_DEBUG("PipelineMappingMultiProcessing::start");
 
         // Check members initialization
-        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)
-                && (m_fiducialMarker != nullptr) && (m_fiducialMarker->getWidth() > 0) && (m_fiducialMarker->getHeight() > 0)) {
+        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0) && (m_trackable != nullptr)) {
 
             LOG_DEBUG("Start processing tasks");
 

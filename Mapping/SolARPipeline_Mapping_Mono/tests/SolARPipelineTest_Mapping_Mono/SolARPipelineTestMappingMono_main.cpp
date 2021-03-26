@@ -200,11 +200,11 @@ int main(int argc, char ** argv)
                 gMappingPipeline->setCameraParameters(camParams);
 
                 LOG_INFO("Producer client: Load fiducial marker description file");
-                SRef<Trackable> trackableObject = trackableLoader->loadTrackable();
+                SRef<Trackable> trackableObject;
+                trackableLoader->loadTrackable(trackableObject);
 
                 if (trackableObject != 0) {
-                    LOG_INFO("Producer client: Fiducial marker created: url = {}", trackableObject->getURL());
-
+                    LOG_INFO("Producer client: Fiducial marker created: \n{}", xpcf::utils::dynamic_pointer_cast<FiducialMarker>(trackableObject)->getPattern().getPatternMatrix());
                     LOG_INFO("Producer client: Set mapping pipeline fiducial marker");
                     gMappingPipeline->setObjectToTrack(trackableObject);
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xpcf-registry autoAlias="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-	<module uuid="6e960df6-9a36-11e8-9eb6-529269fb1459" name="SolARModuleOpenGL" description="SolARModuleOpenGL" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenGL/0.9.1/lib/x86_64/shared">
+	<module uuid="6e960df6-9a36-11e8-9eb6-529269fb1459" name="SolARModuleOpenGL" description="SolARModuleOpenGL" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenGL/0.9.4/lib/x86_64/shared">
 		<component uuid="afd38ea0-9a46-11e8-9eb6-529269fb1459" name="SolAR3DPointsViewerOpengl" description="SolAR3DPointsViewerOpengl">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="575d365a-9a27-11e8-9eb6-529269fb1459" name="I3DPointsViewer" description="I3DPointsViewer"/>

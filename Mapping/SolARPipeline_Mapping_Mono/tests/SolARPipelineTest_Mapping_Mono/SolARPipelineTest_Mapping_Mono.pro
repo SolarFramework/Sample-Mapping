@@ -1,4 +1,5 @@
 ## remove Qt dependencies
+QMAKE_PROJECT_DEPTH = 0
 QT       -= core gui
 CONFIG -= qt
 

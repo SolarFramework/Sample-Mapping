@@ -21,7 +21,8 @@ namespace SolAR {
 namespace PIPELINES {
 namespace MAPPING {
 
-#define NB_NEWKEYFRAMES_LOOP 10
+#define NB_LOCALKEYFRAMES 10
+#define NB_NEWKEYFRAMES_LOOP 20
 
 // Public methods
 
@@ -440,11 +441,23 @@ namespace MAPPING {
         if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("New keyframe id: {}", keyframe->getId());
             // Local bundle adjustment
-            std::vector<uint32_t> bestIdx;
+            std::vector<uint32_t> bestIdx, bestIdxToOptimize;
             m_covisibilityGraph->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx);
-            bestIdx.push_back(keyframe->getId());
-            m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
-            m_mapper->pruning();
+			if (bestIdx.size() < NB_LOCALKEYFRAMES)
+				bestIdxToOptimize = bestIdx;
+			else
+				bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
+			bestIdxToOptimize.push_back(keyframe->getId());
+			LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
+			double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
+			// map pruning
+			std::vector<SRef<CloudPoint>> localMap;
+			m_mapper->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
+			int nbRemovedCP = m_mapper->pointCloudPruning(localMap);
+			std::vector<SRef<Keyframe>> localKeyframes;
+			m_keyframesManager->getKeyframes(bestIdx, localKeyframes);
+			int nbRemovedKf = m_mapper->keyframePruning(localKeyframes);
+			LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
             m_countNewKeyframes++;
             m_dropBufferNewKeyframeLoop.push(keyframe);
         }
@@ -491,7 +504,8 @@ namespace MAPPING {
             Transform3Df keyframeOldPose = lastKeyframe->getPose();
             m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
             // map pruning
-            m_mapper->pruning();
+            m_mapper->pointCloudPruning();
+            m_mapper->keyframePruning();
             // update pose correction
             Transform3Df transform = lastKeyframe->getPose() * keyframeOldPose.inverse();
             m_T_M_W = transform * m_T_M_W;
@@ -505,8 +519,8 @@ namespace MAPPING {
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
         // Map pruning
-        m_mapper->pruning();
-
+		m_mapper->pointCloudPruning();
+		m_mapper->keyframePruning();
         LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 

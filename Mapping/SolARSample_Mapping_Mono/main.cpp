@@ -22,18 +22,11 @@
 #include "api/display/I3DOverlay.h"
 #include "api/display/I2DOverlay.h"
 #include "api/display/I3DPointsViewer.h"
-#include "api/display/IMatchesOverlay.h"
 #include "api/features/IKeypointDetector.h"
 #include "api/features/IDescriptorsExtractor.h"
-#include "api/features/IDescriptorMatcher.h"
-#include "api/features/IMatchesFilter.h"
 #include "api/solver/map/IMapper.h"
-#include "api/solver/pose/I2D3DCorrespondencesFinder.h"
-#include "api/solver/map/IKeyframeSelector.h"
-#include "api/solver/map/IMapFilter.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
-#include "api/geom/IProject.h"
 #include "api/reloc/IKeyframeRetriever.h"
 #include "api/storage/ICovisibilityGraph.h"
 #include "api/storage/IKeyframesManager.h"
@@ -53,6 +46,8 @@ using namespace SolAR::api::reloc;
 namespace xpcf  = org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
+#define NB_LOCALKEYFRAMES 10
+#define NB_NEWKEYFRAMES_LOOP 20
 
 int main(int argc, char *argv[])
 {
@@ -84,7 +79,6 @@ int main(int argc, char *argv[])
 		auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
 		auto overlay3D = xpcfComponentManager->resolve<display::I3DOverlay>();
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
-		auto matchesOverlay = xpcfComponentManager->resolve<api::display::IMatchesOverlay>();
 		auto pointCloudManager = xpcfComponentManager->resolve<IPointCloudManager>();
 		auto keyframesManager = xpcfComponentManager->resolve<IKeyframesManager>();
 		auto covisibilityGraph = xpcfComponentManager->resolve<ICovisibilityGraph>();
@@ -92,15 +86,9 @@ int main(int argc, char *argv[])
 		auto mapper = xpcfComponentManager->resolve<solver::map::IMapper>();
 		auto keypointsDetector = xpcfComponentManager->resolve<features::IKeypointDetector>();
 		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractor>();
-		auto matcher = xpcfComponentManager->resolve<features::IDescriptorMatcher>();
-		auto corr2D3DFinder = xpcfComponentManager->resolve<solver::pose::I2D3DCorrespondencesFinder>();
-		auto keyframeSelector = xpcfComponentManager->resolve<solver::map::IKeyframeSelector>();
-		auto projector = xpcfComponentManager->resolve<api::geom::IProject>();
-		auto mapFilter = xpcfComponentManager->resolve<api::solver::map::IMapFilter>();
 		auto bundler = xpcfComponentManager->resolve<api::solver::map::IBundler>("BundleFixedKeyframes");
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
 		auto undistortKeypoints = xpcfComponentManager->resolve<api::geom::IUndistortPoints>();
-		auto matchesFilter = xpcfComponentManager->resolve<features::IMatchesFilter>();
 		auto loopDetector = xpcfComponentManager->resolve<loop::ILoopClosureDetector>();
 		auto loopCorrector = xpcfComponentManager->resolve<loop::ILoopCorrector>();
 		auto bootstrapper = xpcfComponentManager->resolve<slam::IBootstrapper>();
@@ -127,13 +115,11 @@ int main(int argc, char *argv[])
 		tracking->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		mapping->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		projector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
 
 		// get properties
 		float minWeightNeighbor = mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
-		float reprojErrorThreshold = mapper->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
 
 		// Correct pose and Bootstrap
 		Transform3Df T_M_W = Transform3Df::Identity();
@@ -220,19 +206,27 @@ int main(int argc, char *argv[])
 			if (mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
 				LOG_DEBUG("New keyframe id: {}", keyframe->getId());			
 				// Local bundle adjustment
-				std::vector<uint32_t> bestIdx;
+				std::vector<uint32_t> bestIdx, bestIdxToOptimize;
 				covisibilityGraph->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx);
-				bestIdx.push_back(keyframe->getId());
-				LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
-				double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdx);
+				if (bestIdx.size() < NB_LOCALKEYFRAMES)
+					bestIdxToOptimize = bestIdx;
+				else
+					bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
+				bestIdxToOptimize.push_back(keyframe->getId());
+				LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
+				double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdxToOptimize);
 				// map pruning
 				std::vector<SRef<CloudPoint>> localMap;
 				mapper->getLocalPointCloud(keyframe, minWeightNeighbor, localMap);
-				mapper->pruning(localMap);
+				int nbRemovedCP = mapper->pointCloudPruning(localMap);
+				std::vector<SRef<Keyframe>> localKeyframes;
+				keyframesManager->getKeyframes(bestIdx, localKeyframes);
+				int nbRemovedKf = mapper->keyframePruning(localKeyframes);
+				LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
 				// try to loop detection
 				countNewKeyframes++;
 				// loop closure
-				if (countNewKeyframes >= 20) {
+				if (countNewKeyframes >= NB_NEWKEYFRAMES_LOOP) {
 					SRef<Keyframe> detectedLoopKeyframe;
 					Transform3Df sim3Transform;
 					std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
@@ -247,7 +241,8 @@ int main(int argc, char *argv[])
 						// loop optimization
 						globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);						
 						// map pruning
-						mapper->pruning();
+						mapper->pointCloudPruning();
+						mapper->keyframePruning();
 						countNewKeyframes = 0;
 						// update pose correction
 						Transform3Df transform = keyframe->getPose() * keyframeOldPose.inverse();
@@ -282,8 +277,8 @@ int main(int argc, char *argv[])
 		// global bundle adjustment
 		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
 		// map pruning
-		mapper->pruning();
-
+		mapper->pointCloudPruning();
+		mapper->keyframePruning();
 		LOG_INFO("Nb keyframes of map: {}", keyframesManager->getNbKeyframes());
 		LOG_INFO("Nb cloud points of map: {}", pointCloudManager->getNbPoints());
 

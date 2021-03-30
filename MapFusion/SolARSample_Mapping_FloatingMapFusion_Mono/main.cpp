@@ -124,8 +124,8 @@ int main(int argc, char *argv[])
 			LOG_INFO("Error after bundler: {}", error_bundle);
 
 			// pruning
-			globalMapper->pruning();
-
+            globalMapper->pointCloudPruning();
+            globalMapper->keyframePruning();
 			// display		
 			// get global map
 			SRef<IPointCloudManager> globalPointCloudManager;

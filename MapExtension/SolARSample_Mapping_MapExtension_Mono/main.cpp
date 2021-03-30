@@ -22,7 +22,6 @@
 #include "api/display/I3DOverlay.h"
 #include "api/display/I2DOverlay.h"
 #include "api/display/I3DPointsViewer.h"
-#include "api/display/IMatchesOverlay.h"
 #include "api/features/IKeypointDetector.h"
 #include "api/features/IDescriptorsExtractor.h"
 #include "api/features/IDescriptorMatcher.h"
@@ -30,11 +29,8 @@
 #include "api/solver/pose/I3DTransformSACFinderFrom2D3D.h"
 #include "api/solver/map/IMapper.h"
 #include "api/solver/pose/I2D3DCorrespondencesFinder.h"
-#include "api/solver/map/IKeyframeSelector.h"
-#include "api/solver/map/IMapFilter.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
-#include "api/geom/IProject.h"
 #include "api/reloc/IKeyframeRetriever.h"
 #include "api/storage/ICovisibilityGraph.h"
 #include "api/storage/IKeyframesManager.h"
@@ -42,8 +38,8 @@
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
 #include "api/slam/IBootstrapper.h"
+#include "api/slam/ITracking.h"
 #include "api/slam/IMapping.h"
-#include "api/solver/pose/IFiducialMarkerPose.h"
 
 using namespace SolAR;
 using namespace SolAR::datastructure;
@@ -53,6 +49,8 @@ using namespace SolAR::api::reloc;
 namespace xpcf  = org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
+#define NB_LOCALKEYFRAMES 10
+#define NB_NEWKEYFRAMES_LOOP 20
 
 int main(int argc, char *argv[])
 {
@@ -83,10 +81,7 @@ int main(int argc, char *argv[])
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
 		auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
 		auto overlay3D = xpcfComponentManager->resolve<display::I3DOverlay>();
-		auto overlay2DGreen = xpcfComponentManager->resolve<display::I2DOverlay>("Green");
-		auto overlay2DRed = xpcfComponentManager->resolve<display::I2DOverlay>("Red");
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
-		auto matchesOverlay = xpcfComponentManager->resolve<api::display::IMatchesOverlay>();
 		auto pointCloudManager = xpcfComponentManager->resolve<IPointCloudManager>();
 		auto keyframesManager = xpcfComponentManager->resolve<IKeyframesManager>();
 		auto covisibilityGraph = xpcfComponentManager->resolve<ICovisibilityGraph>();
@@ -97,9 +92,6 @@ int main(int argc, char *argv[])
 		auto matcher = xpcfComponentManager->resolve<features::IDescriptorMatcher>();
 		auto corr2D3DFinder = xpcfComponentManager->resolve<solver::pose::I2D3DCorrespondencesFinder>();
 		auto pnpRansac = xpcfComponentManager->resolve<api::solver::pose::I3DTransformSACFinderFrom2D3D>();
-		auto keyframeSelector = xpcfComponentManager->resolve<solver::map::IKeyframeSelector>();
-		auto projector = xpcfComponentManager->resolve<api::geom::IProject>();
-		auto mapFilter = xpcfComponentManager->resolve<api::solver::map::IMapFilter>();
 		auto bundler = xpcfComponentManager->resolve<api::solver::map::IBundler>("BundleFixedKeyframes");
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
 		auto undistortKeypoints = xpcfComponentManager->resolve<api::geom::IUndistortPoints>();
@@ -107,8 +99,8 @@ int main(int argc, char *argv[])
 		auto loopDetector = xpcfComponentManager->resolve<loop::ILoopClosureDetector>();
 		auto loopCorrector = xpcfComponentManager->resolve<loop::ILoopCorrector>();
 		auto bootstrapper = xpcfComponentManager->resolve<slam::IBootstrapper>();
+		auto tracking = xpcfComponentManager->resolve<slam::ITracking>();
 		auto mapping = xpcfComponentManager->resolve<slam::IMapping>();
-		auto fiducialMarkerPoseEstimator = xpcfComponentManager->resolve<solver::pose::IFiducialMarkerPose>();
 		LOG_INFO("Components created!");
 		LOG_INFO("Start AR device loader");
 		// Connect remotely to the HoloLens streaming app
@@ -126,16 +118,14 @@ int main(int argc, char *argv[])
 		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
+		tracking->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		mapping->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		projector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		pnpRansac->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
 
 		// get properties
 		float minWeightNeighbor = mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
-		float reprojErrorThreshold = mapper->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
 
 		// Correct pose
 		Transform3Df T_M_W = Transform3Df::Identity();
@@ -151,13 +141,6 @@ int main(int argc, char *argv[])
 
 		LOG_INFO("Number of initial point cloud: {}", pointCloudManager->getNbPoints());
 		LOG_INFO("Number of initial keyframes: {}", keyframesManager->getNbKeyframes());
-		
-		// update local point cloud
-		std::vector<SRef<CloudPoint>> localMap;
-		auto updateLocalMap=[&](const SRef<Keyframe> &keyframe){
-			localMap.clear();			
-			mapper->getLocalPointCloud(keyframe, minWeightNeighbor, localMap);
-		};
 
         // Relocalization and mapping
 		std::vector<Transform3Df>   framePoses;
@@ -214,8 +197,7 @@ int main(int argc, char *argv[])
 						// found T_W_M
 						T_M_W = poseFound * frame->getPose().inverse();
 						// update reference keyframe
-						refKeyframe = bestRetKeyframe;
-						updateLocalMap(refKeyframe);
+						tracking->updateReferenceKeyframe(bestRetKeyframe);
 						// set pose for the current frame
 						frame->setPose(poseFound);
 						lostTracking = false;
@@ -229,80 +211,10 @@ int main(int argc, char *argv[])
 				framePoses.push_back(pose);
 				frame->setPose(pose);
 
-				// feature matching to reference keyframe			
-				std::vector<DescriptorMatch> matches;
-				matcher->match(refKeyframe->getDescriptors(), descriptors, matches);
-				matchesFilter->filter(matches, matches, refKeyframe->getKeypoints(), keypoints);
-				float maxMatchDistance = -FLT_MAX;
-				for (const auto &it : matches) {
-					float score = it.getMatchingScore();
-					if (score > maxMatchDistance)
-						maxMatchDistance = score;
-				}
-
-				// find 2D-3D point correspondences
-				std::vector<Point2Df> pts2d;
-				std::vector<Point3Df> pts3d;
-				std::vector < std::pair<uint32_t, SRef<CloudPoint>>> corres2D3D;
-				std::vector<DescriptorMatch> foundMatches;
-				std::vector<DescriptorMatch> remainingMatches;
-				corr2D3DFinder->find(refKeyframe, frame, matches, pts3d, pts2d, corres2D3D, foundMatches, remainingMatches);
-				if (corres2D3D.size() == 0)
-					break;
-				std::set<uint32_t> idxCPSeen;					// Index of CP seen
-				for (const auto & itCorr : corres2D3D) {
-					idxCPSeen.insert(itCorr.second->getId());
-				}
-				// Find map visibilities of the current frame
-				std::map<uint32_t, uint32_t> newMapVisibility;	// map visibilities			
-				std::vector< Point2Df > refCPSeenProj;
-				projector->project(pts3d, refCPSeenProj, pose); // Project ref cloud point seen to current frame to define inliers/outliers
-				std::vector<Point2Df> pts2d_inliers, pts2d_outliers;
-				for (int i = 0; i < refCPSeenProj.size(); ++i) {
-					float dis = (pts2d[i] - refCPSeenProj[i]).norm();
-					if (dis < reprojErrorThreshold) {
-						corres2D3D[i].second->updateConfidence(true);
-						newMapVisibility[corres2D3D[i].first] = corres2D3D[i].second->getId();
-						pts2d_inliers.push_back(pts2d[i]);
-					}
-					else {
-						corres2D3D[i].second->updateConfidence(false);
-						pts2d_outliers.push_back(pts2d[i]);
-					}
-				}
-				LOG_DEBUG("Number of inliers / outliers: {} / {}", pts2d_inliers.size(), pts2d_outliers.size());
-
-				// Find more visibilities by projecting the rest of local map
-				//  projection points
-				std::vector<SRef<CloudPoint>> localMapUnseen;
-				for (auto &it_cp : localMap)
-					if (idxCPSeen.find(it_cp->getId()) == idxCPSeen.end())
-						localMapUnseen.push_back(it_cp);
-				std::vector< Point2Df > projected2DPts;
-				projector->project(localMapUnseen, projected2DPts, pose);
-
-				// find more inlier matches
-				std::vector<SRef<DescriptorBuffer>> desAllLocalMapUnseen;
-				for (auto &it_cp : localMapUnseen) {
-					desAllLocalMapUnseen.push_back(it_cp->getDescriptor());
-				}
-				std::vector<DescriptorMatch> allMatches;
-				matcher->matchInRegion(projected2DPts, desAllLocalMapUnseen, frame, allMatches, 0, maxMatchDistance * 1.5);
-				// find visibility of new frame					
-				for (auto &it_match : allMatches) {
-					int idx_2d = it_match.getIndexInDescriptorB();
-					int idx_3d = it_match.getIndexInDescriptorA();
-					auto it2d = newMapVisibility.find(idx_2d);
-					if (it2d == newMapVisibility.end()) {
-						pts2d_inliers.push_back(Point2Df(keypoints[idx_2d].getX(), keypoints[idx_2d].getY()));
-						newMapVisibility[idx_2d] = localMapUnseen[idx_3d]->getId();
-					}
-				}
-
-				// Add visibilities to current frame
-				frame->addVisibilities(newMapVisibility);
-				LOG_DEBUG("Number of tracked points: {}", newMapVisibility.size());
-				if (newMapVisibility.size() < minWeightNeighbor)
+				// update visibility for the current frame
+				tracking->process(frame, displayImage);
+				LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
+				if (frame->getVisibility().size() < minWeightNeighbor)
 					break;
 
 				// mapping
@@ -310,33 +222,43 @@ int main(int argc, char *argv[])
 				if (mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
 					LOG_DEBUG("New keyframe id: {}", keyframe->getId());
 					// Local bundle adjustment
-					std::vector<uint32_t> bestIdx;
+					std::vector<uint32_t> bestIdx, bestIdxToOptimize;
 					covisibilityGraph->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx);
-					bestIdx.push_back(keyframe->getId());
-					LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
-					double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdx);
+					if (bestIdx.size() < NB_LOCALKEYFRAMES)
+						bestIdxToOptimize = bestIdx;
+					else
+						bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
+					bestIdxToOptimize.push_back(keyframe->getId());
+					LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
+					double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdxToOptimize);
 					// map pruning
-					updateLocalMap(keyframe);
-					mapper->pruning(localMap);
+					std::vector<SRef<CloudPoint>> localMap;
+					mapper->getLocalPointCloud(keyframe, minWeightNeighbor, localMap);
+					int nbRemovedCP = mapper->pointCloudPruning(localMap);
+					std::vector<SRef<Keyframe>> localKeyframes;
+					keyframesManager->getKeyframes(bestIdx, localKeyframes);
+					int nbRemovedKf = mapper->keyframePruning(localKeyframes);
+					LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
 					// try to loop detection
 					countNewKeyframes++;
 					// loop closure
-					if (countNewKeyframes >= 10) {
+					if (countNewKeyframes >= NB_NEWKEYFRAMES_LOOP) {
 						SRef<Keyframe> detectedLoopKeyframe;
 						Transform3Df sim3Transform;
 						std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
 						if (loopDetector->detect(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
 							// detected loop keyframe
 							LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-							LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-							LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
+							LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+							LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
 							// performs loop correction 						
 							Transform3Df keyframeOldPose = keyframe->getPose();
 							loopCorrector->correct(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
 							// loop optimization
 							globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
 							// map pruning
-							mapper->pruning();
+							mapper->pointCloudPruning();
+							mapper->keyframePruning();
 							countNewKeyframes = 0;
 							// update pose correction
 							Transform3Df transform = keyframe->getPose() * keyframeOldPose.inverse();
@@ -344,16 +266,13 @@ int main(int argc, char *argv[])
 						}
 					}
 				}
+
 				// update reference keyframe
 				if (keyframe) {
-					refKeyframe = keyframe;
-					updateLocalMap(refKeyframe);
+					tracking->updateReferenceKeyframe(keyframe);
 				}
-
-				// draw pose				
-				overlay3D->draw(frame->getPose(), displayImage);
-				overlay2DRed->drawCircles(pts2d_outliers, displayImage);
-				overlay2DGreen->drawCircles(pts2d_inliers, displayImage);
+				// draw pose
+				overlay3D->draw(frame->getPose(), displayImage);				
 			}						
 
 			// display
@@ -369,11 +288,11 @@ int main(int argc, char *argv[])
 			pointCloudManager->getAllPoints(pointCloud);
 			// display point cloud 
 			if (lostTracking) {
-				if (viewer3D->display(pointCloud, Transform3Df::Identity(), keyframePoses, framePoses, localMap) == FrameworkReturnCode::_STOP)
+				if (viewer3D->display(pointCloud, Transform3Df::Identity(), keyframePoses, framePoses) == FrameworkReturnCode::_STOP)
 					break;
 			}
 			else {
-				if (viewer3D->display(pointCloud, frame->getPose(), keyframePoses, framePoses, localMap) == FrameworkReturnCode::_STOP)
+				if (viewer3D->display(pointCloud, frame->getPose(), keyframePoses, framePoses) == FrameworkReturnCode::_STOP)
 					break;
 			}
         }
@@ -381,8 +300,8 @@ int main(int argc, char *argv[])
 		// global bundle adjustment
 		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
 		// map pruning
-		mapper->pruning();
-
+		mapper->pointCloudPruning();
+		mapper->keyframePruning();
 		LOG_INFO("Nb keyframes of map: {}", keyframesManager->getNbKeyframes());
 		LOG_INFO("Nb cloud points of map: {}", pointCloudManager->getNbPoints());
 

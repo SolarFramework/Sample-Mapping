@@ -155,8 +155,8 @@ int main(int argc, char *argv[])
 		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
 
 		// pruning
-		globalMap->pruning();
-		
+		globalMap->pointCloudPruning();
+		globalMap->keyframePruning();		
 		// display		
 		std::vector<SRef<Keyframe>> globalKeyframes;
 		std::vector<SRef<CloudPoint>> globalPointCloud;

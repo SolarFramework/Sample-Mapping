@@ -4,11 +4,7 @@ CONFIG -= qt
 
 ## global defintions : target lib name, version
 TARGET = SolARSample_Mapping_MapVisualizer
-<<<<<<< HEAD
 VERSION=0.9.3
-=======
-VERSION=0.9.1
->>>>>>> develop
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z

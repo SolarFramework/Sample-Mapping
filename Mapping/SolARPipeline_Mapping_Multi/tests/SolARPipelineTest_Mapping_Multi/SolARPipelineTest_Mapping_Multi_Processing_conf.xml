@@ -256,9 +256,9 @@
 		</configure>
 		<configure component="SolARKeypointDetectorOpencv">
 			<property name="type" type="string" value="AKAZE2"/>
-			<property name="imageRatio" type="float" value="0.7"/>
+                        <property name="imageRatio" type="float" value="1.0"/>
 			<property name="nbDescriptors" type="int" value="2000"/>
-			<property name="nbOctaves" type="int" value="3"/>
+                        <property name="nbOctaves" type="int" value="4"/>
 			<property name="threshold" type="float" value="0.0001"/>
                         <property name="borderRatio" type="float" value="0.0"/>
                 </configure>
@@ -299,13 +299,9 @@
 		</configure>
 		<configure component="SolARMapFilter">
 			<property name="reprojErrorThreshold" type="float" value="5.0"/>
-			<property name="minTriangulationAngle" type="float" value="0.02"/>
-			<property name="maxTriangulationAngle" type="float" value="1.0"/>
+                        <property name="minTriangulationAngle" type="float" value="0.01"/>
+                        <property name="maxTriangulationAngle" type="float" value="2.0"/>
 			<property name="cheiralityCheck" type="int" value="1"/>
-		</configure>
-		<configure component="SolARKeyframeSelector">
-			<property name="minNbMatchesIsKeyframe" type="int" value="5"/>
-			<property name="minMeanDistanceIsKeyframe" type="float" value="0.05"/>
 		</configure>
 		<configure component="SolARKeyframeSelector" name="BootstrapProperties">
 			<property name="minNbMatchesIsKeyframe" type="int" value="50"/>
@@ -316,7 +312,7 @@
 			<property name="threshold" type="float" value="0.01"/>
 			<property name="level" type="int" value="3"/>
 			<property name="matchingDistanceRatio" type="float" value="0.8"/>
-			<property name="matchingDistanceMax" type="float" value="600"/>
+                        <property name="matchingDistanceMax" type="float" value="800"/>
 		</configure>
 		<configure component="SolAR3DTransformEstimationSACFrom3D3D">
 			<property name="iterationsCount" type="int" value="500"/>

@@ -298,10 +298,6 @@
             <property name="maxTriangulationAngle" type="float" value="1.0"/>
             <property name="cheiralityCheck" type="int" value ="1"/>
         </configure>
-        <configure component="SolARKeyframeSelector">
-            <property name="minNbMatchesIsKeyframe" type="int" value="5"/>
-            <property name="minMeanDistanceIsKeyframe" type="float" value="0.05"/>
-        </configure>
         <configure component="SolARKeyframeSelector" name="BootstrapProperties">
             <property name="minNbMatchesIsKeyframe" type="int" value="50"/>
             <property name="minMeanDistanceIsKeyframe" type="float" value="0.02"/>

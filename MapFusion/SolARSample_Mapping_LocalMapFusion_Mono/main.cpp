@@ -80,8 +80,9 @@ int main(int argc, char *argv[])
         LOG_INFO("Start creating components");
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
-		auto globalMap = xpcfComponentManager->resolve<solver::map::IMapper>("Global");
-		auto localMap = xpcfComponentManager->resolve<solver::map::IMapper>("Local");
+		auto globalMap = xpcfComponentManager->resolve<solver::map::IMapper>("globalMapper");
+		auto localMap = xpcfComponentManager->resolve<solver::map::IMapper>("localMapper");
+		auto fusionMap = xpcfComponentManager->resolve<solver::map::IMapper>("fusionMapper");
 		auto mapFusion = xpcfComponentManager->resolve<solver::map::IMapFusion>();
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();		
 		LOG_INFO("Components created!");
@@ -168,6 +169,9 @@ int main(int argc, char *argv[])
 			if (viewer3D->display(globalPointCloud, Transform3Df::Identity(), globalKeyframesPoses, {}, {}, {}) == FrameworkReturnCode::_STOP)
 				break;
 		}
+		// save the fusion map
+		fusionMap->set(globalMap);
+		fusionMap->saveToFile();
     }
 
     catch (xpcf::Exception e)

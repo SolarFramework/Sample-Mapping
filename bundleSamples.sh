@@ -1,9 +1,8 @@
 
-Version="0.9.0"
+Version="0.9.1"
 
 if [ -z "$1" ]
 then
-   echo "toto"
    filename="SolAR_Mapping_$Version"
 else
    filename=$1

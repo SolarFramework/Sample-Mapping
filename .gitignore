@@ -4,8 +4,11 @@ bin/
 *.pro.user
 
 *-Debug
-
 *-Release
+*-debug.bat
+*-release.bat
+*_debug.bat
+*_release.bat
 **/build*
 
 # Prerequisites
@@ -84,6 +87,8 @@ Release/
 *.sln
 **/debug/
 **/release/
+*/debug/*
+*/release/*
 *.vcxproj
 *.vcxproj.filters
 *-packagedependencies.txt

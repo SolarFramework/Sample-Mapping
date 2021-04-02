@@ -1,7 +1,7 @@
 @echo off
 SETLOCAL EnableDelayedExpansion
 
-SET version=0.9.0
+SET version=0.9.1
 
 SET filename=SolAR_Fiducial_%version%
 SET arg1=%1

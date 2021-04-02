@@ -33,6 +33,7 @@
 #include "api/solver/map/IKeyframeSelector.h"
 #include "api/solver/map/IMapFilter.h"
 #include "api/solver/map/IBundler.h"
+#include "api/geom/IUndistortPoints.h"
 #include "api/geom/IProject.h"
 #include "api/reloc/IKeyframeRetriever.h"
 #include "api/storage/ICovisibilityGraph.h"
@@ -101,6 +102,7 @@ int main(int argc, char *argv[])
 		auto mapFilter = xpcfComponentManager->resolve<api::solver::map::IMapFilter>();
 		auto bundler = xpcfComponentManager->resolve<api::solver::map::IBundler>("BundleFixedKeyframes");
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
+		auto undistortKeypoints = xpcfComponentManager->resolve<api::geom::IUndistortPoints>();
 		auto matchesFilter = xpcfComponentManager->resolve<features::IMatchesFilter>();
 		auto loopDetector = xpcfComponentManager->resolve<loop::ILoopClosureDetector>();
 		auto loopCorrector = xpcfComponentManager->resolve<loop::ILoopCorrector>();
@@ -126,6 +128,7 @@ int main(int argc, char *argv[])
 		mapping->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		projector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		pnpRansac->setCameraParameters(camParams.intrinsic, camParams.distortion);
+		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
 
 		// get properties
@@ -174,11 +177,12 @@ int main(int argc, char *argv[])
 			SRef<Image> displayImage = image->copy();
 
 			// feature extraction image
-			std::vector<Keypoint> keypoints;
+			std::vector<Keypoint> keypoints, undistortedKeypoints;
 			keypointsDetector->detect(image, keypoints);
+			undistortKeypoints->undistort(keypoints, undistortedKeypoints);
 			SRef<DescriptorBuffer> descriptors;
 			descriptorExtractor->extract(image, keypoints, descriptors);
-			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, descriptors, image, refKeyframe, pose);
+			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, refKeyframe, pose);
 
 			// Relocalization
 			if (lostTracking) {	

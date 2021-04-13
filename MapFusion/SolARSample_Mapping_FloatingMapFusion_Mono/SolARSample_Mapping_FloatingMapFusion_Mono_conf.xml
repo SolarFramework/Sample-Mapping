@@ -302,7 +302,7 @@
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
-			<property name="errorOutlier" type="float" value="5.0"/>
+			<property name="errorOutlier" type="float" value="10.0"/>
 			<property name="useSpanningTree" type="int" value="0"/>
 			<property name="isRobust" type="int" value="0"/>
 			<property name="fixedMap" type="int" value="0"/>

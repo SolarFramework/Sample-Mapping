@@ -251,7 +251,7 @@
 		<configure component="SolARSLAMBootstrapper">
 			<property name="hasPose" type="int" value="1"/>
 			<property name="nbMinInitPointCloud" type="int" value="50"/>
-			<property name="angleThres" type="float" value="0.05"/>
+			<property name="angleThres" type="float" value="0.08"/>
 		</configure>
 		<configure component="SolARSLAMTracking">
             <property name="minWeightNeighbor" type="float" value="50.0"/>
@@ -333,13 +333,9 @@
 			<property name="maxTriangulationAngle" type="float" value="2.0"/>
 			<property name="cheiralityCheck" type="int" value="1"/>
 		</configure>
-		<configure component="SolARKeyframeSelector">
-			<property name="minNbMatchesIsKeyframe" type="int" value="5"/>
-			<property name="minMeanDistanceIsKeyframe" type="float" value="0.04"/>
-		</configure>
 		<configure component="SolARKeyframeSelector" name="BootstrapProperties">
 			<property name="minNbMatchesIsKeyframe" type="int" value="50"/>
-			<property name="minMeanDistanceIsKeyframe" type="float" value="0.02"/>
+			<property name="minMeanDistanceIsKeyframe" type="float" value="0.04"/>
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
 			<property name="VOCpath" type="string" value="../../data/fbow_voc/akaze.fbow"/>

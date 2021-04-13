@@ -28,16 +28,15 @@
 #include "api/features/IDescriptorMatcher.h"
 #include "api/features/IMatchesFilter.h"
 #include "api/solver/pose/I3DTransformSACFinderFrom2D3D.h"
-#include "api/solver/map/IMapper.h"
 #include "api/solver/pose/I2D3DCorrespondencesFinder.h"
 #include "api/solver/map/IKeyframeSelector.h"
 #include "api/solver/map/IMapFilter.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IProject.h"
 #include "api/reloc/IKeyframeRetriever.h"
-#include "api/storage/ICovisibilityGraph.h"
 #include "api/storage/IKeyframesManager.h"
 #include "api/storage/IPointCloudManager.h"
+#include "api/storage/IMapManager.h"
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
 #include "api/slam/IBootstrapper.h"
@@ -82,9 +81,9 @@ int main(int argc, char *argv[])
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
 		auto viewerImage = xpcfComponentManager->resolve<display::IImageViewer>("viewerImage");
-		auto globalMapper = xpcfComponentManager->resolve<solver::map::IMapper>("globalMapper");
-		auto floatingMapper = xpcfComponentManager->resolve<solver::map::IMapper>("floatingMapper");
-		auto fusionMapper = xpcfComponentManager->resolve<solver::map::IMapper>("fusionMapper");
+		auto globalMapManager = xpcfComponentManager->resolve<storage::IMapManager>("globalMapper");
+		auto floatingMapManager = xpcfComponentManager->resolve<storage::IMapManager>("floatingMapper");
+		auto fusionMapManager = xpcfComponentManager->resolve<storage::IMapManager>("fusionMapper");
 		auto mapOverlapDetector = xpcfComponentManager->resolve<loop::IOverlapDetector>();
 		auto mapFusion = xpcfComponentManager->resolve<solver::map::IMapFusion>();
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
@@ -92,25 +91,36 @@ int main(int argc, char *argv[])
 		// Load camera intrinsics parameters
 		CameraParameters camParams = arDevice->getParameters(INDEX_USE_CAMERA);
 
-		if (globalMapper->loadFromFile() != FrameworkReturnCode::_SUCCESS) {
+		if (globalMapManager->loadFromFile() != FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("Cannot load global map");
 			return -1;
 		}
-		if (floatingMapper->loadFromFile() != FrameworkReturnCode::_SUCCESS) {
+		if (floatingMapManager->loadFromFile() != FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("Cannot load floating map");
 			return -1;
 		}
+
+		// get map
+		SRef<Map> floatingMap, globalMap;
+		floatingMapManager->getMap(floatingMap);
+		globalMapManager->getMap(globalMap);
+		LOG_INFO("Global map");
+		LOG_INFO("Number of point cloud: {}", globalMap->getConstPointCloud()->getNbPoints());
+		LOG_INFO("Number of keyframes: {}", globalMap->getConstKeyframeCollection()->getNbKeyframes());
+		LOG_INFO("Local map");
+		LOG_INFO("Number of point cloud: {}", floatingMap->getConstPointCloud()->getNbPoints());
+		LOG_INFO("Number of keyframes: {}", floatingMap->getConstKeyframeCollection()->getNbKeyframes());
 
 		Transform3Df sim3Transform;
 		std::vector<std::pair<uint32_t, uint32_t>>overlapsIndices;		
 		// detect overlap from global/floating map and extract sim3
 		LOG_INFO("Overlap detection: ");
-		if (mapOverlapDetector->detect(globalMapper, floatingMapper, sim3Transform, overlapsIndices) == FrameworkReturnCode::_SUCCESS) {
+		if (mapOverlapDetector->detect(globalMap, floatingMap, sim3Transform, overlapsIndices) == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("	->overlap sim3 from {} overlap cloud points: \n{}", overlapsIndices.size(), sim3Transform.matrix());
 			// map fusion
 			uint32_t nbMatches;
 			float error;
-			if (mapFusion->merge(floatingMapper, globalMapper, sim3Transform, nbMatches, error) == FrameworkReturnCode::_ERROR_) {
+			if (mapFusion->merge(floatingMap, globalMap, sim3Transform, nbMatches, error) == FrameworkReturnCode::_ERROR_) {
 				LOG_INFO("Cannot merge two maps");
 				return 0;
 			}
@@ -119,24 +129,19 @@ int main(int argc, char *argv[])
 			LOG_INFO("Error: {}", error);
 
 			// global bundle adjustment
-			globalBundler->setMapper(globalMapper);
+			globalBundler->setMap(globalMap);
 			double error_bundle  = globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
 			LOG_INFO("Error after bundler: {}", error_bundle);
 
 			// pruning
-            globalMapper->pointCloudPruning();
-            globalMapper->keyframePruning();
-			// display		
-			// get global map
-			SRef<IPointCloudManager> globalPointCloudManager;
-			SRef<IKeyframesManager> globalKeyframesManager;
-			globalMapper->getPointCloudManager(globalPointCloudManager);
-			globalMapper->getKeyframesManager(globalKeyframesManager);
+            globalMapManager->pointCloudPruning();
+            globalMapManager->keyframePruning();
 
+			// get keyframes and point cloud to display		
 			std::vector<SRef<Keyframe>> globalKeyframes;
 			std::vector<SRef<CloudPoint>> globalPointCloud;
-			globalKeyframesManager->getAllKeyframes(globalKeyframes);
-			globalPointCloudManager->getAllPoints(globalPointCloud);
+			globalMap->getConstKeyframeCollection()->getAllKeyframes(globalKeyframes);
+			globalMap->getConstPointCloud()->getAllPoints(globalPointCloud);
 
 			std::vector<Transform3Df> globalKeyframesPoses;
 			for (const auto &it : globalKeyframes)
@@ -148,8 +153,8 @@ int main(int argc, char *argv[])
 			}
 
 			// save the fusion map
-			fusionMapper->set(globalMapper);
-			fusionMapper->saveToFile();
+			fusionMapManager->setMap(globalMap);
+			fusionMapManager->saveToFile();
 		}
 		else {
 			LOG_INFO(" no overlaps detected")

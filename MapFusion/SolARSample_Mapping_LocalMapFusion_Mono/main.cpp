@@ -27,16 +27,15 @@
 #include "api/features/IDescriptorMatcher.h"
 #include "api/features/IMatchesFilter.h"
 #include "api/solver/pose/I3DTransformSACFinderFrom2D3D.h"
-#include "api/solver/map/IMapper.h"
 #include "api/solver/pose/I2D3DCorrespondencesFinder.h"
 #include "api/solver/map/IKeyframeSelector.h"
 #include "api/solver/map/IMapFilter.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IProject.h"
 #include "api/reloc/IKeyframeRetriever.h"
-#include "api/storage/ICovisibilityGraph.h"
 #include "api/storage/IKeyframesManager.h"
 #include "api/storage/IPointCloudManager.h"
+#include "api/storage/IMapManager.h"
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
 #include "api/slam/IBootstrapper.h"
@@ -80,9 +79,9 @@ int main(int argc, char *argv[])
         LOG_INFO("Start creating components");
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
-		auto globalMap = xpcfComponentManager->resolve<solver::map::IMapper>("globalMapper");
-		auto localMap = xpcfComponentManager->resolve<solver::map::IMapper>("localMapper");
-		auto fusionMap = xpcfComponentManager->resolve<solver::map::IMapper>("fusionMapper");
+		auto globalMapManager = xpcfComponentManager->resolve<storage::IMapManager>("globalMapper");
+		auto localMapManger = xpcfComponentManager->resolve<storage::IMapManager>("localMapper");
+		auto fusionMapManger = xpcfComponentManager->resolve<storage::IMapManager>("fusionMapper");
 		auto mapFusion = xpcfComponentManager->resolve<solver::map::IMapFusion>();
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();		
 		LOG_INFO("Components created!");
@@ -91,7 +90,7 @@ int main(int argc, char *argv[])
 		CameraParameters camParams = arDevice->getParameters(INDEX_USE_CAMERA);
 
 		// Load global map from file
-		if (globalMap->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
+		if (globalMapManager->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("Load global map done!");
 		}
 		else {
@@ -100,7 +99,7 @@ int main(int argc, char *argv[])
 		}		
 
 		// Load local map from file
-		if (localMap->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
+		if (localMapManger->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("Load local map done!");
 		}
 		else {
@@ -108,21 +107,16 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		// get keyframe mananger and point cloud mananger
-		SRef<IPointCloudManager> globalPointCloudManager, localPointCloudManager;
-		SRef<IKeyframesManager> globalKeyframesManager, localKeyframesManager;
-		globalMap->getPointCloudManager(globalPointCloudManager);
-		globalMap->getKeyframesManager(globalKeyframesManager);
-		localMap->getPointCloudManager(localPointCloudManager);
-		localMap->getKeyframesManager(localKeyframesManager);
-
+		// get map
+		SRef<Map> localMap, globalMap;
+		localMapManger->getMap(localMap);
+		globalMapManager->getMap(globalMap);
 		LOG_INFO("Global map");
-		LOG_INFO("Number of point cloud: {}", globalPointCloudManager->getNbPoints());
-		LOG_INFO("Number of keyframes: {}", globalKeyframesManager->getNbKeyframes());
-
+		LOG_INFO("Number of point cloud: {}", globalMap->getConstPointCloud()->getNbPoints());
+		LOG_INFO("Number of keyframes: {}", globalMap->getConstKeyframeCollection()->getNbKeyframes());
 		LOG_INFO("Local map");
-		LOG_INFO("Number of point cloud: {}", localPointCloudManager->getNbPoints());
-		LOG_INFO("Number of keyframes: {}", localKeyframesManager->getNbKeyframes());
+		LOG_INFO("Number of point cloud: {}", localMap->getConstPointCloud()->getNbPoints());
+		LOG_INFO("Number of keyframes: {}", localMap->getConstKeyframeCollection()->getNbKeyframes());
 
 		// load transformation matrix
 		Transform3Df transformLocalToGlobal;
@@ -151,17 +145,18 @@ int main(int argc, char *argv[])
 		LOG_INFO("Error: {}", error);
 
 		// global bundle adjustment
-		globalBundler->setMapper(globalMap);
+		globalBundler->setMap(globalMap);
 		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
 
 		// pruning
-		globalMap->pointCloudPruning();
-		globalMap->keyframePruning();		
-		// display		
+		globalMapManager->pointCloudPruning();
+		globalMapManager->keyframePruning();
+	
+		// get keyframes and point cloud to display		
 		std::vector<SRef<Keyframe>> globalKeyframes;
 		std::vector<SRef<CloudPoint>> globalPointCloud;
-		globalKeyframesManager->getAllKeyframes(globalKeyframes);
-		globalPointCloudManager->getAllPoints(globalPointCloud);
+		globalMap->getConstKeyframeCollection()->getAllKeyframes(globalKeyframes);
+		globalMap->getConstPointCloud()->getAllPoints(globalPointCloud);
 		std::vector<Transform3Df> globalKeyframesPoses;
 		for (const auto &it : globalKeyframes)
 			globalKeyframesPoses.push_back(it->getPose());
@@ -170,8 +165,8 @@ int main(int argc, char *argv[])
 				break;
 		}
 		// save the fusion map
-		fusionMap->set(globalMap);
-		fusionMap->saveToFile();
+		fusionMapManger->setMap(globalMap);
+		fusionMapManger->saveToFile();
     }
 
     catch (xpcf::Exception e)

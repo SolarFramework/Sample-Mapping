@@ -137,9 +137,9 @@
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="68dc9152-5199-11ea-8d77-2e728ce88125" name="IMapFilter" description="IMapFilter"/>
 		</component>
-		<component uuid="8e3c926a-0861-46f7-80b2-8abb5576692c" name="SolARMapper" description="SolARMapper">
+		<component uuid="8e3c926a-0861-46f7-80b2-8abb5576692c" name="SolARMapManager" description="SolARMapManager">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-			<interface uuid="90075c1b-915b-469d-b92d-41c5d575bf15" name="IMapper" description="IMapper"/>
+			<interface uuid="90075c1b-915b-469d-b92d-41c5d575bf15" name="IMapManager" description="IMapManager"/>
 		</component>
 		<component uuid="a2ef5542-029e-4fce-9974-0aea14b29d6f" name="SolARSBPatternReIndexer" description="SolARSBPatternReIndexer">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
@@ -221,7 +221,7 @@
 			<bind interface="I3DTransform" to="SolAR3DTransform"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" range="default|all" properties="BundleFixedKeyframesProperties"/>
-			<bind interface="IMapper" to="SolARMapper" scope="Singleton"/>
+			<bind interface="IMapManager" to="SolARMapManager" scope="Singleton"/>
 			<bind interface="IPointCloudManager" to="SolARPointCloudManager" scope="Singleton"/>
 			<bind interface="IKeyframesManager" to="SolARKeyframesManager" scope="Singleton"/>
 			<bind interface="ICovisibilityGraph" to="SolARCovisibilityGraph" scope="Singleton"/>
@@ -265,7 +265,7 @@
 			<property name="ratioCPRefKeyframe" type="float" value="0.5"/>
 			<property name="minTrackedPoints" type="int" value="200"/>
 		</configure>
-		<configure component="SolARMapper">
+		<configure component="SolARMapManager">
 			<property name="directory" type="string" value="../../data/map_hololens/mapA"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>

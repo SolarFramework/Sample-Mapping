@@ -24,11 +24,11 @@
 #include "api/display/I3DPointsViewer.h"
 #include "api/features/IKeypointDetector.h"
 #include "api/features/IDescriptorsExtractor.h"
-#include "api/solver/map/IMapper.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
 #include "api/reloc/IKeyframeRetriever.h"
-#include "api/storage/ICovisibilityGraph.h"
+#include "api/storage/IMapManager.h"
+#include "api/storage/ICovisibilityGraphManager.h"
 #include "api/storage/IKeyframesManager.h"
 #include "api/storage/IPointCloudManager.h"
 #include "api/loop/ILoopClosureDetector.h"
@@ -81,9 +81,9 @@ int main(int argc, char *argv[])
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
 		auto pointCloudManager = xpcfComponentManager->resolve<IPointCloudManager>();
 		auto keyframesManager = xpcfComponentManager->resolve<IKeyframesManager>();
-		auto covisibilityGraph = xpcfComponentManager->resolve<ICovisibilityGraph>();
+		auto covisibilityGraphManager = xpcfComponentManager->resolve<ICovisibilityGraphManager>();
 		auto keyframeRetriever = xpcfComponentManager->resolve<IKeyframeRetriever>();
-		auto mapper = xpcfComponentManager->resolve<solver::map::IMapper>();
+		auto mapManager = xpcfComponentManager->resolve<IMapManager>();
 		auto keypointsDetector = xpcfComponentManager->resolve<features::IKeypointDetector>();
 		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractor>();
 		auto bundler = xpcfComponentManager->resolve<api::solver::map::IBundler>("BundleFixedKeyframes");
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
 				LOG_DEBUG("New keyframe id: {}", keyframe->getId());			
 				// Local bundle adjustment
 				std::vector<uint32_t> bestIdx, bestIdxToOptimize;
-				covisibilityGraph->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx);
+				covisibilityGraphManager->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx);
 				if (bestIdx.size() < NB_LOCALKEYFRAMES)
 					bestIdxToOptimize = bestIdx;
 				else
@@ -217,11 +217,11 @@ int main(int argc, char *argv[])
 				double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdxToOptimize);
 				// map pruning
 				std::vector<SRef<CloudPoint>> localMap;
-				mapper->getLocalPointCloud(keyframe, minWeightNeighbor, localMap);
-				int nbRemovedCP = mapper->pointCloudPruning(localMap);
+				mapManager->getLocalPointCloud(keyframe, minWeightNeighbor, localMap);
+				int nbRemovedCP = mapManager->pointCloudPruning(localMap);
 				std::vector<SRef<Keyframe>> localKeyframes;
 				keyframesManager->getKeyframes(bestIdx, localKeyframes);
-				int nbRemovedKf = mapper->keyframePruning(localKeyframes);
+				int nbRemovedKf = mapManager->keyframePruning(localKeyframes);
 				LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
 				// try to loop detection
 				countNewKeyframes++;
@@ -241,8 +241,8 @@ int main(int argc, char *argv[])
 						// loop optimization
 						globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);						
 						// map pruning
-						mapper->pointCloudPruning();
-						mapper->keyframePruning();
+						mapManager->pointCloudPruning();
+						mapManager->keyframePruning();
 						countNewKeyframes = 0;
 						// update pose correction
 						Transform3Df transform = keyframe->getPose() * keyframeOldPose.inverse();
@@ -277,8 +277,8 @@ int main(int argc, char *argv[])
 		// global bundle adjustment
 		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
 		// map pruning
-		mapper->pointCloudPruning();
-		mapper->keyframePruning();
+		mapManager->pointCloudPruning();
+		mapManager->keyframePruning();
 		LOG_INFO("Nb keyframes of map: {}", keyframesManager->getNbKeyframes());
 		LOG_INFO("Nb cloud points of map: {}", pointCloudManager->getNbPoints());
 
@@ -296,7 +296,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Save map
-		mapper->saveToFile();
+		mapManager->saveToFile();
     }
 
     catch (xpcf::Exception e)

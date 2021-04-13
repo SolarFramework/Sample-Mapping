@@ -7,9 +7,9 @@
 		</component>
 	</module>
 	<module uuid="28b89d39-41bd-451d-b19e-d25a3d7c5797" name="SolARModuleTools"  description="SolARModuleTools"  path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleTools/0.9.4/lib/x86_64/shared">
-		<component uuid="8e3c926a-0861-46f7-80b2-8abb5576692c" name="SolARMapper" description="SolARMapper">
+		<component uuid="8e3c926a-0861-46f7-80b2-8abb5576692c" name="SolARMapManager" description="SolARMapManager">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-			<interface uuid="90075c1b-915b-469d-b92d-41c5d575bf15" name="IMapper" description="IMapper"/>
+			<interface uuid="90075c1b-915b-469d-b92d-41c5d575bf15" name="IMapManager" description="IMapManager"/>
 		</component>	
 		<component uuid="958165e9-c4ea-4146-be50-b527a9a851f0" name="SolARPointCloudManager" description="SolARPointCloudManager">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
@@ -19,9 +19,9 @@
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="2c147595-6c74-4f69-b63d-91e162c311ed" name="IKeyframesManager" description="IPointCloudManager"/>
 		</component>
-		<component uuid="17c7087f-3394-4b4b-8e6d-3f8639bb00ea" name="SolARCovisibilityGraph" description="SolARCovisibilityGraph">
+		<component uuid="17c7087f-3394-4b4b-8e6d-3f8639bb00ea" name="SolARCovisibilityGraphManager" description="SolARCovisibilityGraphManager">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-			<interface uuid="15455f5a-0e99-49e5-a3fb-39de3eeb5b9b" name="ICovisibilityGraph" description="ICovisibilityGraph"/>
+			<interface uuid="15455f5a-0e99-49e5-a3fb-39de3eeb5b9b" name="ICovisibilityGraphManager" description="ICovisibilityGraphManager"/>
 		</component>
 	</module>
 	<module uuid="b81f0b90-bdbc-11e8-a355-529269fb1459" name="SolARModuleFBOW" description="SolARModuleFBOW" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleFBOW/0.9.4/lib/x86_64/shared">
@@ -33,12 +33,12 @@
 		
 	<factory>
 		<bindings>			
-            <bind interface="IMapper" to="SolARMapper" range="default|all" name="mapViz" properties="mapViz"/>
+            <bind interface="IMapManager" to="SolARMapManager" range="default|all" name="mapViz" properties="mapViz"/>
 		</bindings>
 	</factory>
 	
     <properties>
-		<configure component="SolARMapper" name="mapViz">
+		<configure component="SolARMapManager" name="mapViz">
             <property name="directory" type="string" value="../../data/map_hololens/mapA"/>
             <property name="identificationFileName" type="string" value="identification.bin"/>
             <property name="coordinateFileName" type="string" value="coordinate.bin"/>

@@ -1,7 +1,7 @@
 # Sample-Mapping
 [![License](https://img.shields.io/github/license/SolARFramework/SolARModuleTools?style=flat-square&label=License)](https://www.apache.org/licenses/LICENSE-2.0)
 
-The samples demonstrates mapping features such as mapping, map extension, map fusion, map visualization.
+The samples demonstrates mapping features such as mapping, map extension, map visualization.
 
 The samples for mapping are open-source, designed by [b<>com](https://b-com.com/en), under [Apache v2 licence](https://www.apache.org/licenses/LICENSE-2.0).
 
@@ -23,7 +23,6 @@ To install the required data, just launch the following script:
 This script will install the following data into the `./data` folder:
 - The bag of words downloaded from our [GitHub releases](https://github.com/SolarFramework/binaries/releases/download/fbow%2F0.0.1%2Fwin/fbow_voc.zip) and unzipped in the `./data` folder.
 - Hololens captures (image and poses) downloaded from our Artifactory ([Loop_Desktop_A](https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/loopDesktopA.zip) and [Loop_Desktop_B](https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/loopDesktopB.zip)) and copied into the `./data/data_hololens` folder.
-- Maps produced from the previous captures and downloaded from our Artifactory ([mapA](https://artifact.b-com.com/solar-generic-local/maps/hololens/bcomLab/loopDesktopA.zip) and [mapB](https://artifact.b-com.com/solar-generic-local/maps/hololens/bcomLab/loopDesktopB.zip)) and copied into the `./data/map_hololens` folder.
 
 <strong>Loop_Desktop_A</strong> is a video sequence captured with a Hololens 1 around a desktop starting and finishing with the fiducial Marker A with a loop trajectory. A fiducial marker B is captured during the trajectory.
 
@@ -122,26 +121,3 @@ This sample allows to extend a map with a new capture. It will load a 3D map pre
 > #### Linux
 >
 	./run.sh ./SolARSample_Mapping_MapExtension
-
-### Map Fusion samples
-
-The two samples allow to fuse two maps previoulsy built:
-* <strong>Local Map Fusion</strong>: This fusion requires to specify the 3D transform between the two maps in the `TransformLocalToGlobal.txt` file. This 3D transform can be estimated with the OpenCV module test called `SolARTest_ModuleOpenCV_DeviceDualMarkerCalibration` which will estimate the transform between two markers, here the `FiducialMarkerA` reference of the `mapA`, and `FiducialMarkerB` reference of the `mapB` and also visible in the `loop_desktop_A` AR device capture.
-
-> #### Windows
->
-	SolARSample_Mapping_LocalMapFusion.exe
-
-> #### Linux
->
-	./run.sh ./SolARSample_Mapping_LocalMapFusion
-
-* <strong>Floating Map Fusion</strong>: This fusion will automatically detect overlaps between two maps based on a keyframe retrieval approach. The overlaps detection will estimate the 3D transform between the two maps, and the the sample will merge them.
-
-> #### Windows
->
-	SolARSample_Mapping_FloatingMapFusion.exe
-
-> #### Linux
->
-	./run.sh ./SolARSample_Mapping_FloatingMapFusion

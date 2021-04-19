@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<xpcf-registry autoAlias="true">
+
+<!-- Module generated from SolARFramework by xpcf_grpc_gen -->
+<module uuid="{e0de6da4-75cb-4698-9640-ecf336e90d53}" name="xpcfGrpcRemotingSolARFramework" description="xpcf remoting module for project SolARFramework" path="$XPCF_MODULE_ROOT/SolARBuild/xpcfGrpcRemotingSolARFramework/0.9.3/lib/x86_64/shared">
+    <component uuid="110a089c-0bb1-488e-b24b-c1b96bc9df3b" name="IMappingPipeline_grpcProxy" description="IMappingPipeline_grpcProxy grpc client proxy component">
+        <interface uuid="6c5b9edc-c78b-47fd-8cb2-2bf8d7ede4ea" name="XPCF::IInjectable" description="Provides dependency injection interface"/>
+        <interface uuid="98dba14f-6ef9-462e-a387-34756b4cba80" name="XPCF::IConfigurable" description="Provides generic configuration ability to any component through metadata parameters"/>
+        <interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>
+    </component>
+</module>
+
+<properties>
+    <configure component="110a089c-0bb1-488e-b24b-c1b96bc9df3b">
+        <property name="channelUrl" access="rw" type="string" value="0.0.0.0:50051"/>
+        <property name="channelCredentials" access="rw" type="uint" value="0"/>
+    </configure>
+</properties>
+
+</xpcf-registry>

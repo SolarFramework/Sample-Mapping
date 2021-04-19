@@ -27,6 +27,13 @@ namespace MAPPING {
 
     PipelineMappingMultiProcessing::PipelineMappingMultiProcessing():ConfigurableBase(xpcf::toUUID<PipelineMappingMultiProcessing>())
     {
+
+        #if NDEBUG
+            boost::log::core::get()->set_logging_enabled(false);
+        #endif
+
+        LOG_ADD_LOG_TO_CONSOLE();
+
         LOG_DEBUG("PipelineMappingMultiProcessing constructor");
 
         try {
@@ -156,7 +163,7 @@ namespace MAPPING {
 
     FrameworkReturnCode PipelineMappingMultiProcessing::init() {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing");
+        LOG_DEBUG("PipelineMappingMultiProcessing init");
 
         return FrameworkReturnCode::_SUCCESS;
     }
@@ -185,6 +192,7 @@ namespace MAPPING {
     FrameworkReturnCode PipelineMappingMultiProcessing::setObjectToTrack(const SRef<Trackable> trackableObject) {
 
         LOG_DEBUG("PipelineMappingMultiProcessing::setObjectToTrack");
+
         m_trackable = trackableObject;
         return (m_fiducialMarkerPoseEstimator->setTrackable(m_trackable));
     }

@@ -14,11 +14,11 @@ unzip -o loopDesktopB.zip -d ./data/data_hololens
 rm loopDesktopB.zip
 
 # Download maps
-curl https://artifact.b-com.com/solar-generic-local/maps/hololens/bcomLab/loopDesktopA.zip -L -o mapA.zip
+curl https://artifact.b-com.com/solar-generic-local/maps/hololens/bcomLab/mapLabA_linux_0_9_1.zip -L -o mapA.zip
 unzip -o mapA.zip -d ./data/map_hololens
 rm mapA.zip
 
-curl https://artifact.b-com.com/solar-generic-local/maps/hololens/bcomLab/loopDesktopB.zip -L -o mapB.zip
+curl https://artifact.b-com.com/solar-generic-local/maps/hololens/bcomLab/mapLabB_linux_0_9_1.zip -L -o mapB.zip
 unzip -o mapB.zip -d ./data/map_hololens
 rm mapB.zip
 

@@ -237,13 +237,13 @@
 	<properties>
 		<configure component="SolARDeviceDataLoader">
 			<property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
-                        <property name="pathToData" type="string" value="../../data/data_hololens/loop_desktop_A"/>
+			<property name="pathToData" type="string" value="../../data/data_hololens/loop_desktop_A"/>
 			<property name="delayTime" type="int" value="1"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
 			<property name="hasPose" type="int" value="1"/>
 			<property name="nbMinInitPointCloud" type="int" value="50"/>
-			<property name="angleThres" type="float" value="0.05"/>
+			<property name="angleThres" type="float" value="0.08"/>
 		</configure>
 		<configure component="SolARSLAMTracking">
                         <property name="minWeightNeighbor" type="float" value="50.0"/>
@@ -251,14 +251,14 @@
                         <property name="thresAngleViewDirection" type="float" value="0.8"/>
 		</configure>
 		<configure component="SolARSLAMMapping">
-                        <property name="minWeightNeighbor" type="float" value="5.0"/>
-                        <property name="maxNbNeighborKfs" type="int" value="8"/>
-                        <property name="nbPassedFrameAtLeast" type="int" value="1"/>
-                        <property name="ratioCPRefKeyframe" type="float" value="0.5"/>
-                        <property name="minTrackedPoints" type="int" value="200"/>
+			<property name="minWeightNeighbor" type="float" value="5.0"/>
+			<property name="maxNbNeighborKfs" type="int" value="8"/>
+			<property name="nbPassedFrameAtLeast" type="int" value="1"/>
+			<property name="ratioCPRefKeyframe" type="float" value="0.5"/>
+			<property name="minTrackedPoints" type="int" value="200"/>
 		</configure>
 		<configure component="SolARMapper">
-                        <property name="directory" type="string" value="../../data/map_hololens/mapA"/>
+			<property name="directory" type="string" value="../../data/map_local/mapA"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
@@ -327,7 +327,7 @@
 		</configure>
 		<configure component="SolARKeyframeSelector" name="BootstrapProperties">
 			<property name="minNbMatchesIsKeyframe" type="int" value="50"/>
-			<property name="minMeanDistanceIsKeyframe" type="float" value="0.02"/>
+			<property name="minMeanDistanceIsKeyframe" type="float" value="0.04"/>
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
 			<property name="VOCpath" type="string" value="../../data/fbow_voc/akaze.fbow"/>
@@ -340,7 +340,7 @@
 			<property name="iterationsCount" type="int" value="500"/>
 			<property name="reprojError" type="float" value="10.0"/>
 			<property name="confidence" type="float" value="0.9"/>
-                        <property name="minNbInliers" type="int" value="20"/>
+			<property name="minNbInliers" type="int" value="20"/>
 		</configure>
 		<configure component="SolARPoseFinderFrom2D2DOpencv">
 			<property name="confidence" type="float" value="0.99"/>
@@ -373,7 +373,7 @@
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
-			<property name="errorOutlier" type="float" value="5.0"/>
+			<property name="errorOutlier" type="float" value="10.0"/>
 			<property name="useSpanningTree" type="int" value="0"/>
 			<property name="isRobust" type="int" value="0"/>
 			<property name="fixedMap" type="int" value="0"/>
@@ -384,7 +384,7 @@
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
-			<property name="errorOutlier" type="float" value="5.0"/>
+			<property name="errorOutlier" type="float" value="10.0"/>
 			<property name="useSpanningTree" type="int" value="0"/>
 			<property name="isRobust" type="int" value="0"/>
 			<property name="fixedMap" type="int" value="0"/>

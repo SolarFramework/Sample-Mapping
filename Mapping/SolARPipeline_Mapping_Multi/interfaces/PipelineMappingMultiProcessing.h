@@ -133,7 +133,8 @@ namespace MAPPING {
         /// @param[in] image: the input image to process
         /// @param[in] pose: the input pose to process
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> image, const datastructure::Transform3Df & pose) override;
+        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> image,
+                                                  const datastructure::Transform3Df & pose) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization
         /// (resulting from all mapping processing since the start of the pipeline)
@@ -141,7 +142,7 @@ namespace MAPPING {
         /// @param[out] keyframePoses: pipeline current keyframe poses
         /// @return FrameworkReturnCode::_SUCCESS if data are available, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode getDataForVisualization(std::vector<SRef<datastructure::CloudPoint>> & outputPointClouds,
-                                                            std::vector<datastructure::Transform3Df> & keyframePoses) const override;
+                                                    std::vector<datastructure::Transform3Df> & keyframePoses) const override;
 
     private:
 
@@ -193,6 +194,10 @@ namespace MAPPING {
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframeLoop;
+
+
+        /// @brief Initialize class members
+        void initClassMembers();
 
         /// @brief Correct pose and do bootstrap using an image and the associated pose
         /// This method must be called with successive pairs of (image, pose)

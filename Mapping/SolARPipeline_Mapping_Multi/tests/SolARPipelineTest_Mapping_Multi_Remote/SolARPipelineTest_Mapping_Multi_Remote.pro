@@ -68,13 +68,15 @@ win32 {
 }
 
 DISTFILES += \
+    SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml \
     packagedependencies.txt \
     xpcfGrpcPipelineMappingMultiComponentClient.xml \
     xpcfGrpcPipelineMappingMultiComponentServer.xml
 
 xml_files.path = $${TARGETDEPLOYDIR}
 xml_files.files =  xpcfGrpcPipelineMappingMultiComponentClient.xml \
-                   xpcfGrpcPipelineMappingMultiComponentServer.xml
+                   xpcfGrpcPipelineMappingMultiComponentServer.xml \
+                   SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml
 
 INSTALLS += xml_files
 

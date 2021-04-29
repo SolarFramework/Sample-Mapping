@@ -46,9 +46,6 @@ xpcf::DelegateTask * gClientViewerTask = 0;
 
 // Viewer used by viewer client
 SRef<api::display::I3DPointsViewer> gViewer3D = 0;
-// Point clouds and keyframe poses used by client viewer
-std::vector<SRef<CloudPoint>> gPointClouds;
-std::vector<Transform3Df> gKeyframePoses;
 
 // Components used by producer client
 SRef<input::devices::IARDevice> gArDevice = 0;
@@ -93,8 +90,14 @@ auto fnClientProducer = []() {
 // Fonction for viewer client thread
 auto fnClientViewer = []() {
 
+    // Point clouds and keyframe poses used by client viewer
+    std::vector<SRef<CloudPoint>> pointClouds;
+    std::vector<Transform3Df> keyframePoses;
+
     // Try to get point clouds and key frame poses to display
-    if (gMappingPipelineMulti->getDataForVisualization(gPointClouds, gKeyframePoses) == FrameworkReturnCode::_SUCCESS) {
+    if (gMappingPipelineMulti->getDataForVisualization(pointClouds, keyframePoses) == FrameworkReturnCode::_SUCCESS) {
+
+        LOG_DEBUG("Viewer client: get point cloud and keyframe poses");
 
         if (gViewer3D == 0) {
             gViewer3D = gXpcfComponentManager->resolve<display::I3DPointsViewer>();
@@ -102,7 +105,11 @@ auto fnClientViewer = []() {
         }
 
         // Display new data
-        gViewer3D->display(gPointClouds, gKeyframePoses[gKeyframePoses.size()-1], gKeyframePoses, {}, {});
+        gViewer3D->display(pointClouds, keyframePoses[keyframePoses.size()-1], keyframePoses, {}, {});
+
+    }
+    else {
+        LOG_DEBUG("Viewer client: nothing to display");
     }
 };
 

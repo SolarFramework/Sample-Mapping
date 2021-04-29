@@ -12,6 +12,7 @@
 #include <xpcf/api/IComponentManager.h>
 #include <xpcf/core/helpers.h>
 #include <boost/thread/thread.hpp>
+#include <boost/log/core.hpp>
 #include <signal.h>
 
 #include "core/Log.h"
@@ -20,7 +21,6 @@
 #include "api/input/files/ITrackableLoader.h"
 #include "datastructure/FiducialMarker.h"
 #include "api/display/IImageViewer.h"
-#include "api/display/I3DPointsViewer.h"
 
 using namespace std;
 using namespace SolAR;
@@ -38,13 +38,6 @@ SRef<pipeline::IMappingPipeline> gMappingPipelineMulti = 0;
 
 // Global client threads
 xpcf::DelegateTask * gClientProducerTask = 0;
-xpcf::DelegateTask * gClientViewerTask = 0;
-
-// Viewer used by viewer client
-SRef<display::I3DPointsViewer> gViewer3D = 0;
-// Point clouds and keyframe poses used by client viewer
-vector<SRef<CloudPoint>> gPointClouds;
-vector<Transform3Df> gKeyframePoses;
 
 // Components used by producer client
 SRef<input::devices::IARDevice> gArDevice = 0;
@@ -108,24 +101,6 @@ auto fnClientProducer = []() {
     }
 };
 
-// Fonction for viewer client thread
-auto fnClientViewer = []() {
-
-    // Try to get point clouds and key frame poses to display
-    if (gMappingPipelineMulti->getDataForVisualization(gPointClouds, gKeyframePoses) == FrameworkReturnCode::_SUCCESS) {
-
-        if (gViewer3D == 0) {
-            gViewer3D = gXpcfComponentManager->resolve<display::I3DPointsViewer>();
-            LOG_INFO("Viewer client: I3DPointsViewer component created");
-        }
-
-        // Display new data
-        gViewer3D->display(gPointClouds, gKeyframePoses[gKeyframePoses.size()-1], gKeyframePoses, {}, {});
-
-    }
-};
-
-
 // Return SolAR Framework return code text value
 string getReturnCodeTextValue (SolAR::FrameworkReturnCode return_code) {
 
@@ -175,17 +150,10 @@ static void SigInt(int signo) {
     if (gClientProducerTask != 0)
         gClientProducerTask->stop();
 
-    LOG_INFO("Stop viewer client thread");
-
-    if (gClientViewerTask != 0)
-        gClientViewerTask->stop();
-
     LOG_INFO("Stop mapping pipeline process");
 
     if (gMappingPipelineMulti != 0)
         gMappingPipelineMulti->stop();
-
-    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
     LOG_INFO("End of test");
 
@@ -203,8 +171,8 @@ int main(int argc, char* argv[])
     // Signal interruption function (Ctrl + C)
     signal(SIGINT, SigInt);
 
-    cxxopts::Options option_list("xpcf_grpc_client",
-                                 "xpcf_grpc_client - The commandline interface to the xpcf grpc client test application.\n");
+    cxxopts::Options option_list("SolARPipelineTest_Mapping_Multi_Remote_Producer",
+                                 "SolARPipelineTest_Mapping_Multi_Remote_Producer - The commandline interface to the xpcf grpc client test application.\n");
     option_list.add_options()
             ("h,help", "display this help and exit")
             ("v,version", "display version information and exit")
@@ -216,7 +184,7 @@ int main(int argc, char* argv[])
         print_help(option_list);
     else if (options.count("version"))
     {
-        cout << "xpcf_grpc_client version MYVERSION \n";
+        cout << "SolARPipelineTest_Mapping_Multi_Remote_Producer version MYVERSION \n";
         cout << '\n';
     }
     else if (!options.count("file") || options["file"].as<string>().empty()) {
@@ -231,6 +199,7 @@ int main(int argc, char* argv[])
 
         string file = options["file"].as<string>();
         LOG_INFO("Load Client Remote Mapping Pipeline configuration file: {}", file);
+
         if (gXpcfComponentManager->load(file.c_str()) == org::bcom::xpcf::_SUCCESS)
         {
             LOG_INFO("Resolve IMappingPipeline interface");
@@ -243,95 +212,83 @@ int main(int argc, char* argv[])
 
         SolAR::FrameworkReturnCode result;
 
-        // Manage producer client thread
-        if (gXpcfComponentManager->load("SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml") == org::bcom::xpcf::_SUCCESS)
-        {
-            LOG_INFO("Producer client configuration file loaded");
+        gArDevice = gXpcfComponentManager->resolve<SolAR::api::input::devices::IARDevice>();
+        LOG_INFO("Remote producer client: AR device component created");
 
-            gArDevice = gXpcfComponentManager->resolve<SolAR::api::input::devices::IARDevice>();
-            LOG_INFO("Producer client: AR device component created");
+        auto trackableLoader = gXpcfComponentManager->resolve<SolAR::api::input::files::ITrackableLoader>();
+        LOG_INFO("Remote producer client: Trackable loader component created");
 
-            auto trackableLoader = gXpcfComponentManager->resolve<SolAR::api::input::files::ITrackableLoader>();
-            LOG_INFO("Producer client: Trackable loader component created");
+        gImageViewer = gXpcfComponentManager->resolve<SolAR::api::display::IImageViewer>();
+        LOG_INFO("Remote producer client: AR device component created");
 
-            gImageViewer = gXpcfComponentManager->resolve<SolAR::api::display::IImageViewer>();
-            LOG_INFO("Producer client: AR device component created");
+        // Connect remotely to the HoloLens streaming app
+        if (gArDevice->start() == FrameworkReturnCode::_SUCCESS) {
 
+            // Load camera intrinsics parameters
+            CameraParameters camParams;
+            camParams = gArDevice->getParameters(0);
 
-            // Connect remotely to the HoloLens streaming app
-            if (gArDevice->start() == FrameworkReturnCode::_SUCCESS) {
+            result = gMappingPipelineMulti->setCameraParameters(camParams);
+            LOG_INFO("Remote producer client: Set mapping pipeline camera parameters result = {}",
+                     getReturnCodeTextValue(result));
 
-                // Load camera intrinsics parameters
-                CameraParameters camParams;
-                camParams = gArDevice->getParameters(0);
-
-                result = gMappingPipelineMulti->setCameraParameters(camParams);
-                LOG_INFO("Producer client: Set mapping pipeline camera parameters result = {}",
-                         getReturnCodeTextValue(result));
-
-
-                LOG_INFO("Producer client: Load fiducial marker description file");
-                SRef<Trackable> trackableObject;
-                if (trackableLoader->loadTrackable(trackableObject) != FrameworkReturnCode::_SUCCESS)
-                {
-                    LOG_INFO("Cannot load fiducial marker");
-                    return -1;
-                }
-
-                if (trackableObject != 0) {
-                    LOG_INFO("Producer client: Trackable object created: url = {}", trackableObject->getURL());
-
-                    result = gMappingPipelineMulti->setObjectToTrack(trackableObject);
-                    LOG_INFO("Producer client: Set mapping pipeline fiducial marker result = {}",
-                             getReturnCodeTextValue(result));
-
-                    LOG_INFO("Producer client: Start remote mapping pipeline");
-
-                    if (gMappingPipelineMulti->start() == FrameworkReturnCode::_SUCCESS) {
-                        LOG_INFO("Start producer client thread");
-
-                        gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
-                        gClientProducerTask->start();
-                    }
-                    else {
-                        LOG_ERROR("Cannot start mapping pipeline");
-                    }
-                }
-                else {
-                    LOG_INFO("Error while loading fiducial marker");
-                    return -1;
-                }
-
-            }
-            else {
-                LOG_INFO("Cannot start AR device loader");
+            LOG_INFO("Remote producer client: Load fiducial marker description file");
+            SRef<Trackable> trackableObject;
+            if (trackableLoader->loadTrackable(trackableObject) != FrameworkReturnCode::_SUCCESS)
+            {
+                LOG_INFO("Cannot load fiducial marker");
                 return -1;
             }
+
+            if (trackableObject != 0) {
+                LOG_INFO("Remote producer client: Trackable object created: url = {}", trackableObject->getURL());
+
+                result = gMappingPipelineMulti->setObjectToTrack(trackableObject);
+                LOG_INFO("Remote producer client: Set mapping pipeline fiducial marker result = {}",
+                         getReturnCodeTextValue(result));
+
+                LOG_INFO("Remote producer client: Start remote mapping pipeline");
+
+                if (gMappingPipelineMulti->start() == FrameworkReturnCode::_SUCCESS) {
+                    LOG_INFO("Start remote producer client thread");
+
+                    gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
+                    gClientProducerTask->start();
+                }
+                else {
+                    LOG_ERROR("Cannot start mapping pipeline");
+                }
+            }
+            else {
+                LOG_INFO("Error while loading fiducial marker");
+                return -1;
+            }
+
         }
         else {
-            LOG_INFO("Failed to load the producer client configuration file");
-            return -1;
-        }
-
-        // Manage viewer client thread
-        if (gXpcfComponentManager->load("SolARPipelineTest_Mapping_Multi_Viewer_conf.xml") == org::bcom::xpcf::_SUCCESS)
-        {
-            LOG_INFO("Viewer client configuration file loaded");
-
-            LOG_INFO("Start viewer client thread");
-
-            gClientViewerTask  = new xpcf::DelegateTask(fnClientViewer);
-            gClientViewerTask->start();
-        }
-        else {
-            LOG_ERROR("Failed to load the viewer client configuration file");
+            LOG_INFO("Cannot start AR device loader");
             return -1;
         }
 
         LOG_INFO("\n\n***** Control+C to stop *****\n");
 
-        // Wait for interruption
-        while (true);
+        // Wait for end of images or interruption
+        while (gImageToSend) {
+
+        }
+
+        LOG_INFO("Stop producer client thread");
+
+        if (gClientProducerTask != 0)
+            gClientProducerTask->stop();
+
+        LOG_INFO("Stop mapping pipeline processing");
+
+        if (gMappingPipelineMulti != 0)
+            gMappingPipelineMulti->stop();
+
+        LOG_INFO("End of test");
+
     }
     catch (xpcf::Exception & e) {
         LOG_INFO("The following exception has been caught: {}", e.what());

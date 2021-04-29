@@ -1,5 +1,5 @@
 ## global defintions : target lib name, version
-TARGET = SolARPipelineTest_Mapping_Multi_Remote
+TARGET = SolARPipelineTest_Mapping_Multi_Remote_Producer
 VERSION=0.9.3
 
 CONFIG += c++1z
@@ -36,7 +36,7 @@ PROJECTCONFIG = QTVS
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/templateappconfig.pri)))  # Shell_quote & shell_path required for visual on windows
 
 SOURCES += \
-    SolARPipelineTest_Mapping_Multi_Remote.cpp
+    SolARPipelineTest_Mapping_Multi_Remote_Producer.cpp
 
 
 linux {
@@ -69,14 +69,10 @@ win32 {
 
 DISTFILES += \
     SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml \
-    packagedependencies.txt \
-    xpcfGrpcPipelineMappingMultiComponentClient.xml \
-    xpcfGrpcPipelineMappingMultiComponentServer.xml
+    packagedependencies.txt
 
 xml_files.path = $${TARGETDEPLOYDIR}
-xml_files.files =  xpcfGrpcPipelineMappingMultiComponentClient.xml \
-                   xpcfGrpcPipelineMappingMultiComponentServer.xml \
-                   SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml
+xml_files.files =  SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml
 
 INSTALLS += xml_files
 

@@ -103,7 +103,6 @@ auto fnClientViewer = []() {
 
         // Display new data
         gViewer3D->display(gPointClouds, gKeyframePoses[gKeyframePoses.size()-1], gKeyframePoses, {}, {});
-
     }
 };
 

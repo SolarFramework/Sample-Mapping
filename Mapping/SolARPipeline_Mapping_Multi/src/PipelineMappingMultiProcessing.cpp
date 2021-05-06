@@ -29,12 +29,6 @@ namespace MAPPING {
     PipelineMappingMultiProcessing::PipelineMappingMultiProcessing():ConfigurableBase(xpcf::toUUID<PipelineMappingMultiProcessing>())
     {
 
-        #if NDEBUG
-            boost::log::core::get()->set_logging_enabled(false);
-        #endif
-
-        LOG_ADD_LOG_TO_CONSOLE();
-
         LOG_DEBUG("PipelineMappingMultiProcessing constructor");
 
         try {

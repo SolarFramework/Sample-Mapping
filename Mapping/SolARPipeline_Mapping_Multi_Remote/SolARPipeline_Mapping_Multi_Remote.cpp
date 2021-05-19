@@ -13,6 +13,9 @@
 #include <cstdlib>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/detail/utf8_codecvt_facet.hpp>
+#include "core/Log.h"
+
+using namespace SolAR;
 
 namespace fs = boost::filesystem;
 
@@ -32,6 +35,12 @@ void print_error(const std::string& msg)
 
 int main(int argc, char* argv[])
 {
+#if NDEBUG
+    boost::log::core::get()->set_logging_enabled(false);
+#endif
+
+    LOG_ADD_LOG_TO_CONSOLE();
+
     fs::detail::utf8_codecvt_facet utf8;
     SRef<xpcf::IComponentManager> cmpMgr = xpcf::getComponentManagerInstance();
     cmpMgr->bindLocal<xpcf::IGrpcServerManager,xpcf::GrpcServerManager>();
@@ -50,12 +59,15 @@ int main(int argc, char* argv[])
              cxxopts::value<std::string>());
 
     auto options = option_list.parse(argc, argv);
-    if (options.count("help"))
+    if (options.count("help")) {
         print_help(option_list);
+        return 0;
+    }
     else if (options.count("version"))
     {
-        std::cout << "SolARPipeline_Mapping_Multi_Remote version MYVERSION \n";
+        std::cout << "SolARPipeline_Mapping_Multi_Remote version 0.9.3 \n";
         std::cout << '\n';
+        return 0;
     }
     else if ((!options.count("file") || options["file"].as<std::string>().empty())
              && (!options.count("folder") || options["folder"].as<std::string>().empty())) {

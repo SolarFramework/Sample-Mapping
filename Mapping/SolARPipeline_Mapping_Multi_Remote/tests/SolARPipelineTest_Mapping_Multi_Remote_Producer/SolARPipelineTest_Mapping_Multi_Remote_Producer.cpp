@@ -180,12 +180,15 @@ int main(int argc, char* argv[])
              cxxopts::value<string>());
 
     auto options = option_list.parse(argc, argv);
-    if (options.count("help"))
+    if (options.count("help")) {
         print_help(option_list);
+        return 0;
+    }
     else if (options.count("version"))
     {
-        cout << "SolARPipelineTest_Mapping_Multi_Remote_Producer version MYVERSION \n";
+        cout << "SolARPipelineTest_Mapping_Multi_Remote_Producer version 0.9.3 \n";
         cout << '\n';
+        return 0;
     }
     else if (!options.count("file") || options["file"].as<string>().empty()) {
         print_error("missing one of file or database dir argument");

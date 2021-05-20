@@ -1,47 +1,14 @@
 node("master") {
 
     /*
-    *  MapExtension
-    */
-    SolArModulePipeline {
-        moduleName="SolARSample_Mapping_MapExtension_Mono"
-        dirName="SolARBuild"
-        buildDir="MapExtension/SolARSample_Mapping_MapExtension_Mono"
-        makeTarget="install install_deps"
-        android=false
-        packageScripts="bundleSamples"
-    }
-
-    /*
-    *  MapFusion
-    */
-    SolArModulePipeline {
-        moduleName="SolARSample_Mapping_FloatingMapFusion_Mono"
-        dirName="SolARBuild"
-        buildDir="MapFusion/SolARSample_Mapping_FloatingMapFusion_Mono"
-        makeTarget="install install_deps"
-        android=false
-        packageScripts="bundleSamples"
-    }
-
-    /*
-    *  Mapping
-    */
+     *  Pipelines
+     */
     SolArModulePipeline {
         moduleName="SolARPipeline_Mapping_Mono"
         dirName="SolARBuild"
         buildDir="Mapping/SolARPipeline_Mapping_Mono"
         android=true
         makeTarget="install install_deps"       
-    }
-
-    SolArModulePipeline {
-        moduleName="SolARSample_Mapping_Mono"
-        dirName="SolARBuild"
-        buildDir="Mapping/SolARSample_Mapping_Mono,Mapping/SolARPipeline_Mapping_Mono/tests/SolARPipelineTest_Mapping_Mono"
-        makeTarget="install install_deps"
-        android=false
-        packageScripts="bundleSamples"
     }
 
     SolArModulePipeline {
@@ -52,33 +19,14 @@ node("master") {
         makeTarget="install install_deps"
     }
 
-    SolArModulePipeline {
-        moduleName="SolARSample_Mapping_Multi"
-        dirName="SolARBuild"
-        buildDir="Mapping/SolARSample_Mapping_Multi,Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi"
-        makeTarget="install install_deps"
-        android=false
-        packageScripts="bundleSamples"
-    }
-
-
-    SolArModulePipeline {
-        moduleName="SolARSample_Mapping_LocalMapFusion_Mono"
-        dirName="SolARBuild"
-        buildDir="MapFusion/SolARSample_Mapping_LocalMapFusion_Mono"
-        makeTarget="install install_deps"
-        android=false
-        packageScripts="bundleSamples"
-    }
-
 
     /*
-    *  MapViz
-    */
+     *  Samples
+     */
     SolArModulePipeline {
-        moduleName="SolARSample_Mapping_MapVisualizer"
+        moduleName="SolARSample_Mapping_MapExtension_Mono"
         dirName="SolARBuild"
-        buildDir="MapViz"
+        buildDir="MapExtension/SolARSample_Mapping_MapExtension_Mono,MapFusion/SolARSample_Mapping_FloatingMapFusion_Mono,Mapping/SolARSample_Mapping_Mono,Mapping/SolARPipeline_Mapping_Mono/tests/SolARPipelineTest_Mapping_Mono,Mapping/SolARSample_Mapping_Multi,Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi,MapFusion/SolARSample_Mapping_LocalMapFusion_Mono,MapViz"
         makeTarget="install install_deps"
         android=false
         packageScripts="bundleSamples"

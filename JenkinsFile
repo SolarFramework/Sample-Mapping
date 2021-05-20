@@ -1,75 +1,89 @@
 node("master") {
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="MapExtension/SolARSample_Mapping_MapExtension_Mono"
-    android=false
-} 
+    /*
+    *  MapExtension
+    */
+    SolArModulePipeline {
+        moduleName="SolARSample_Mapping_MapExtension_Mono"
+        dirName="SolARBuild"
+        buildDir="MapExtension/SolARSample_Mapping_MapExtension_Mono"
+        makeTarget="install install_deps"
+        android=false
+        packageScripts="bundleSamples"
+    }
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="MapFusion/SolARSample_Mapping_FloatingMapFusion_Mono"
-    android=false
-}    
+    /*
+    *  MapFusion
+    */
+    SolArModulePipeline {
+        moduleName="SolARSample_Mapping_FloatingMapFusion_Mono"
+        dirName="SolARBuild"
+        buildDir="MapFusion/SolARSample_Mapping_FloatingMapFusion_Mono"
+        makeTarget="install install_deps"
+        android=false
+        packageScripts="bundleSamples"
+    }
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="MapFusion/SolARSample_Mapping_LocalMapFusion_Mono"
-    android=false
-}
+    /*
+    *  Mapping
+    */
+    SolArModulePipeline {
+        moduleName="SolARPipeline_Mapping_Mono"
+        dirName="SolARBuild"
+        buildDir="Mapping/SolARPipeline_Mapping_Mono"
+        android=true
+        makeTarget="install install_deps"       
+    }
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="Mapping/SolARSample_Mapping_Mono"
-    android=false
-}
+    SolArModulePipeline {
+        moduleName="SolARSample_Mapping_Mono"
+        dirName="SolARBuild"
+        buildDir="Mapping/SolARSample_Mapping_Mono,Mapping/SolARPipeline_Mapping_Mono/tests/SolARPipelineTest_Mapping_Mono"
+        makeTarget="install install_deps"
+        android=false
+        packageScripts="bundleSamples"
+    }
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="Mapping/SolARSample_Mapping_Multi"
-    android=false
-}
+    SolArModulePipeline {
+        moduleName="SolARPipeline_Mapping_Multi"
+        dirName="SolARBuild"
+        buildDir="Mapping/SolARPipeline_Mapping_Multi"
+        android=true
+        makeTarget="install install_deps"
+    }
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="Mapping/SolARPipeline_Mapping_Mono"
-    android=false
-}
+    SolArModulePipeline {
+        moduleName="SolARSample_Mapping_Multi"
+        dirName="SolARBuild"
+        buildDir="Mapping/SolARSample_Mapping_Multi,Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi"
+        makeTarget="install install_deps"
+        android=false
+        packageScripts="bundleSamples"
+    }
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="Mapping/SolARPipeline_Mapping_Mono/tests/SolARPipelineTest_Mapping_Mono"
-    android=false
-}
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="Mapping/SolARPipeline_Mapping_Multi"
-    android=false
-}
+    SolArModulePipeline {
+        moduleName="SolARSample_Mapping_LocalMapFusion_Mono"
+        dirName="SolARBuild"
+        buildDir="MapFusion/SolARSample_Mapping_LocalMapFusion_Mono"
+        makeTarget="install install_deps"
+        android=false
+        packageScripts="bundleSamples"
+    }
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi"
-    android=false
-}
 
-SolArModulePipeline {
-    moduleName="Mapping"
-    dirName="SolARBuild"
-    buildDir="MapViz"
-    android=false
-}
+    /*
+    *  MapViz
+    */
+    SolArModulePipeline {
+        moduleName="SolARSample_Mapping_MapVisualizer"
+        dirName="SolARBuild"
+        buildDir="MapViz"
+        makeTarget="install install_deps"
+        android=false
+        packageScripts="bundleSamples"
+    }
 
-}
+} // node('master')
 
 

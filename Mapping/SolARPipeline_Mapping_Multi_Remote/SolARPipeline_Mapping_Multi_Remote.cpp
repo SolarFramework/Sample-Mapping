@@ -53,9 +53,9 @@ int main(int argc, char* argv[])
     option_list.add_options()
             ("h,help", "display this help and exit")
             ("v,version", "display version information and exit")
-            ("f,file", "xpcf grpc server configuration file",
+            ("m,modules", "XPCF modules configuration file",
              cxxopts::value<std::string>())
-            ("d,folder", "xpcf grpc server configuration folder (every xpcf xml file in the folder is loaded)",
+            ("p,properties", "XPCF properties configuration file",
              cxxopts::value<std::string>());
 
     auto options = option_list.parse(argc, argv);
@@ -69,20 +69,24 @@ int main(int argc, char* argv[])
         std::cout << '\n';
         return 0;
     }
-    else if ((!options.count("file") || options["file"].as<std::string>().empty())
-             && (!options.count("folder") || options["folder"].as<std::string>().empty())) {
-        print_error("missing one of file or folder argument, using " + configSrc + " folder as default");
-        cmpMgr->load(configSrc.c_str(),false);
+    else if ((!options.count("modules") || options["modules"].as<std::string>().empty())
+          || (!options.count("properties") || options["properties"].as<std::string>().empty())) {
+        print_error("missing one of modules (-m) or properties (-p) argument");
+        return -1;
     }
 
-    if (options.count("file") && !options["file"].as<std::string>().empty()) {
-        configSrc = options["file"].as<std::string>();
-        cmpMgr->load(configSrc.c_str());
-    }
-    if (options.count("folder") && !options["folder"].as<std::string>().empty()) {
-        configSrc = options["folder"].as<std::string>();
-        cmpMgr->load(configSrc.c_str(),false);
-    }
+    configSrc = options["modules"].as<std::string>();
+
+    std::cout << "Load modules configuration file: " << configSrc << "\n";
+
+    cmpMgr->load(configSrc.c_str());
+
+    configSrc = options["properties"].as<std::string>();
+
+    std::cout << "Load properties configuration file: " << configSrc << "\n";
+
+    cmpMgr->load(configSrc.c_str());
+
     auto serverMgr = cmpMgr->resolve<xpcf::IGrpcServerManager>();
     char * serverURL = getenv("XPCF_GRPC_SERVER_URL");
     if (serverURL != nullptr) {

@@ -4,26 +4,27 @@ namespace org { namespace bcom { namespace xpcf {
 
 GrpcServerManager::GrpcServerManager():ConfigurableBase(toMap<GrpcServerManager>())
 {
-    std::cout<<"ConfigurableBase\n";
+    std::cout<<"ConfigurableBase" << std::endl;
 
     declareInterface<IGrpcServerManager>(this);
     declareProperty("server_address",m_serverAddress);
+    declareProperty("server_port",m_serverPort);
     declareProperty("serverCredentials",m_serverCredentials);
     declareProperty("max_receive_message_size", m_receiveMessageMaxSize);
     declareProperty("max_send_message_size", m_sendMessageMaxSize);
     declareInjectable<IGrpcService>(m_services);
 
-    std::cout<< "this->getNbInterfaces() = " << this->getNbInterfaces() << "\n";
+    std::cout<< "this->getNbInterfaces() = " << this->getNbInterfaces() << std::endl;
 }
 
 GrpcServerManager::~GrpcServerManager()
 {
-    std::cout<<"~GrpcServerManager\n";
+    std::cout<<"~GrpcServerManager" << std::endl;
 }
 
 void GrpcServerManager::unloadComponent ()
 {
-    std::cout<<"unloadComponent\n";
+    std::cout<<"unloadComponent" << std::endl;
 
     // provide component cleanup strategy
     // default strategy is to delete self, uncomment following line in this case :
@@ -62,14 +63,13 @@ void GrpcServerManager::registerService(SRef<IGrpcService> service)
 
 void GrpcServerManager::registerService(const grpc::string & host, SRef<IGrpcService> service)
 {
-    std::cout<<"registerService 3\n";
-
     registerService(host, service->getService());
 }
 
 void GrpcServerManager::runServer()
 {
-    m_builder.AddListeningPort(m_serverAddress, GrpcHelper::getServerCredentials(static_cast<grpcCredentials>(m_serverCredentials)));
+    m_builder.AddListeningPort(m_serverAddress + ":" + m_serverPort, GrpcHelper::getServerCredentials(static_cast<grpcCredentials>(m_serverCredentials)));
+
     for (auto service: *m_services) {
         std::cout << "Registering IGrpcService # " << service->getServiceName() << std::endl;
         registerService(service);
@@ -86,7 +86,7 @@ void GrpcServerManager::runServer()
     }
 
     std::unique_ptr<grpc::Server> server(m_builder.BuildAndStart());
-    std::cout << "Server listening on " << m_serverAddress << std::endl;
+    std::cout << "Server listening on " << m_serverAddress << ":" << m_serverPort << std::endl;
     server->Wait();
 }
 

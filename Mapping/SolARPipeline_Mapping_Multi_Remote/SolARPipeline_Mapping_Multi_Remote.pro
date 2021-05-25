@@ -8,7 +8,7 @@ CONFIG += console
 CONFIG += verbose
 CONFIG -= qt
 
-DEFINES += MYVERSION=$${VERSION}
+DEFINES += MYVERSION=\"\\\"$${VERSION}\\\"\"
 DEFINES += WITHREMOTING
 
 include(findremakenrules.pri)

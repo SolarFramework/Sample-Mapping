@@ -24,13 +24,13 @@ namespace xpcf = org::bcom::xpcf;
 // print help options
 void print_help(const cxxopts::Options& options)
 {
-    std::cout << options.help({""}) << '\n';
+    std::cout << options.help({""}) << std::endl;
 }
 
 // print error message
 void print_error(const std::string& msg)
 {
-    std::cerr << msg << '\n';
+    std::cerr << msg << std::endl;
 }
 
 int main(int argc, char* argv[])
@@ -65,8 +65,7 @@ int main(int argc, char* argv[])
     }
     else if (options.count("version"))
     {
-        std::cout << "SolARPipeline_Mapping_Multi_Remote version 0.9.3 \n";
-        std::cout << '\n';
+        std::cout << "SolARPipeline_Mapping_Multi_Remote version " << MYVERSION << std::endl << std::endl;
         return 0;
     }
     else if ((!options.count("modules") || options["modules"].as<std::string>().empty())
@@ -77,25 +76,82 @@ int main(int argc, char* argv[])
 
     configSrc = options["modules"].as<std::string>();
 
-    std::cout << "Load modules configuration file: " << configSrc << "\n";
+    std::cout << "Load modules configuration file: " << configSrc << std::endl;
 
-    cmpMgr->load(configSrc.c_str());
+    if (cmpMgr->load(configSrc.c_str()) != org::bcom::xpcf::_SUCCESS) {
+        std::cout << "Failed to load modules configuration file: " << configSrc << std::endl;
+        return -1;
+    }
 
     configSrc = options["properties"].as<std::string>();
 
-    std::cout << "Load properties configuration file: " << configSrc << "\n";
+    std::cout << "Load properties configuration file: " << configSrc << std::endl;
 
-    cmpMgr->load(configSrc.c_str());
+    if (cmpMgr->load(configSrc.c_str()) != org::bcom::xpcf::_SUCCESS) {
+        std::cout << "Failed to load properties configuration file: " << configSrc << std::endl;
+        return -1;
+    }
 
     auto serverMgr = cmpMgr->resolve<xpcf::IGrpcServerManager>();
-    char * serverURL = getenv("XPCF_GRPC_SERVER_URL");
-    if (serverURL != nullptr) {
-        serverMgr->bindTo<xpcf::IConfigurable>()->getProperty("server_address")->setStringValue(serverURL);
+
+    // Check if server port is defined in environment variable XPCF_GRPC_SERVER_PORT
+
+    char * serverPort = getenv("XPCF_GRPC_SERVER_PORT");
+
+    if (serverPort != nullptr) {
+        serverMgr->bindTo<xpcf::IConfigurable>()->getProperty("server_port")->setStringValue(serverPort);
+
+        std::cout << "'XPCF_GRPC_SERVER_PORT' environment variable found: set server port to "
+                  << serverMgr->bindTo<xpcf::IConfigurable>()->getProperty("server_port")->getStringValue() << std::endl;
     }
     else {
-        std::cout<<"No 'XPCF_GRPC_SERVER_URL' environment variable found: ";
+        std::cout<<"No 'XPCF_GRPC_SERVER_PORT' environment variable found: set server port to default value ("
+                 << serverMgr->bindTo<xpcf::IConfigurable>()->getProperty("server_port")->getStringValue() << ")" << std::endl;
     }
-    std::cout<<"xpcf_grpc_server listens on: "<<serverMgr->bindTo<xpcf::IConfigurable>()->getProperty("server_address")->getStringValue()<<std::endl;
+
+    // Check if log level is defined in environment variable XPCF_GRPC_SERVER_PORT
+    char * log_level = getenv("XPCF_GRPC_SERVER_LOG_LEVEL");
+
+    if (log_level != nullptr) {
+        std::string str_log_level(log_level);
+
+        if (str_log_level == "DEBUG"){
+            LOG_SET_DEBUG_LEVEL();
+            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
+        }
+        else if (str_log_level == "CRITICAL"){
+            LOG_SET_CRITICAL_LEVEL();
+            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
+        }
+        else if (str_log_level == "ERROR"){
+            LOG_SET_ERROR_LEVEL();
+            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
+        }
+        else if (str_log_level == "INFO"){
+            LOG_SET_INFO_LEVEL();
+            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
+        }
+        else if (str_log_level == "TRACE"){
+            LOG_SET_TRACE_LEVEL();
+            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
+        }
+        else if (str_log_level == "WARNING"){
+            LOG_SET_WARNING_LEVEL();
+            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
+        }
+        else {
+            std::cout << "******************************************************************************" << std::endl;
+            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found but with invalid value" << std::endl;
+            std::cout << "Expected values are: DEBUG, CRITICAL, ERROR, INFO, TRACE or WARNING" << std::endl;
+            std::cout << "Set log level to default value" << std::endl;
+            std::cout << "******************************************************************************" << std::endl;
+        }
+    }
+    else {
+        std::cout << "No 'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to default value" << std::endl;
+    }
+
     serverMgr->runServer();
+
     return 0;
 }

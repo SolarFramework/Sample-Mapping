@@ -36,7 +36,8 @@
 #include "api/slam/IBootstrapper.h"
 #include "api/slam/ITracking.h"
 #include "api/slam/IMapping.h"
-#include "api/solver/pose/IFiducialMarkerPose.h"
+#include "api/input/files/ITrackableLoader.h"
+#include "api/solver/pose/ITrackablePose.h"
 
 using namespace SolAR;
 using namespace SolAR::datastructure;
@@ -94,7 +95,8 @@ int main(int argc, char *argv[])
 		auto bootstrapper = xpcfComponentManager->resolve<slam::IBootstrapper>();
 		auto tracking = xpcfComponentManager->resolve<slam::ITracking>();
 		auto mapping = xpcfComponentManager->resolve<slam::IMapping>();
-		auto fiducialMarkerPoseEstimator = xpcfComponentManager->resolve<solver::pose::IFiducialMarkerPose>();
+        auto trackableLoader = xpcfComponentManager->resolve<input::files::ITrackableLoader>();
+        auto fiducialMarkerPoseEstimator = xpcfComponentManager->resolve<solver::pose::ITrackablePose>();
 		LOG_INFO("Components created!");
 		LOG_INFO("Start AR device loader");
 		// Connect remotely to the HoloLens streaming app
@@ -125,6 +127,23 @@ int main(int argc, char *argv[])
 		Transform3Df T_M_W = Transform3Df::Identity();
 		bool isFoundTransform = false;
 		bool bootstrapOk = false;
+
+        // Load Trackable
+        SRef<Trackable> trackable;
+        if (trackableLoader->loadTrackable(trackable) != FrameworkReturnCode::_SUCCESS)
+        {
+            LOG_ERROR("cannot load fiducial marker");
+            return -1;
+        }
+        else
+        {
+            if (fiducialMarkerPoseEstimator->setTrackable(trackable)!= FrameworkReturnCode::_SUCCESS)
+            {
+                LOG_ERROR("cannot set fiducial marker as a trackable ofr fiducial marker pose estimator");
+                return -1;
+            }
+        }
+
 		while (!bootstrapOk) {
 			// get data
 			std::vector<SRef<Image>> images;

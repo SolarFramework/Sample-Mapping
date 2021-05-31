@@ -13,7 +13,7 @@ CONFIG += console
 include(findremakenrules.pri)
 
 CONFIG(debug,debug|release) {
-	TARGETDEPLOYDIR = $${PWD}/../../bin/Debug
+        TARGETDEPLOYDIR = $${PWD}/../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
@@ -53,6 +53,11 @@ macx {
     QMAKE_CXXFLAGS += -fasm-blocks -x objective-c++
 }
 
+linux {
+    QMAKE_LFLAGS += -ldl
+    LIBS += -L/home/linuxbrew/.linuxbrew/lib # temporary fix caused by grpc with -lre2 ... without -L in grpc.pc
+}
+
 win32 {
     QMAKE_LFLAGS += /MACHINE:X64
     DEFINES += WIN64 UNICODE _UNICODE
@@ -86,6 +91,7 @@ linux {
 
 
 DISTFILES += \
+    SolARSample_Mapping_Multi_conf.xml \
     packagedependencies.txt
 
 #NOTE : Must be placed at the end of the .pro

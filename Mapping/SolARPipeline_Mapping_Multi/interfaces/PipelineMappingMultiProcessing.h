@@ -35,7 +35,7 @@
 #include <shared_mutex>
 
 #include "api/pipeline/IMappingPipeline.h"
-#include "api/solver/pose/IFiducialMarkerPose.h"
+#include "api/solver/pose/ITrackablePose.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
@@ -71,7 +71,7 @@ namespace MAPPING {
      * <TT>UUID: dc734eb4-fcc6-4178-8452-7429939f04bd</TT>
      *
      * @SolARComponentInjectablesBegin
-     * @SolARComponentInjectable{SolAR::api::solver::pose::IFiducialMarkerPose}
+     * @SolARComponentInjectable{SolAR::api::solver::pose::ITrackablePose}
      * @SolARComponentInjectable{SolAR::api::slam::IBootstrapper}
      * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}     
      * @SolARComponentInjectable{SolAR::api::slam::IMapping}
@@ -105,9 +105,8 @@ namespace MAPPING {
         void unloadComponent() override final {}
 
         /// @brief Initialization of the pipeline
-        /// Initialize the pipeline by providing a reference to the component manager loaded by the PipelineManager.
-        /// @param[in] componentManager a shared reference to the component manager which has loaded the components and configuration in the pipleine manager
-        FrameworkReturnCode init(SRef<xpcf::IComponentManager> componentManager) override;
+        /// @return FrameworkReturnCode::_SUCCESS if the init succeed, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode init() override;
 
         /// @brief Set the camera parameters
         /// @param[in] cameraParams: the camera parameters (its resolution and its focal)
@@ -133,7 +132,8 @@ namespace MAPPING {
         /// @param[in] image: the input image to process
         /// @param[in] pose: the input pose to process
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> image, const datastructure::Transform3Df & pose) override;
+        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> image,
+                                                  const datastructure::Transform3Df & pose) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization
         /// (resulting from all mapping processing since the start of the pipeline)
@@ -141,7 +141,7 @@ namespace MAPPING {
         /// @param[out] keyframePoses: pipeline current keyframe poses
         /// @return FrameworkReturnCode::_SUCCESS if data are available, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode getDataForVisualization(std::vector<SRef<datastructure::CloudPoint>> & outputPointClouds,
-                                                            std::vector<datastructure::Transform3Df> & keyframePoses) const override;
+                                                    std::vector<datastructure::Transform3Df> & keyframePoses) const override;
 
     private:
 
@@ -149,10 +149,10 @@ namespace MAPPING {
         std::mutex m_mutexUseLocalMap; // Mutex used for mapping task
 
         datastructure::CameraParameters m_cameraParams;        // camera parameters
-        SRef<datastructure::FiducialMarker> m_fiducialMarker;  // fiducial marker description
+        SRef<datastructure::Trackable> m_trackable;  // fiducial marker description
 
         // Components used
-        SRef<api::solver::pose::IFiducialMarkerPose> m_fiducialMarkerPoseEstimator;
+        SRef<api::solver::pose::ITrackablePose> m_fiducialMarkerPoseEstimator;
         SRef<api::slam::IBootstrapper> m_bootstrapper;
         SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;        
         SRef<api::slam::ITracking> m_tracking;
@@ -193,6 +193,10 @@ namespace MAPPING {
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframeLoop;
+
+
+        /// @brief Initialize class members
+        void initClassMembers();
 
         /// @brief Correct pose and do bootstrap using an image and the associated pose
         /// This method must be called with successive pairs of (image, pose)

@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
         // declare and create components
         LOG_INFO("Start creating components");
 		auto arDevice = xpcfComponentManager->resolve<input::devices::IARDevice>();
-		auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
+        auto imageViewer = xpcfComponentManager->resolve<display::IImageViewer>();
 		auto overlay3D = xpcfComponentManager->resolve<display::I3DOverlay>();
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
 		auto pointCloudManager = xpcfComponentManager->resolve<IPointCloudManager>();
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 
 		// Load camera intrinsics parameters
 		CameraParameters camParams;
-		camParams = arDevice->getParameters(0);
+        camParams = arDevice->getParameters(INDEX_USE_CAMERA);
 		overlay3D->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);

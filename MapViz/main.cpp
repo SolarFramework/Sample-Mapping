@@ -18,7 +18,7 @@
 #include "xpcf/xpcf.h"
 #include "core/Log.h"
 #include "api/display/I3DPointsViewer.h"
-#include "api/solver/map/IMapper.h"
+#include "api/storage/IMapManager.h"
 #include "api/storage/IPointCloudManager.h"
 
 using namespace SolAR;
@@ -55,30 +55,32 @@ int main(int argc, char *argv[])
 		// declare and create components
 		LOG_INFO("Start creating components");
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
-		auto mapper = xpcfComponentManager->resolve<solver::map::IMapper>("mapViz");
+		auto mapManager = xpcfComponentManager->resolve<storage::IMapManager>("mapViz");
 		LOG_INFO("Components created!");
 
-		if (mapper->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
+		if (mapManager->loadFromFile() == FrameworkReturnCode::_SUCCESS) {
 			LOG_INFO("Load map done!");
 		}
+		else {
+			LOG_INFO("Load map failed!");
+			return 0;
+		}
 
-		SRef<IPointCloudManager> pointCloudManager;
-		SRef<IKeyframesManager> keyframesManager;
-		std::vector<SRef<Keyframe>> keyframes;
-		std::vector<SRef<CloudPoint>> pointCloud;
+		SRef<Map> map;
+		mapManager->getMap(map);
 
-		mapper->getPointCloudManager(pointCloudManager);
-		mapper->getKeyframesManager(keyframesManager);
-
+		const SRef<PointCloud>& pointCloud = map->getConstPointCloud();
+		const SRef<KeyframeCollection>& keyframeCollection = map->getConstKeyframeCollection();
 
 		LOG_INFO("map information:");
-		LOG_INFO("Number of point cloud: {}", pointCloudManager->getNbPoints());
-		LOG_INFO("Number of keyframes: {}", keyframesManager->getNbKeyframes());
+		LOG_INFO("Number of point cloud: {}", pointCloud->getNbPoints());
+		LOG_INFO("Number of keyframes: {}", keyframeCollection->getNbKeyframes());
 
 		// get point clouds and keyframes
-
-		keyframesManager->getAllKeyframes(keyframes);
-		pointCloudManager->getAllPoints(pointCloud);
+		std::vector<SRef<CloudPoint>> cloudPoints;
+		std::vector<SRef<Keyframe>> keyframes;
+		keyframeCollection->getAllKeyframes(keyframes);
+		pointCloud->getAllPoints(cloudPoints);
 
 		std::vector<Transform3Df>kfPoses, fPoses;
 		fPoses = {};
@@ -86,7 +88,7 @@ int main(int argc, char *argv[])
 			kfPoses.push_back(kf->getPose());
 		}
 		while (true) {
-			if (viewer3D->display(pointCloud, Transform3Df::Identity(), kfPoses, fPoses) == FrameworkReturnCode::_STOP)
+			if (viewer3D->display(cloudPoints, Transform3Df::Identity(), kfPoses, fPoses) == FrameworkReturnCode::_STOP)
 				break;
 		}
     return 0;

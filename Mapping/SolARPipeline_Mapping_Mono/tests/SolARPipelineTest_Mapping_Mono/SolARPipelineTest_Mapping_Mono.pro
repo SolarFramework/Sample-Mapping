@@ -1,10 +1,11 @@
 ## remove Qt dependencies
+QMAKE_PROJECT_DEPTH = 0
 QT       -= core gui
 CONFIG -= qt
 
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Mono
-VERSION=0.9.3
+VERSION=0.9.4
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z

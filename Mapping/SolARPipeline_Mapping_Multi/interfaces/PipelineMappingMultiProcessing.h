@@ -39,12 +39,12 @@
 #include "api/slam/IBootstrapper.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
-#include "api/solver/map/IMapper.h"
 #include "api/slam/ITracking.h"
 #include "api/slam/IMapping.h"
 #include "api/storage/IKeyframesManager.h"
 #include "api/storage/IPointCloudManager.h"
-#include "api/storage/ICovisibilityGraph.h"
+#include "api/storage/ICovisibilityGraphManager.h"
+#include "api/storage/IMapManager.h"
 #include "api/features/IKeypointDetector.h"
 #include "api/features/IDescriptorsExtractor.h"
 #include "api/features/IDescriptorMatcher.h"
@@ -73,19 +73,18 @@ namespace MAPPING {
      * @SolARComponentInjectablesBegin
      * @SolARComponentInjectable{SolAR::api::solver::pose::ITrackablePose}
      * @SolARComponentInjectable{SolAR::api::slam::IBootstrapper}
-     * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}
-     * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}
-     * @SolARComponentInjectable{SolAR::api::solver::map::IMapper}
+     * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}     
      * @SolARComponentInjectable{SolAR::api::slam::IMapping}
      * @SolARComponentInjectable{SolAR::api::storage::IKeyframesManager}
      * @SolARComponentInjectable{SolAR::api::storage::IPointCloudManager}
+	 * @SolARComponentInjectable{SolAR::api::storage::ICovisibilityGraphManager}
+	 * @SolARComponentInjectable{SolAR::api::storage::IMapManager}
      * @SolARComponentInjectable{SolAR::api::features::IKeypointDetector}
      * @SolARComponentInjectable{SolAR::api::features::IDescriptorsExtractor}
      * @SolARComponentInjectable{SolAR::api::features::IDescriptorMatcher}
      * @SolARComponentInjectable{SolAR::api::features::IMatchesFilter}
      * @SolARComponentInjectable{SolAR::api::solver::pose::I2D3DCorrespondencesFinder}
-     * @SolARComponentInjectable{SolAR::api::geom::IProject}
-     * @SolARComponentInjectable{SolAR::api::storage::ICovisibilityGraph}
+     * @SolARComponentInjectable{SolAR::api::geom::IProject}     
      * @SolARComponentInjectable{SolAR::api::loop::ILoopClosureDetector}
      * @SolARComponentInjectable{SolAR::api::loop::ILoopCorrector}
      * @SolARComponentInjectable{SolAR::api::geom::IUndistortPoints}
@@ -155,19 +154,19 @@ namespace MAPPING {
         // Components used
         SRef<api::solver::pose::ITrackablePose> m_fiducialMarkerPoseEstimator;
         SRef<api::slam::IBootstrapper> m_bootstrapper;
-        SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;
-        SRef<api::solver::map::IMapper> m_mapper;
+        SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;        
         SRef<api::slam::ITracking> m_tracking;
         SRef<api::slam::IMapping> m_mapping;
         SRef<api::storage::IKeyframesManager> m_keyframesManager;
         SRef<api::storage::IPointCloudManager> m_pointCloudManager;
+		SRef<api::storage::ICovisibilityGraphManager> m_covisibilityGraphManager;
+		SRef<api::storage::IMapManager> m_mapManager;
         SRef<api::features::IKeypointDetector> m_keypointsDetector;
         SRef<api::features::IDescriptorsExtractor> m_descriptorExtractor;
         SRef<api::features::IDescriptorMatcher> m_matcher;
         SRef<api::features::IMatchesFilter> m_matchesFilter;
         SRef<api::solver::pose::I2D3DCorrespondencesFinder> m_corr2D3DFinder;
-        SRef<api::geom::IProject> m_projector;
-        SRef<api::storage::ICovisibilityGraph> m_covisibilityGraph;
+        SRef<api::geom::IProject> m_projector;        
         SRef<api::loop::ILoopClosureDetector> m_loopDetector;
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
 		SRef<api::geom::IUndistortPoints> m_undistortKeypoints;

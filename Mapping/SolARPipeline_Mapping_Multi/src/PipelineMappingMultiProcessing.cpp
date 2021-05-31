@@ -22,7 +22,8 @@ namespace SolAR {
 namespace PIPELINES {
 namespace MAPPING {
 
-#define NB_NEWKEYFRAMES_LOOP 10
+#define NB_LOCALKEYFRAMES 10
+#define NB_NEWKEYFRAMES_LOOP 20
 
 // Public methods
 
@@ -40,19 +41,19 @@ namespace MAPPING {
             declareInjectable<api::slam::IBootstrapper>(m_bootstrapper);
             declareInjectable<api::solver::map::IBundler>(m_bundler, "BundleFixedKeyframes");
             declareInjectable<api::solver::map::IBundler>(m_globalBundler);
-			declareInjectable<api::geom::IUndistortPoints>(m_undistortKeypoints);
-            declareInjectable<api::solver::map::IMapper>(m_mapper);
+			declareInjectable<api::geom::IUndistortPoints>(m_undistortKeypoints);            
             declareInjectable<api::slam::ITracking>(m_tracking);
             declareInjectable<api::slam::IMapping>(m_mapping);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
+			declareInjectable<api::storage::ICovisibilityGraphManager>(m_covisibilityGraphManager);
+			declareInjectable<api::storage::IMapManager>(m_mapManager);
             declareInjectable<api::features::IKeypointDetector>(m_keypointsDetector);
             declareInjectable<api::features::IDescriptorsExtractor>(m_descriptorExtractor);
             declareInjectable<api::features::IDescriptorMatcher>(m_matcher);
             declareInjectable<api::features::IMatchesFilter>(m_matchesFilter);
             declareInjectable<api::solver::pose::I2D3DCorrespondencesFinder>(m_corr2D3DFinder);
-            declareInjectable<api::geom::IProject>(m_projector);
-            declareInjectable<api::storage::ICovisibilityGraph>(m_covisibilityGraph);
+            declareInjectable<api::geom::IProject>(m_projector);            
             declareInjectable<api::loop::ILoopClosureDetector>(m_loopDetector);
             declareInjectable<api::loop::ILoopCorrector>(m_loopCorrector);
 
@@ -141,7 +142,7 @@ namespace MAPPING {
         LOG_DEBUG("PipelineMappingMultiProcessing::onInjected");
 
         // Get properties
-        m_reprojErrorThreshold = m_mapper->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
+        m_reprojErrorThreshold = m_mapManager->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
         m_minWeightNeighbor = m_mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
     }
 
@@ -470,11 +471,23 @@ namespace MAPPING {
         if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("New keyframe id: {}", keyframe->getId());
             // Local bundle adjustment
-            std::vector<uint32_t> bestIdx;
-            m_covisibilityGraph->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx);
-            bestIdx.push_back(keyframe->getId());
-            m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
-            m_mapper->pruning();
+            std::vector<uint32_t> bestIdx, bestIdxToOptimize;
+            m_covisibilityGraphManager->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx);
+			if (bestIdx.size() < NB_LOCALKEYFRAMES)
+				bestIdxToOptimize = bestIdx;
+			else
+				bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
+			bestIdxToOptimize.push_back(keyframe->getId());
+			LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
+			double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
+			// map pruning
+			std::vector<SRef<CloudPoint>> localMap;
+			m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
+			int nbRemovedCP = m_mapManager->pointCloudPruning(localMap);
+			std::vector<SRef<Keyframe>> localKeyframes;
+			m_keyframesManager->getKeyframes(bestIdx, localKeyframes);
+			int nbRemovedKf = m_mapManager->keyframePruning(localKeyframes);
+			LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
             m_countNewKeyframes++;
             m_dropBufferNewKeyframeLoop.push(keyframe);
         }
@@ -521,7 +534,8 @@ namespace MAPPING {
             Transform3Df keyframeOldPose = lastKeyframe->getPose();
             m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
             // map pruning
-            m_mapper->pruning();
+            m_mapManager->pointCloudPruning();
+            m_mapManager->keyframePruning();
             // update pose correction
             Transform3Df transform = lastKeyframe->getPose() * keyframeOldPose.inverse();
             m_T_M_W = transform * m_T_M_W;
@@ -535,13 +549,13 @@ namespace MAPPING {
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
         // Map pruning
-        m_mapper->pruning();
-
+		m_mapManager->pointCloudPruning();
+		m_mapManager->keyframePruning();
         LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 
         LOG_DEBUG("Update global map");
-        m_mapper->saveToFile();
+        m_mapManager->saveToFile();
     }
 
     bool PipelineMappingMultiProcessing::isBootstrapFinished() const {

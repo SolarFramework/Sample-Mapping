@@ -109,46 +109,42 @@ int main(int argc, char* argv[])
                  << serverMgr->bindTo<xpcf::IConfigurable>()->getProperty("server_port")->getStringValue() << ")" << std::endl;
     }
 
-    // Check if log level is defined in environment variable XPCF_GRPC_SERVER_PORT
-    char * log_level = getenv("XPCF_GRPC_SERVER_LOG_LEVEL");
+    // Check if log level is defined in environment variable SOLAR_LOG_LEVEL
+    char * log_level = getenv("SOLAR_LOG_LEVEL");
 
     if (log_level != nullptr) {
         std::string str_log_level(log_level);
 
+        std::cout << "'SOLAR_LOG_LEVEL' environment variable found with value: " << log_level << std::endl;
+
         if (str_log_level == "DEBUG"){
             LOG_SET_DEBUG_LEVEL();
-            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
         }
         else if (str_log_level == "CRITICAL"){
             LOG_SET_CRITICAL_LEVEL();
-            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
         }
         else if (str_log_level == "ERROR"){
             LOG_SET_ERROR_LEVEL();
-            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
         }
         else if (str_log_level == "INFO"){
             LOG_SET_INFO_LEVEL();
-            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
         }
         else if (str_log_level == "TRACE"){
             LOG_SET_TRACE_LEVEL();
-            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
         }
         else if (str_log_level == "WARNING"){
             LOG_SET_WARNING_LEVEL();
-            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to " << log_level << std::endl;
         }
         else {
-            std::cout << "******************************************************************************" << std::endl;
-            std::cout << "'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found but with invalid value" << std::endl;
+            std::cout << "*********************************************************************" << std::endl;
+            std::cout << "'SOLAR_LOG_LEVEL' environment variable: invalid value" << std::endl;
             std::cout << "Expected values are: DEBUG, CRITICAL, ERROR, INFO, TRACE or WARNING" << std::endl;
             std::cout << "Set log level to default value" << std::endl;
-            std::cout << "******************************************************************************" << std::endl;
+            std::cout << "*********************************************************************" << std::endl;
         }
     }
     else {
-        std::cout << "No 'XPCF_GRPC_SERVER_LOG_LEVEL' environment variable found: set log level to default value" << std::endl;
+        std::cout << "No 'SOLAR_LOG_LEVEL' environment variable found: set log level to default value (INFO)" << std::endl;
     }
 
     serverMgr->runServer();

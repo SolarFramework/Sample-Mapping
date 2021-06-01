@@ -4,7 +4,7 @@ CONFIG -= qt
 
 ## global defintions : target lib name, version
 TARGET = SolARSample_Mapping_Multi
-VERSION=0.9.4
+VERSION=0.9.3
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z
@@ -48,14 +48,14 @@ unix {
     QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
 }
 
+linux {
+        QMAKE_LFLAGS += -ldl
+        LIBS += -L/home/linuxbrew/.linuxbrew/lib # temporary fix caused by grpc with -lre2 ... without -L in grpc.pc
+}
+
 macx {
     QMAKE_MAC_SDK= macosx
     QMAKE_CXXFLAGS += -fasm-blocks -x objective-c++
-}
-
-linux {
-    QMAKE_LFLAGS += -ldl
-    LIBS += -L/home/linuxbrew/.linuxbrew/lib # temporary fix caused by grpc with -lre2 ... without -L in grpc.pc
 }
 
 win32 {

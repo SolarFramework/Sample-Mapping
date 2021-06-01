@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Save map
-		mapManager->saveToFile();
+        mapManager->saveToFile();
     }
 
     catch (xpcf::Exception e)

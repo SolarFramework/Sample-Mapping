@@ -40,7 +40,7 @@
         </configure>
         <!-- Remote client configuration-->
         <configure component="SolARFiducialMarkerLoaderOpencv">
-            <property name="filePath" type="string" value="../../data/data_hololens/fiducialMarkerB.yml" description="Path of the .yml file describing the fiducial marker."/>
+            <property name="filePath" type="string" value="../../data/data_hololens/fiducialMarkerA.yml" description="Path of the .yml file describing the fiducial marker."/>
         </configure>
         <configure component="SolARDeviceDataLoader">
             <property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>

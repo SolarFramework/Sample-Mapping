@@ -2,7 +2,7 @@
 <xpcf-registry autoAlias="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <!-- Module generated from SolARFramework by xpcf_grpc_gen -->
-    <module uuid="ef97ff20-3dee-4f36-9c2a-d8a2454029a9" name="SolARFrameworkGRPCRemote" description="xpcf remoting module for project SolARFramework" path="$XPCF_MODULE_ROOT/SolARBuild/SolARFrameworkGRPCRemote/0.9.3/lib/x86_64/shared">
+    <module uuid="2220ba3c-9b0d-4363-8d24-7714397cee15" name="SolARFrameworkGRPCRemote" description="xpcf remoting module for project SolARFramework" path="$XPCF_MODULE_ROOT/SolARBuild/SolARFrameworkGRPCRemote/0.9.3/lib/x86_64/shared">
         <component uuid="110a089c-0bb1-488e-b24b-c1b96bc9df3b" name="IMappingPipeline_grpcProxy" description="IMappingPipeline_grpcProxy grpc client proxy component">
             <interface uuid="6c5b9edc-c78b-47fd-8cb2-2bf8d7ede4ea" name="XPCF::IInjectable" description="Provides dependency injection interface"/>
             <interface uuid="98dba14f-6ef9-462e-a387-34756b4cba80" name="XPCF::IConfigurable" description="Provides generic configuration ability to any component through metadata parameters"/>

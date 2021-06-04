@@ -12,7 +12,7 @@ node("master") {
     }
 
     SolArModulePipeline {
-        moduleName="SolARPipeline_Mapping_Multi"
+        moduleName="SolARPipelineMappingMulti"
         dirName="SolARBuild"
         buildDir="Mapping/SolARPipeline_Mapping_Multi"
         android=true

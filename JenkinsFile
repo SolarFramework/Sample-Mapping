@@ -4,7 +4,7 @@ node("master") {
      *  Pipelines
      */
     SolArModulePipeline {
-        moduleName="SolARPipeline_Mapping_Mono"
+        moduleName="SolARPipelineMappingMono"
         dirName="SolARBuild"
         buildDir="Mapping/SolARPipeline_Mapping_Mono"
         android=true

@@ -50,13 +50,13 @@ int gNbImages = 0;
 // print help options
 void print_help(const cxxopts::Options& options)
 {
-    cout << options.help({""}) << '\n';
+    cout << options.help({""}) << std::endl;
 }
 
 // print error message
 void print_error(const string& msg)
 {
-    cerr << msg << '\n';
+    cerr << msg << std::endl;
 }
 
 // Fonction for producer client thread
@@ -186,8 +186,7 @@ int main(int argc, char* argv[])
     }
     else if (options.count("version"))
     {
-        cout << "SolARPipelineTest_Mapping_Multi_Remote_Producer version 0.9.3 \n";
-        cout << '\n';
+        std::cout << "SolARPipelineTest_MapUpdate_Remote version " << MYVERSION << std::endl << std::endl;
         return 0;
     }
     else if (!options.count("file") || options["file"].as<string>().empty()) {

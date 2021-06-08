@@ -252,7 +252,7 @@ namespace MAPPING {
 
 //        LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
 
-        // Correct pose
+        // Correct pose after loop detection
         Transform3Df poseCorrected = m_T_M_W * pose;
 
         if (!isBootstrapFinished()){
@@ -312,7 +312,6 @@ namespace MAPPING {
         m_countNewKeyframes = 0;
 
         m_T_M_W = Transform3Df::Identity();
-        m_isFoundTransform = false;
         m_isStopMapping = false;
         m_minWeightNeighbor = 0;
 
@@ -347,23 +346,6 @@ namespace MAPPING {
         Transform3Df pose = imagePose.second;
 
         LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap: new image to process");
-
-        // find T_W_M
-        if (!m_isFoundTransform) {
-            Transform3Df T_M_C;
-            if (m_fiducialMarkerPoseEstimator->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
-                m_T_M_W = T_M_C * pose.inverse();
-                m_isFoundTransform = true;
-                LOG_DEBUG("Transformation found");
-            }
-            else {
-                LOG_DEBUG("3D transformation not found");
-            }
-
-            return;
-        }
-
-        LOG_DEBUG("3D transformation found: do bootstrap");
 
         // do bootstrap
         SRef<Image> view;
@@ -516,9 +498,9 @@ namespace MAPPING {
         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
         if (m_loopDetector->detect(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
             // detected loop keyframe
-            LOG_DEBUG("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-            LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-            LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
+            LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
+            LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+            LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
             // performs loop correction
             {
                 m_loopCorrector->correct(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);

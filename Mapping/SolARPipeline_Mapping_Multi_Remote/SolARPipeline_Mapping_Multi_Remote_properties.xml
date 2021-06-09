@@ -37,8 +37,8 @@
         <property name="keyframesManagerFileName" type="string" value="keyframes.bin"/>
         <property name="covisibilityGraphFileName" type="string" value="covisibility_graph.bin"/>
         <property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
-        <property name="reprojErrorThreshold" type="float" value="10.0"/>
-        <property name="thresConfidence" type="float" value="0.25"/>
+        <property name="reprojErrorThreshold" type="float" value="5.0"/>
+        <property name="thresConfidence" type="float" value="0.03"/>
     </configure>
     <configure component="SolARKeypointDetectorOpencv">
         <property name="type" type="string" value="AKAZE2"/>
@@ -106,7 +106,7 @@
     </configure>
     <configure component="SolAR3DTransformEstimationSACFrom3D3D">
         <property name="iterationsCount" type="int" value="500"/>
-        <property name="reprojError" type="float" value="10.0"/>
+        <property name="reprojError" type="float" value="3.0"/>
         <property name="confidence" type="float" value="0.9"/>
         <property name="minNbInliers" type="int" value="20"/>
     </configure>
@@ -131,7 +131,7 @@
         <property name="nbIterationsGlobal" type="int" value="20"/>
         <property name="setVerbose" type="int" value="0"/>
         <property name="nbMaxFixedKeyframes" type="int" value="20"/>
-        <property name="errorOutlier" type="float" value="10.0"/>
+        <property name="errorOutlier" type="float" value="5.0"/>
         <property name="useSpanningTree" type="int" value="0"/>
         <property name="isRobust" type="int" value="0"/>
         <property name="fixedMap" type="int" value="0"/>
@@ -142,7 +142,7 @@
         <property name="nbIterationsGlobal" type="int" value="20"/>
         <property name="setVerbose" type="int" value="0"/>
         <property name="nbMaxFixedKeyframes" type="int" value="20"/>
-        <property name="errorOutlier" type="float" value="10.0"/>
+        <property name="errorOutlier" type="float" value="5.0"/>
         <property name="useSpanningTree" type="int" value="0"/>
         <property name="isRobust" type="int" value="0"/>
         <property name="fixedMap" type="int" value="0"/>

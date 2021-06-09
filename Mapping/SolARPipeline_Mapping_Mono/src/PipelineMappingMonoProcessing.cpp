@@ -65,8 +65,6 @@ namespace MAPPING {
             m_trackable = nullptr;
             m_countNewKeyframes = 0;
 
-            m_dataToStore = false;
-            m_isFoundTransform = false;
             m_T_M_W = Transform3Df::Identity();
             m_minWeightNeighbor = 0;
 
@@ -160,7 +158,9 @@ namespace MAPPING {
     FrameworkReturnCode PipelineMappingMonoProcessing::stop() {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::stop");
-
+        if (isBootstrapFinished()){
+            globalBundleAdjustment();
+        }
         LOG_DEBUG("Stop mapping processing task");
         m_mappingTask->stop();
 
@@ -171,7 +171,7 @@ namespace MAPPING {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::mappingProcessRequest");
 
-        // Correct pose
+        // Correct pose after loop detection
         Transform3Df poseCorrected = m_T_M_W * pose;
 
         // Add pair (image, pose) to input drop buffer for mapping
@@ -215,22 +215,6 @@ namespace MAPPING {
                                             (const SRef<Image> & image, const Transform3Df & pose) {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::correctPoseAndBootstrap");
-
-        // Find T_W_M
-        if (!m_isFoundTransform) {
-            Transform3Df T_M_C;
-            if (m_fiducialMarkerPoseEstimator->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
-                m_T_M_W = T_M_C * pose.inverse();
-                m_isFoundTransform = true;
-                LOG_DEBUG("3D transformation found");
-            }
-            else {
-                LOG_DEBUG("3D transformation not found");
-                return false;
-            }
-        }
-
-        LOG_DEBUG("3D transformation found: do bootstrap");
 
         SRef<Image> view;
         if (m_bootstrapper->process(image, view, pose) == FrameworkReturnCode::_SUCCESS) {
@@ -352,9 +336,9 @@ namespace MAPPING {
                         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
                         if (m_loopDetector->detect(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
                             // detected loop keyframe
-                            LOG_DEBUG("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-                            LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-                            LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
+                            LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
+                            LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+                            LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
                             // performs loop correction
                             Transform3Df keyframeOldPose = keyframe->getPose();
                             m_loopCorrector->correct(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
@@ -369,24 +353,11 @@ namespace MAPPING {
                             m_T_M_W = transform * m_T_M_W;
                         }
                     }
-					// New data to store
-					m_dataToStore = true;
                 }
 
                 // update reference keyframe
                 if (keyframe) {
 					m_tracking->updateReferenceKeyframe(keyframe);
-                }
-            }
-            else {
-                LOG_DEBUG("***** No (image, pose) pair to process *****");
-
-                // Data to store ?
-                if (m_dataToStore) {
-                    m_dataToStore = false;
-
-                    // Bundle adjustment, map pruning and global map udate
-                    globalBundleAdjustment();
                 }
             }
         }

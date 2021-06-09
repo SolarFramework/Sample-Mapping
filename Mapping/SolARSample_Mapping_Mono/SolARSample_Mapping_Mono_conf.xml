@@ -344,7 +344,7 @@
 		</configure>
 		<configure component="SolAR3DTransformEstimationSACFrom3D3D">
 			<property name="iterationsCount" type="int" value="500"/>
-			<property name="reprojError" type="float" value="10.0"/>
+			<property name="reprojError" type="float" value="3.0"/>
 			<property name="confidence" type="float" value="0.9"/>
 			<property name="minNbInliers" type="int" value="20"/>
 		</configure>

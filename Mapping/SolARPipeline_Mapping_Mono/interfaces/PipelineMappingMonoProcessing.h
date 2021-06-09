@@ -170,8 +170,6 @@ namespace MAPPING {
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
 		SRef<api::geom::IUndistortPoints> m_undistortKeypoints;
 
-        bool m_dataToStore;                 // indicates if new data to store
-        bool m_isFoundTransform;            // indicates if the 3D transformation as been found
         datastructure::Transform3Df m_T_M_W;               // 3D transformation matrix
         float m_minWeightNeighbor, m_reprojErrorThreshold;
         int m_countNewKeyframes;

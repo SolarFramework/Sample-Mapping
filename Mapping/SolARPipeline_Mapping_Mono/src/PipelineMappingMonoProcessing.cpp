@@ -35,7 +35,6 @@ namespace MAPPING {
             declareInterface<api::pipeline::IMappingPipeline>(this);
 
             LOG_DEBUG("Components injection declaration");
-            declareInjectable<api::solver::pose::ITrackablePose>(m_fiducialMarkerPoseEstimator);
             declareInjectable<api::slam::IBootstrapper>(m_bootstrapper);
             declareInjectable<api::solver::map::IBundler>(m_bundler, "BundleFixedKeyframes");
             declareInjectable<api::solver::map::IBundler>(m_globalBundler);
@@ -62,7 +61,6 @@ namespace MAPPING {
             // Initialize private members
             m_cameraParams.resolution.width = 0;
             m_cameraParams.resolution.height = 0;
-            m_trackable = nullptr;
             m_countNewKeyframes = 0;
 
             m_T_M_W = Transform3Df::Identity();
@@ -115,7 +113,6 @@ namespace MAPPING {
 
         m_cameraParams = cameraParams;
 
-        m_fiducialMarkerPoseEstimator->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_bootstrapper->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_mapping->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_projector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -130,19 +127,12 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMonoProcessing::setObjectToTrack(const SRef<Trackable> trackableObject) {
-
-        LOG_DEBUG("PipelineMappingMonoProcessing::setObjectToTrack");
-        m_trackable = trackableObject;
-        return (m_fiducialMarkerPoseEstimator->setTrackable(trackableObject));
-    }
-
     FrameworkReturnCode PipelineMappingMonoProcessing::start() {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::start");
 
         // Check members initialization
-        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0) && (m_trackable != nullptr)) {
+        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)) {
 
             LOG_DEBUG("Start mapping processing task");
             m_mappingTask->start();

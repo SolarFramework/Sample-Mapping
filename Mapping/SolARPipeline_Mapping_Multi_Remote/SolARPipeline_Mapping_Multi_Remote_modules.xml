@@ -180,10 +180,6 @@
         <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
         <interface uuid="8f05eea8-c1c6-11ea-b3de-0242ac130004" name="ILoopCorrector" description="ILoopCorrector"/>
     </component>
-    <component uuid="cddd23c4-da4e-4c5c-b3f9-7d095d097c97" name="SolARFiducialMarkerPoseEstimator" description="SolARFiducialMarkerPoseEstimator">
-        <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-        <interface uuid="d5247968-b74e-4afb-9abd-546021441ad4" name="IFiducialMarkerPose" description="IFiducialMarkerPose"/>
-    </component>
     <component uuid="8f43eed0-1a2e-4c47-83f0-8dd5b259cdb0" name="SolARSLAMBootstrapper" description="SolARSLAMBootstrapper">
         <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
         <interface uuid="b0515c62-cc81-4600-835c-8acdfedf39b5" name="IBootstrapper" description="IBootstrapper"/>
@@ -234,9 +230,6 @@
 
     <injects>
         <!-- injects for the mapping pipeline -->
-        <inject to="SolARFiducialMarkerPoseEstimator">
-              <bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherRadiusOpencv"/>
-        </inject>
         <inject to="SolARSLAMBootstrapper">
               <bind interface="IKeyframeSelector" to="SolARKeyframeSelector" properties="BootstrapProperties"/>
         </inject>

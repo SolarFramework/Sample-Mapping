@@ -18,8 +18,6 @@
 #include "core/Log.h"
 #include "api/pipeline/IMappingPipeline.h"
 #include "api/input/devices/IARDevice.h"
-#include "api/input/files/ITrackableLoader.h"
-#include "datastructure/FiducialMarker.h"
 #include "api/display/IImageViewer.h"
 
 using namespace std;
@@ -217,9 +215,6 @@ int main(int argc, char* argv[])
         gArDevice = gXpcfComponentManager->resolve<SolAR::api::input::devices::IARDevice>();
         LOG_INFO("Remote producer client: AR device component created");
 
-        auto trackableLoader = gXpcfComponentManager->resolve<SolAR::api::input::files::ITrackableLoader>();
-        LOG_INFO("Remote producer client: Trackable loader component created");
-
         gImageViewer = gXpcfComponentManager->resolve<SolAR::api::display::IImageViewer>();
         LOG_INFO("Remote producer client: AR device component created");
 
@@ -234,38 +229,17 @@ int main(int argc, char* argv[])
             LOG_INFO("Remote producer client: Set mapping pipeline camera parameters result = {}",
                      getReturnCodeTextValue(result));
 
-            LOG_INFO("Remote producer client: Load fiducial marker description file");
-            SRef<Trackable> trackableObject;
-            if (trackableLoader->loadTrackable(trackableObject) != FrameworkReturnCode::_SUCCESS)
-            {
-                LOG_INFO("Cannot load fiducial marker");
-                return -1;
-            }
+            LOG_INFO("Remote producer client: Start remote mapping pipeline");
 
-            if (trackableObject != 0) {
-                LOG_INFO("Remote producer client: Trackable object created: url = {}", trackableObject->getURL());
+            if (gMappingPipelineMulti->start() == FrameworkReturnCode::_SUCCESS) {
+                LOG_INFO("Start remote producer client thread");
 
-                result = gMappingPipelineMulti->setObjectToTrack(trackableObject);
-                LOG_INFO("Remote producer client: Set mapping pipeline fiducial marker result = {}",
-                         getReturnCodeTextValue(result));
-
-                LOG_INFO("Remote producer client: Start remote mapping pipeline");
-
-                if (gMappingPipelineMulti->start() == FrameworkReturnCode::_SUCCESS) {
-                    LOG_INFO("Start remote producer client thread");
-
-                    gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
-                    gClientProducerTask->start();
-                }
-                else {
-                    LOG_ERROR("Cannot start mapping pipeline");
-                }
+                gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
+                gClientProducerTask->start();
             }
             else {
-                LOG_INFO("Error while loading fiducial marker");
-                return -1;
+                LOG_ERROR("Cannot start mapping pipeline");
             }
-
         }
         else {
             LOG_INFO("Cannot start AR device loader");

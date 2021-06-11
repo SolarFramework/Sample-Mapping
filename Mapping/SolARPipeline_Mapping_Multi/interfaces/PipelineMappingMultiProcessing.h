@@ -35,7 +35,6 @@
 #include <shared_mutex>
 
 #include "api/pipeline/IMappingPipeline.h"
-#include "api/solver/pose/ITrackablePose.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
@@ -57,8 +56,6 @@
 #include "datastructure/Image.h"
 #include "datastructure/CloudPoint.h"
 #include "datastructure/Keypoint.h"
-#include "datastructure/Trackable.h"
-#include "datastructure/FiducialMarker.h"
 
 
 namespace SolAR {
@@ -71,7 +68,6 @@ namespace MAPPING {
      * <TT>UUID: dc734eb4-fcc6-4178-8452-7429939f04bd</TT>
      *
      * @SolARComponentInjectablesBegin
-     * @SolARComponentInjectable{SolAR::api::solver::pose::ITrackablePose}
      * @SolARComponentInjectable{SolAR::api::slam::IBootstrapper}
      * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}     
      * @SolARComponentInjectable{SolAR::api::slam::IMapping}
@@ -113,11 +109,6 @@ namespace MAPPING {
         /// @return FrameworkReturnCode::_SUCCESS if the camera parameters are correctly set, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode setCameraParameters(const datastructure::CameraParameters & cameraParams) override;
 
-        /// @brief Set the object to track during mapping
-        /// @param[in] trackableObject: the trackable object
-        /// @return FrameworkReturnCode::_SUCCESS if the trackable object is correctly set, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode setObjectToTrack(const SRef<datastructure::Trackable> trackableObject) override;
-
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode start() override;
@@ -149,10 +140,8 @@ namespace MAPPING {
         std::mutex m_mutexUseLocalMap; // Mutex used for mapping task
 
         datastructure::CameraParameters m_cameraParams;        // camera parameters
-        SRef<datastructure::Trackable> m_trackable;  // fiducial marker description
 
         // Components used
-        SRef<api::solver::pose::ITrackablePose> m_fiducialMarkerPoseEstimator;
         SRef<api::slam::IBootstrapper> m_bootstrapper;
         SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;        
         SRef<api::slam::ITracking> m_tracking;

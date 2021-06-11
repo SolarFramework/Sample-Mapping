@@ -37,7 +37,6 @@ namespace MAPPING {
 
             LOG_DEBUG("Components injection declaration");
 
-            declareInjectable<api::solver::pose::ITrackablePose>(m_fiducialMarkerPoseEstimator);
             declareInjectable<api::slam::IBootstrapper>(m_bootstrapper);
             declareInjectable<api::solver::map::IBundler>(m_bundler, "BundleFixedKeyframes");
             declareInjectable<api::solver::map::IBundler>(m_globalBundler);
@@ -61,21 +60,7 @@ namespace MAPPING {
 
             LOG_DEBUG("Initialize instance attributes");
             initClassMembers();
-/*
-            // Initialize private members
-            m_cameraParams.resolution.width = 0;
-            m_cameraParams.resolution.height = 0;
-            m_trackable = nullptr;
-            m_countNewKeyframes = 0;
 
-            m_T_M_W = Transform3Df::Identity();
-            m_isFoundTransform = false;
-            m_isStopMapping = false;
-            m_minWeightNeighbor = 0;
-
-            // Initial bootstrap status
-            m_isBootstrapFinished = false;
-*/
             LOG_DEBUG("Set the mapping function for asynchronous task");
 
             // Bootstrap processing function
@@ -171,7 +156,6 @@ namespace MAPPING {
 
         m_cameraParams = cameraParams;
 
-        m_fiducialMarkerPoseEstimator->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_bootstrapper->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 		m_tracking->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_mapping->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -186,26 +170,12 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::setObjectToTrack(const SRef<Trackable> trackableObject) {
-
-        LOG_DEBUG("PipelineMappingMultiProcessing::setObjectToTrack");
-
-        m_trackable = trackableObject;
-
-        SRef<FiducialMarker> fMarker = xpcf::utils::dynamic_pointer_cast<FiducialMarker>(trackableObject);
-        LOG_DEBUG("Trackable object url = {}", fMarker->getURL());
-        LOG_DEBUG("Trackable object size = {}/{}", fMarker->getWidth(), fMarker->getHeight());
-        LOG_DEBUG("Trackable object pattern size = {}", fMarker->getPattern().getSize());
-
-        return (m_fiducialMarkerPoseEstimator->setTrackable(m_trackable));
-    }
-
     FrameworkReturnCode PipelineMappingMultiProcessing::start() {
 
         LOG_DEBUG("PipelineMappingMultiProcessing::start");
 
         // Check members initialization
-        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0) && (m_trackable != nullptr)) {
+        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)) {
 
             LOG_DEBUG("Start processing tasks");
 
@@ -250,7 +220,7 @@ namespace MAPPING {
 
     FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
 
-//        LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
+        LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
 
         // Correct pose after loop detection
         Transform3Df poseCorrected = m_T_M_W * pose;
@@ -259,13 +229,13 @@ namespace MAPPING {
             // Add pair (image, pose) to input drop buffer for bootstrap
             m_dropBufferCamImagePoseCaptureBootstrap.push(std::make_pair(image, poseCorrected));
 
-//            LOG_DEBUG("New pair of (image, pose) stored for bootstrap processing");
+            LOG_DEBUG("New pair of (image, pose) stored for bootstrap processing");
         }
         else {
             // Add pair (image, pose) to input drop buffer for mapping
             m_dropBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
 
-//            LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
+            LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
         }
 
         return FrameworkReturnCode::_SUCCESS;
@@ -274,7 +244,7 @@ namespace MAPPING {
     FrameworkReturnCode PipelineMappingMultiProcessing::getDataForVisualization(std::vector<SRef<CloudPoint>> & outputPointClouds,
                                                 std::vector<Transform3Df> & keyframePoses) const {
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::getDataForVisualization");
+        LOG_DEBUG("PipelineMappingMultiProcessing::getDataForVisualization");
 
         if (isBootstrapFinished()) {
 
@@ -308,7 +278,6 @@ namespace MAPPING {
         // Initialize private members
         m_cameraParams.resolution.width = 0;
         m_cameraParams.resolution.height = 0;
-        m_trackable = nullptr;
         m_countNewKeyframes = 0;
 
         m_T_M_W = Transform3Df::Identity();
@@ -331,7 +300,7 @@ namespace MAPPING {
 
     void PipelineMappingMultiProcessing::correctPoseAndBootstrap () {
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap = {}", isBootstrapFinished());
+        LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap = {}", isBootstrapFinished());
 
         std::pair<SRef<Image>, Transform3Df> imagePose;
 
@@ -365,7 +334,7 @@ namespace MAPPING {
 
     void PipelineMappingMultiProcessing::keypointsDetection() {
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::keypointsDetection");
+        LOG_DEBUG("PipelineMappingMultiProcessing::keypointsDetection");
 
         std::pair<SRef<Image>, Transform3Df> imagePose;
 
@@ -386,7 +355,7 @@ namespace MAPPING {
 
     void PipelineMappingMultiProcessing::featureExtraction() {
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::featureExtraction");
+        LOG_DEBUG("PipelineMappingMultiProcessing::featureExtraction");
 
         SRef<Frame> frame;
 
@@ -404,7 +373,7 @@ namespace MAPPING {
 
     void PipelineMappingMultiProcessing::updateVisibility() {
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility");
+        LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility");
 
         SRef<Frame> frame;
 
@@ -439,7 +408,7 @@ namespace MAPPING {
 
     void PipelineMappingMultiProcessing::mapping() {
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::mapping");
+        LOG_DEBUG("PipelineMappingMultiProcessing::mapping");
 
         SRef<Frame> frame;
 
@@ -482,7 +451,7 @@ namespace MAPPING {
 
     void PipelineMappingMultiProcessing::loopClosure() {
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::loopClosure");
+        LOG_DEBUG("PipelineMappingMultiProcessing::loopClosure");
 
         SRef<Keyframe> lastKeyframe;
 
@@ -526,7 +495,7 @@ namespace MAPPING {
 
     void PipelineMappingMultiProcessing::globalBundleAdjustment() {
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::globalBundleAdjustment");
+        LOG_DEBUG("PipelineMappingMultiProcessing::globalBundleAdjustment");
 
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -547,7 +516,7 @@ namespace MAPPING {
 
     void PipelineMappingMultiProcessing::setBootstrapSatus(const bool status) {
 
-//        LOG_DEBUG("Set bootstrap status to: {}", status);
+        LOG_DEBUG("Set bootstrap status to: {}", status);
 
         m_isBootstrapFinished = status;
     }

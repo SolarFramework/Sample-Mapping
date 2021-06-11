@@ -21,8 +21,6 @@
 #include "core/Log.h"
 #include "api/pipeline/IMappingPipeline.h"
 #include "api/input/devices/IARDevice.h"
-#include "api/input/files/ITrackableLoader.h"
-#include "datastructure/FiducialMarker.h"
 #include "api/display/IImageViewer.h"
 #include "api/display/I3DPointsViewer.h"
 
@@ -191,9 +189,6 @@ int main(int argc, char ** argv)
             gArDevice = gXpcfComponentManager->resolve<input::devices::IARDevice>();
             LOG_INFO("Producer client: AR device component created");
 
-            auto trackableLoader = gXpcfComponentManager->resolve<input::files::ITrackableLoader>();
-            LOG_INFO("Producer client: Trackable loader component created");
-
             gImageViewer = gXpcfComponentManager->resolve<display::IImageViewer>();
             LOG_INFO("Producer client: Image viewer component created");
 
@@ -207,35 +202,16 @@ int main(int argc, char ** argv)
                 LOG_INFO("Producer client: Set mapping pipeline camera parameters");
                 gMappingPipelineMulti->setCameraParameters(camParams);
 
-                LOG_INFO("Producer client: Load fiducial marker description file");
-                SRef<Trackable> trackableObject;
-                if (trackableLoader->loadTrackable(trackableObject) != FrameworkReturnCode::_SUCCESS)
-                {
-                    LOG_ERROR("Cannot load fiducial marker");
-                    return -1;
-                }
+                LOG_INFO("Producer client: Start mapping pipeline");
 
-                if (trackableObject != 0) {
-                    LOG_INFO("Producer client: Fiducial marker created: url = {}", trackableObject->getURL());
+                if (gMappingPipelineMulti->start() == FrameworkReturnCode::_SUCCESS) {
+                    LOG_INFO("Start producer client thread");
 
-                    LOG_INFO("Producer client: Set mapping pipeline fiducial marker");
-                    gMappingPipelineMulti->setObjectToTrack(trackableObject);
-
-                    LOG_INFO("Producer client: Start mapping pipeline");
-
-                    if (gMappingPipelineMulti->start() == FrameworkReturnCode::_SUCCESS) {
-                        LOG_INFO("Start producer client thread");
-
-                        gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
-                        gClientProducerTask->start();
-                    }
-                    else {
-                        LOG_ERROR("Cannot start mapping pipeline");
-                    }
+                    gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
+                    gClientProducerTask->start();
                 }
                 else {
-                    LOG_ERROR("Error while loading fiducial marker");
-                    return -1;
+                    LOG_ERROR("Cannot start mapping pipeline");
                 }
             }
             else {

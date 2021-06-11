@@ -27,6 +27,10 @@
 #include <xpcf/collection/ICollection.h>
 #include <xpcf/remoting/GrpcHelper.h>
 
+#include "core/Log.h"
+
+using namespace SolAR;
+
 namespace org { namespace bcom { namespace xpcf {
 
 class GrpcServerManager : public ConfigurableBase, virtual public IGrpcServerManager

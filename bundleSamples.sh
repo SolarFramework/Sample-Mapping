@@ -20,7 +20,7 @@ remaken install packagedependencies.txt
 remaken install packagedependencies.txt -c debug
 
 echo "**** Bundle dependencies in bin folder"
-for file in $(find ./SolARSample* ./SolARPipeline*/tests/SolARPipelineTest* -path "*_conf.xml")
+for file in `find . -type f \( -name "SolARSample*_conf.xml" -or -name "SolARPipelineTest*_conf.xml" \)`
 do
    echo "install dependencies for config file: $file"
    remaken bundleXpcf $file -d ./bin/Release -s modules

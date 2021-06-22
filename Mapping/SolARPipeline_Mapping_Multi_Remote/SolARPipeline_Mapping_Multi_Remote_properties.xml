@@ -11,6 +11,12 @@
         <property name="max_send_message_size" access="rw" type="uint" value="2000000"/>
     </configure>
 -->
+    <!-- gRPC proxy configuration-->
+    <configure component="d9da863c-c9ff-4562-a3a2-329ac1f44008">
+        <property name="channelUrl" access="rw" type="string" value="0.0.0.0:50053"/>
+        <property name="channelCredentials" access="rw" type="uint" value="0"/>
+    </configure>
+
     <!-- mapping pipeline configuration -->
     <configure component="SolARSLAMBootstrapper">
         <property name="hasPose" type="int" value="1"/>

@@ -74,6 +74,7 @@ void GrpcServerManager::runServer()
     }
     std::unique_ptr<grpc::Server> server(m_builder.BuildAndStart());
     LOG_DEBUG("Server listening on  {}", m_serverAddress);
+
     server->Wait();
 }
 

@@ -26,6 +26,7 @@
         <!-- gRPC proxy configuration-->
         <configure component="110a089c-0bb1-488e-b24b-c1b96bc9df3b">
             <property name="channelUrl" access="rw" type="string" value="0.0.0.0:50051"/>
+            <!--property name="channelUrl" access="rw" type="string" value="mapping-pipeline.artwin.b-com.com:31956"/-->
             <property name="channelCredentials" access="rw" type="uint" value="0"/>
         </configure>
         <!-- Remote client configuration-->

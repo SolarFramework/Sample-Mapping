@@ -7,6 +7,11 @@
       <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="XPCF::IComponentIntrospect" description="Component introspection interface."/>
       <interface uuid="baab5e42-2c24-48de-953b-07237af419e4" name="org::bcom::xpcf::IGrpcService" description="xpcf GrpcService interface"/>
     </component>
+    <component uuid="d9da863c-c9ff-4562-a3a2-329ac1f44008" name="IMapUpdatePipeline_grpcProxy" description="IMapUpdatePipeline_grpcProxy grpc client proxy component">
+        <interface uuid="6c5b9edc-c78b-47fd-8cb2-2bf8d7ede4ea" name="XPCF::IInjectable" description="Provides dependency injection interface"/>
+        <interface uuid="98dba14f-6ef9-462e-a387-34756b4cba80" name="XPCF::IConfigurable" description="Provides generic configuration ability to any component through metadata parameters"/>
+        <interface uuid="49cbd32c-6dfa-4155-b151-7261dd13f552" name="IMapUpdatePipeline" description="The interface to define a map update processing pipeline"/>
+    </component>
 </module>
 
 <!-- Modules used by the mapping pipeline -->

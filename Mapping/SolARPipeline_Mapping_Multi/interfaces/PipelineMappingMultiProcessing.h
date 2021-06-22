@@ -56,7 +56,7 @@
 #include "datastructure/Image.h"
 #include "datastructure/CloudPoint.h"
 #include "datastructure/Keypoint.h"
-
+#include "api/pipeline/IMapUpdatePipeline.h"
 
 namespace SolAR {
 namespace PIPELINES {
@@ -150,6 +150,7 @@ namespace MAPPING {
         SRef<api::storage::IPointCloudManager> m_pointCloudManager;
 		SRef<api::storage::ICovisibilityGraphManager> m_covisibilityGraphManager;
 		SRef<api::storage::IMapManager> m_mapManager;
+        SRef<api::pipeline::IMapUpdatePipeline> m_mapUpdatePipeline;
         SRef<api::features::IKeypointDetector> m_keypointsDetector;
         SRef<api::features::IDescriptorsExtractor> m_descriptorExtractor;
         SRef<api::features::IDescriptorMatcher> m_matcher;

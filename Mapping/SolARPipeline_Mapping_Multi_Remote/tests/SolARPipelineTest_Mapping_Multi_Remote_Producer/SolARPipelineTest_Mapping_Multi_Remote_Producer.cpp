@@ -70,7 +70,7 @@ auto fnClientProducer = []() {
         if (gArDevice->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
 
             gNbImages ++;
-            LOG_DEBUG("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
+            LOG_INFO("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
 
             SRef<Image> image = images[INDEX_USE_CAMERA];
             Transform3Df pose = poses[INDEX_USE_CAMERA];
@@ -224,6 +224,10 @@ int main(int argc, char* argv[])
             // Load camera intrinsics parameters
             CameraParameters camParams;
             camParams = gArDevice->getParameters(0);
+
+            result = gMappingPipelineMulti->init();
+            LOG_INFO("Remote producer client: Init mapping pipeline result = {}",
+                     getReturnCodeTextValue(result));
 
             result = gMappingPipelineMulti->setCameraParameters(camParams);
             LOG_INFO("Remote producer client: Set mapping pipeline camera parameters result = {}",

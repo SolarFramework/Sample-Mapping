@@ -207,21 +207,6 @@ namespace MAPPING {
             return FrameworkReturnCode::_ERROR_;
         }
 
-        if (m_mapUpdatePipeline != nullptr){
-
-            LOG_DEBUG("Start the remote map update pipeline");
-
-            try {
-                if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {
-                    LOG_ERROR("Error while starting the remote map update pipeline");
-                    return FrameworkReturnCode::_ERROR_;
-                }
-            }  catch (const std::exception &e) {
-                LOG_ERROR("Exception raised during remote request to the map update pipeline: {}", e.what());
-                return FrameworkReturnCode::_ERROR_;
-            }
-        }
-
         return FrameworkReturnCode::_SUCCESS;
     }
 
@@ -245,21 +230,6 @@ namespace MAPPING {
 
         LOG_DEBUG("Re-initialize instance attributes");
         initClassMembers();
-
-        if (m_mapUpdatePipeline != nullptr){
-
-            LOG_DEBUG("Stop the remote map update pipeline");
-
-            try {
-                if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
-                    LOG_ERROR("Error while stopping the remote map update pipeline");
-                    return FrameworkReturnCode::_ERROR_;
-                }
-            }  catch (const std::exception &e) {
-                LOG_ERROR("Exception raised during remote request to the map update pipeline: {}", e.what());
-                return FrameworkReturnCode::_ERROR_;
-            }
-        }
 
         return FrameworkReturnCode::_SUCCESS;
     }
@@ -554,17 +524,31 @@ namespace MAPPING {
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 
         if (m_mapUpdatePipeline != nullptr){
-            LOG_DEBUG("Send local map to the remote map update pipeline");
-
-            SRef<Map> localMap;
-            m_mapManager->getMap(localMap);
-
             try {
-                if (m_mapUpdatePipeline->mapUpdateRequest(localMap) == FrameworkReturnCode::_SUCCESS) {
-                    LOG_DEBUG("Request to the remote map update pipeline has succeeded");
+                LOG_DEBUG("Start the remote map update pipeline");
+
+                if (m_mapUpdatePipeline->start() == FrameworkReturnCode::_SUCCESS) {
+
+                    LOG_DEBUG("Send local map to the remote map update pipeline");
+
+                    SRef<Map> localMap;
+                    m_mapManager->getMap(localMap);
+
+                    if (m_mapUpdatePipeline->mapUpdateRequest(localMap) == FrameworkReturnCode::_SUCCESS) {
+                        LOG_DEBUG("Request to the remote map update pipeline has succeeded");
+                    }
+                    else {
+                        LOG_DEBUG("Request to the remote map update pipeline has failed");
+                    }
+
+                    LOG_DEBUG("Stop the remote map update pipeline");
+
+                    if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
+                        LOG_ERROR("Error while stopping the remote map update pipeline");
+                    }
                 }
                 else {
-                    LOG_DEBUG("Request to the remote map update pipeline has failed");
+                    LOG_ERROR("Error while starting the remote map update pipeline");
                 }
 
             }  catch (const std::exception &e) {
@@ -575,7 +559,6 @@ namespace MAPPING {
             LOG_DEBUG("Update global map (save to file)");
             m_mapManager->saveToFile();
         }
-
     }
 
     bool PipelineMappingMultiProcessing::isBootstrapFinished() const {

@@ -1,6 +1,6 @@
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Multi_Remote_Producer
-VERSION=0.9.3
+VERSION=0.10.0
 
 CONFIG += c++1z
 CONFIG += console

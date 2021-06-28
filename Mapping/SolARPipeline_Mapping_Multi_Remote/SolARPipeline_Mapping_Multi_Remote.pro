@@ -73,7 +73,8 @@ win32 {
 DISTFILES += \
     SolARPipeline_Mapping_Multi_Remote_modules.xml \
     SolARPipeline_Mapping_Multi_Remote_properties.xml \
-    packagedependencies.txt
+    packagedependencies.txt \
+    start_mapping_multi_service.sh
 
 xml_files.path = $${TARGETDEPLOYDIR}
 xml_files.files =  SolARPipeline_Mapping_Multi_Remote_modules.xml \

@@ -144,10 +144,10 @@ int main(int argc, char *argv[])
 		};
 			
 		// buffers
-		xpcf::DropBuffer<std::pair<SRef<Image>, Transform3Df>>						m_dropBufferCamImagePoseCaptureBootstrap;
 		xpcf::DropBuffer<std::pair<SRef<Image>, Transform3Df>>						m_dropBufferCamImagePoseCapture;
 		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferKeypoints;
-		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferFrameDescriptors;
+		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferFrame;
+		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferFrameBootstrap;
 		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferAddKeyframe;
 		xpcf::DropBuffer<SRef<Keyframe>>											m_dropBufferNewKeyframe;
 		xpcf::DropBuffer<SRef<Keyframe>>											m_dropBufferNewKeyframeLoop;
@@ -182,26 +182,24 @@ int main(int argc, char *argv[])
 
 		// bootstrap task
 		auto fnBootstrap = [&]() {
-			std::pair<SRef<Image>, Transform3Df> imagePose;
-			if (bootstrapOk || !m_dropBufferCamImagePoseCaptureBootstrap.tryPop(imagePose)) {
+			SRef<Frame> frame;
+			if (bootstrapOk || !m_dropBufferFrameBootstrap.tryPop(frame)) {
 				xpcf::DelegateTask::yield();
 				return;
 			}
-			SRef<Image> image = imagePose.first;
-			Transform3Df pose = imagePose.second;
 			// find T_W_M
 			if (!isFoundTransform) {
-				m_dropBufferDisplay.push(image);
+				m_dropBufferDisplay.push(frame->getView());
 				Transform3Df T_M_C;
-				if (fiducialMarkerPoseEstimator->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
-					T_M_W = T_M_C * pose.inverse();
+				if (fiducialMarkerPoseEstimator->estimate(frame->getView(), T_M_C) == FrameworkReturnCode::_SUCCESS) {
+					T_M_W = T_M_C * frame->getPose().inverse();
 					isFoundTransform = true;
 				}
 				return;
 			}
 			// do bootstrap
 			SRef<Image> view;
-			if (bootstrapper->process(image, view, pose) == FrameworkReturnCode::_SUCCESS) {
+			if (bootstrapper->process(frame, view) == FrameworkReturnCode::_SUCCESS) {
 				// apply bundle adjustement 
 				bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);	
 				SRef<Keyframe> keyframe2;
@@ -212,7 +210,7 @@ int main(int argc, char *argv[])
 				bootstrapOk = true;
 				return;
 			}
-			overlay3D->draw(pose, view);
+			overlay3D->draw(frame->getPose(), view);
 			m_dropBufferDisplay.push(view);
 		};	
 
@@ -230,17 +228,14 @@ int main(int argc, char *argv[])
 			Transform3Df pose = poses[INDEX_USE_CAMERA];
 			// correct pose
 			pose = T_M_W * pose;
-			if (bootstrapOk)
-				m_dropBufferCamImagePoseCapture.push(std::make_pair(image, pose));			
-			else
-				m_dropBufferCamImagePoseCaptureBootstrap.push(std::make_pair(image, pose));
+			m_dropBufferCamImagePoseCapture.push(std::make_pair(image, pose));			
 		};
 
 		// Keypoint detection task
 		auto fnDetection = [&]()
 		{						
 			std::pair<SRef<Image>, Transform3Df> imagePose;
-			if (!bootstrapOk || !m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
+			if (!m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
 				xpcf::DelegateTask::yield();
 				return;
 			}
@@ -262,14 +257,17 @@ int main(int argc, char *argv[])
 			SRef<DescriptorBuffer> descriptors;
 			descriptorExtractor->extract(frame->getView(), frame->getKeypoints(), descriptors);
 			frame->setDescriptors(descriptors);
-			m_dropBufferFrameDescriptors.push(frame);
+			if (bootstrapOk)
+				m_dropBufferFrame.push(frame);
+			else
+				m_dropBufferFrameBootstrap.push(frame);
 		};
 
 		// Update visibilities task					
 		auto fnUpdateVisibilities = [&]()
 		{			
 			SRef<Frame> frame;
-			if (!m_dropBufferFrameDescriptors.tryPop(frame)) {
+			if (!m_dropBufferFrame.tryPop(frame)) {
 				xpcf::DelegateTask::yield();
 				return;
 			}

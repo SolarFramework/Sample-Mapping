@@ -237,23 +237,11 @@ namespace MAPPING {
     FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
 
         LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
-
         // Correct pose after loop detection
         Transform3Df poseCorrected = m_T_M_W * pose;
-
-        if (!isBootstrapFinished()){
-            // Add pair (image, pose) to input drop buffer for bootstrap
-            m_dropBufferCamImagePoseCaptureBootstrap.push(std::make_pair(image, poseCorrected));
-
-            LOG_DEBUG("New pair of (image, pose) stored for bootstrap processing");
-        }
-        else {
-            // Add pair (image, pose) to input drop buffer for mapping
-            m_dropBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
-
-            LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
-        }
-
+		// Send image and corrected pose to process
+        m_dropBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
+        LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
         return FrameworkReturnCode::_SUCCESS;
     }
 
@@ -306,37 +294,24 @@ namespace MAPPING {
         m_isBootstrapFinished = false;
 
         LOG_DEBUG("Empty buffers");
-
-        m_dropBufferCamImagePoseCaptureBootstrap.empty();
-        m_dropBufferCamImagePoseCapture.empty();
-        m_dropBufferKeypoints.empty();
-        m_dropBufferFrameDescriptors.empty();
-        m_dropBufferAddKeyframe.empty();
-        m_dropBufferNewKeyframe.empty();
-        m_dropBufferNewKeyframeLoop.empty();
     }
 
     void PipelineMappingMultiProcessing::correctPoseAndBootstrap () {
 
         LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap = {}", isBootstrapFinished());
 
-        std::pair<SRef<Image>, Transform3Df> imagePose;
+		SRef<Frame> frame;
 
         // Try to get next (image, pose) if bootstrap is not finished
-        if (m_isBootstrapFinished ||
-           !m_dropBufferCamImagePoseCaptureBootstrap.tryPop(imagePose)) {
+        if (m_isBootstrapFinished || !m_dropBufferFrameBootstrap.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }
-
-        SRef<Image> image = imagePose.first;
-        Transform3Df pose = imagePose.second;
-
         LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap: new image to process");
 
         // do bootstrap
         SRef<Image> view;
-        if (m_bootstrapper->process(image, view, pose) == FrameworkReturnCode::_SUCCESS) {
+        if (m_bootstrapper->process(frame, view) == FrameworkReturnCode::_SUCCESS) {
 
             LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
             m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -356,9 +331,7 @@ namespace MAPPING {
 
         std::pair<SRef<Image>, Transform3Df> imagePose;
 
-        // Bootstrap finished?
-        if (!isBootstrapFinished() ||
-            !m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
+        if (!m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -377,16 +350,17 @@ namespace MAPPING {
 
         SRef<Frame> frame;
 
-        // Images to process ?
         if (!m_dropBufferKeypoints.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }
-
         SRef<DescriptorBuffer> descriptors;
         m_descriptorExtractor->extract(frame->getView(), frame->getKeypoints(), descriptors);
         frame->setDescriptors(descriptors);
-        m_dropBufferFrameDescriptors.push(frame);
+		if (isBootstrapFinished())
+			m_dropBufferFrame.push(frame);
+		else
+			m_dropBufferFrameBootstrap.push(frame);
     }
 
     void PipelineMappingMultiProcessing::updateVisibility() {
@@ -395,8 +369,8 @@ namespace MAPPING {
 
         SRef<Frame> frame;
 
-        // Frame to process?
-        if (!m_dropBufferFrameDescriptors.tryPop(frame)) {
+        // Frame to process
+        if (!m_dropBufferFrame.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }

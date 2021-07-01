@@ -134,37 +134,74 @@ namespace MAPPING {
         FrameworkReturnCode getDataForVisualization(std::vector<SRef<datastructure::CloudPoint>> & outputPointClouds,
                                                     std::vector<datastructure::Transform3Df> & keyframePoses) const override;
 
+	private:
+		/// @brief Initialize class members
+		void initClassMembers();
+
+		/// @brief Correct pose and do bootstrap using an image and the associated pose
+		/// This method must be called with successive pairs of (image, pose)
+		/// until the bootstrap process is finished (i.e. m_isBootstrapFinished is True)
+		void correctPoseAndBootstrap();
+
+		/// @brief Detection of keypoints
+		void keypointsDetection();
+
+		/// @brief Feature extraction
+		void featureExtraction();
+
+		/// @bried Update visibility
+		void updateVisibility();
+
+		/// @bried Mapping
+		void mapping();
+
+		/// @bried Loop closure detection
+		void loopClosure();
+
+		/// @brief Process to bundle adjustment, map pruning
+		/// and update global map
+		void globalBundleAdjustment();
+
+		/// @brief returns the status of bootstrap
+		/// @return true if bootstrap is finished (m_isBootstrapFinished value)
+		bool isBootstrapFinished() const;
+
+		/// @brief sets the bootstrap status
+		/// (the m_isBootstrapFinished variable value)
+		/// @param status: true (finished) or false (not finished)
+		void setBootstrapSatus(const bool status);
+
     private:
 
-        bool m_isBootstrapFinished; // indicates if the bootstrap step is finished
-        std::mutex m_mutexUseLocalMap; // Mutex used for mapping task
+        bool												m_isBootstrapFinished; // indicates if the bootstrap step is finished
+        std::mutex											m_mutexUseLocalMap; // Mutex used for mapping task
 
-        datastructure::CameraParameters m_cameraParams;        // camera parameters
+        datastructure::CameraParameters						m_cameraParams;        // camera parameters
 
         // Components used
-        SRef<api::slam::IBootstrapper> m_bootstrapper;
-        SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;        
-        SRef<api::slam::ITracking> m_tracking;
-        SRef<api::slam::IMapping> m_mapping;
-        SRef<api::storage::IKeyframesManager> m_keyframesManager;
-        SRef<api::storage::IPointCloudManager> m_pointCloudManager;
-		SRef<api::storage::ICovisibilityGraphManager> m_covisibilityGraphManager;
-		SRef<api::storage::IMapManager> m_mapManager;
-        SRef<api::pipeline::IMapUpdatePipeline> m_mapUpdatePipeline;
-        SRef<api::features::IKeypointDetector> m_keypointsDetector;
-        SRef<api::features::IDescriptorsExtractor> m_descriptorExtractor;
-        SRef<api::features::IDescriptorMatcher> m_matcher;
-        SRef<api::features::IMatchesFilter> m_matchesFilter;
+        SRef<api::slam::IBootstrapper>						m_bootstrapper;
+        SRef<api::solver::map::IBundler>					m_bundler, m_globalBundler;        
+        SRef<api::slam::ITracking>							m_tracking;
+        SRef<api::slam::IMapping>							m_mapping;
+        SRef<api::storage::IKeyframesManager>				m_keyframesManager;
+        SRef<api::storage::IPointCloudManager>				m_pointCloudManager;
+		SRef<api::storage::ICovisibilityGraphManager>		m_covisibilityGraphManager;
+		SRef<api::storage::IMapManager>						m_mapManager;
+        SRef<api::pipeline::IMapUpdatePipeline>				m_mapUpdatePipeline;
+        SRef<api::features::IKeypointDetector>				m_keypointsDetector;
+        SRef<api::features::IDescriptorsExtractor>			m_descriptorExtractor;
+        SRef<api::features::IDescriptorMatcher>				m_matcher;
+        SRef<api::features::IMatchesFilter>					m_matchesFilter;
         SRef<api::solver::pose::I2D3DCorrespondencesFinder> m_corr2D3DFinder;
-        SRef<api::geom::IProject> m_projector;        
-        SRef<api::loop::ILoopClosureDetector> m_loopDetector;
-        SRef<api::loop::ILoopCorrector> m_loopCorrector;
-		SRef<api::geom::IUndistortPoints> m_undistortKeypoints;
+        SRef<api::geom::IProject>							m_projector;        
+        SRef<api::loop::ILoopClosureDetector>				m_loopDetector;
+        SRef<api::loop::ILoopCorrector>						m_loopCorrector;
+		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
 
-        bool m_isStopMapping;               // indicates if the mapping task is stopped
-        datastructure::Transform3Df m_T_M_W;               // 3D transformation matrix
-        float m_minWeightNeighbor, m_reprojErrorThreshold;
-        int m_countNewKeyframes;
+        bool												m_isStopMapping;               // indicates if the mapping task is stopped
+        datastructure::Transform3Df							m_T_M_W;               // 3D transformation matrix
+        float												m_minWeightNeighbor, m_reprojErrorThreshold;
+        int													m_countNewKeyframes;
 
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;
@@ -175,50 +212,13 @@ namespace MAPPING {
         xpcf::DelegateTask * m_loopClosureTask = nullptr;
 
         // Drop buffers used by mapping processing
-        xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCaptureBootstrap;
         xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCapture;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferKeypoints;
-        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameDescriptors;
+        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrame;
+        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameBootstrap;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframe;
-        xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframeLoop;
-
-
-        /// @brief Initialize class members
-        void initClassMembers();
-
-        /// @brief Correct pose and do bootstrap using an image and the associated pose
-        /// This method must be called with successive pairs of (image, pose)
-        /// until the bootstrap process is finished (i.e. m_isBootstrapFinished is True)
-        void correctPoseAndBootstrap();
-
-        /// @brief Detection of keypoints
-        void keypointsDetection();
-
-        /// @brief Feature extraction
-        void featureExtraction();
-
-        /// @bried Update visibility
-        void updateVisibility();
-
-        /// @bried Mapping
-        void mapping();
-
-        /// @bried Loop closure detection
-        void loopClosure();
-
-        /// @brief Process to bundle adjustment, map pruning
-        /// and update global map
-        void globalBundleAdjustment();
-
-        /// @brief returns the status of bootstrap
-        /// @return true if bootstrap is finished (m_isBootstrapFinished value)
-        bool isBootstrapFinished() const;
-
-        /// @brief sets the bootstrap status
-        /// (the m_isBootstrapFinished variable value)
-        /// @param status: true (finished) or false (not finished)
-        void setBootstrapSatus(const bool status);
+        xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframeLoop;        
     };
 
 }

@@ -32,7 +32,7 @@ namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
 #define NB_IMAGES_BETWEEN_RELOCALIZATION 10  // number of read images between 2 requests for relocalization
-#define NB_IMAGES_BEFORE_MAPPING 50          // number of read images before mapping (if relocalization failed)
+#define NB_IMAGES_BEFORE_MAPPING 50         // number of read images before mapping (if relocalization failed)
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -263,6 +263,11 @@ int main(int argc, char* argv[])
             LOG_INFO("Remote mapping client: Init mapping pipeline result = {}",
                      getReturnCodeTextValue(result));
 
+            if (result == FrameworkReturnCode::_ERROR_) {
+                LOG_ERROR("Cannot initialize mapping pipeline");
+                return -1;
+            }
+
             result = gMappingPipelineMulti->setCameraParameters(camParams);
             LOG_INFO("Remote mapping client: Set mapping pipeline camera parameters result = {}",
                      getReturnCodeTextValue(result));
@@ -270,6 +275,11 @@ int main(int argc, char* argv[])
             result = gRelocalizationPipeline->init();
             LOG_INFO("Remote relocalization client: Init relocalization pipeline result = {}",
                      getReturnCodeTextValue(result));
+
+            if (result == FrameworkReturnCode::_ERROR_) {
+                LOG_ERROR("Cannot initialize relocalization pipeline");
+                return -1;
+            }
 
             result = gRelocalizationPipeline->setCameraParameters(camParams);
             LOG_INFO("Remote relocalization client: Set relocalization pipeline camera parameters result = {}",
@@ -337,6 +347,7 @@ int main(int argc, char* argv[])
             }
             else {
                 LOG_ERROR("Cannot start mapping pipeline");
+                return -1;
             }
         }
         else {

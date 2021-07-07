@@ -150,6 +150,9 @@ namespace MAPPING {
 
         if (m_mapUpdatePipeline != nullptr){
 
+            LOG_DEBUG("Map Update pipeline URL = {}",
+                     m_mapUpdatePipeline->bindTo<xpcf::IConfigurable>()->getProperty("channelUrl")->getStringValue());
+
             LOG_DEBUG("Initialize the remote map update pipeline");
 
             try {

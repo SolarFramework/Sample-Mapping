@@ -50,17 +50,18 @@ The processing of this pipeline is divided into <ins>three main steps</ins>:
 
 To initialize the mapping pipeline processing, a device must give **the caracteristics of the camera** it uses (resolution, focal).
 
-Then, the pipeline is able to process images and poses. To do this, some <ins>input data# are needed</ins>:
+Then, the pipeline is able to process images and poses. To do this, some <ins>input data</ins> are needed:
 
 - **the images captured by the device** (images are sent to the pipeline one by one)
 - **the relative position and orientation of the capture device**, for each image
 
-And finally, after the pipeline processing, the <ins>output data# are</ins>:
+And finally, after the pipeline processing, the <ins>output data</ins> are:
 
 - the **current map of the place** calculated by the pipeline from the first image to the current one (in fact, a **point cloud**)
-- the **recalculated *positions and orientations of the capture device**, inside this point cloud, from the first image to the current one (in fact, only for some **keyframes** determined by the pipeline).
+- the **recalculated positions and orientations of the capture device**, inside this point cloud, from the first image to the current one (in fact, only for some **keyframes** determined by the pipeline).
 
-To facilitate the use of this pipeline by any client application embedded in a device, it offers a simple interface based on the _SolAR::api::pipeline::IMappingPipeline_ class (see https://solarframework.github.io/create/api/ for interface definition and data structures). +
+To facilitate the use of this pipeline by any client application embedded in a device, it offers a simple interface based on the _SolAR::api::pipeline::IMappingPipeline_ class (see https://solarframework.github.io/create/api/ for interface definition and data structures). 
+
 This interface is defined as follows:
 
 ```cpp
@@ -146,7 +147,7 @@ REPOSITORY                                    TAG               IMAGE ID       C
 artwin/solar/pipeline/mapping-multi-remote    latest            f613562d92a8   26 hours ago   2.05GB
 ```
 
-<ins>Step 2</ins>: Upload the new image to your Docker registry#
+<ins>Step 2</ins>: Upload the new image to your Docker registry
 
 The next step is to upload the mapping pipeline image to your own Docker repository, to make it available for deployment:
 
@@ -157,7 +158,7 @@ docker push artwin/solar/pipeline/mapping-multi-remote:latest
 
 Then, check that this image is now available in your repository.
 
-### To the deployment with Kubernetes
+### Deployment with Kubernetes
 
 > :warning: In order to be able to perform the instructions presented in this part, you must have installed the Kubernetes command-line tool, *kubectl*, on your computer:
 > https://kubernetes.io/docs/tasks/tools/
@@ -439,7 +440,7 @@ kubectl logs -f [pod name]
 kubectl set env deployment [deployment name] SOLAR_LOG_LEVEL=INFO
 ```
 
-NOTE: You can find more kubectl commands on this web site: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
+> :information_source: You can find more kubectl commands on this web site: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 
 ## Mapping Service test samples
 

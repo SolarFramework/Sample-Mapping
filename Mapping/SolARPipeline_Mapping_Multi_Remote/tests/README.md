@@ -7,7 +7,7 @@ The purpose of this documentation is to present the *ARCloud Mapping Service*: a
 
 First, we will present the mapping pipeline on which this remote service is based. Then, we will describe how to configure and deploy the service on a Cloud architecture. And finally, we will explain how to test this mapping service using a sample application.
 
-## Contents of the Mapping Service package=
+## Contents of the Mapping Service package
 
 The Mapping Service is delivered as a package containing all the files you need to deploy and test this computer vision pipeline on your own Cloud architecture.
 

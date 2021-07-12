@@ -26,21 +26,15 @@ This package includes:
   * all the **libraries needed by the two test applications**, stored in the _modules_ folder
   * the ***data needed by the two test applications**, stored in the _data_ folder
 
----
-:information_source: The complete projects of these two test applications are available on the **SolAR Framework GitHub**:
 
-https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Producer
+> :information_source: The complete projects of these two test applications are available on the **SolAR Framework GitHub**:
+> * https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Producer
+> * https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Viewer
 
-https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Viewer
----
+> :warning: The Mapping Service Docker image, based on Ubuntu 18.04, is completely independant from other external resources, and can be deployed on any Cloud infrastructure that supports Docker containers.
 
----
-:warning: The Mapping Service Docker image, based on Ubuntu 18.04, is completely independant from other external resources, and can be deployed on any Cloud infrastructure that supports Docker containers.
----
+> :warning: The test client applications were built on a **Linux** operating system (Ubuntu 18.04) and must be used on that system only.
 
----
-:warning: The test client applications were built on a **Linux** operating system (Ubuntu 18.04) and must be used on that system only.
----
 
 ## The Mapping Pipeline 
 
@@ -122,13 +116,9 @@ In fact, this service is a remote version of the mapping pipeline presented prev
 
 ### From the Docker image file
 
----
-:warning: In order to be able to perform the instructions presented in this part, you must have installed Docker on your computer:
-
-for Windows: https://www.docker.com/products/docker-desktop 
-
-for Ubuntu: https://doc.ubuntu-fr.org/docker
----
+> :warning: In order to be able to perform the instructions presented in this part, you must have installed Docker on your computer:
+> * for Windows: https://www.docker.com/products/docker-desktop 
+> * for Ubuntu: https://doc.ubuntu-fr.org/docker
 
 To help you easily deploy the mapping service on your own infrastructure, we have already performed some preliminary steps:
 
@@ -169,11 +159,9 @@ Then, check that this image is now available in your repository.
 
 ### To the deployment with Kubernetes
 
----
-:warning: In order to be able to perform the instructions presented in this part, you must have installed the Kubernetes command-line tool, *kubectl*, on your computer:
+> :warning: In order to be able to perform the instructions presented in this part, you must have installed the Kubernetes command-line tool, *kubectl*, on your computer:
+> https://kubernetes.io/docs/tasks/tools/
 
-https://kubernetes.io/docs/tasks/tools/
----
 
 When the mapping service Docker image is available on your registry, you are ready to deploy the service in your Cloud infrastructure, using Kubernetes. But before that, <ins>you must have prepared your Cloud architecture</ins>: set up a traffic manager, a load balancer, an application gateway, a firewall, servers, clusters, nodes...
 
@@ -476,9 +464,7 @@ The algorithm in this example is quite simple: it reads each pair of images and 
 
 Traces are displayed at runtime to follow the progress of the application. In addition, it displays each image read in a specific window to be able to visually follow the path of the Hololens device. 
 
----
-:warning:  you must have a graphical display manager ruuning in your system to manage the image visualization
----
+> :warning:  you must have a graphical display manager ruuning in your system to manage the image visualization
 
 #### Configure the producer application
 
@@ -569,9 +555,7 @@ This sample application is used to check the result of the processing of images 
 
 Traces are displayed at runtime to follow the progress of the application. In addition, it displays current point cloud and keyframe poses in a specific window to visualize the Mapping Service processing result. 
 
----
-:warning: You must have a graphical display manager ruuning in your system to manage the image visualization
----
+> :warning: You must have a graphical display manager ruuning in your system to manage the image visualization
 
 #### Configure the viewer application
 

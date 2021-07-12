@@ -1,5 +1,3 @@
-{::options parse_block_html="true" /}
-
 # ARCloud Mapping Service 
 [![License](https://img.shields.io/github/license/SolARFramework/SolARModuleTools?style=flat-square&label=License)](https://www.apache.org/licenses/LICENSE-2.0)
 
@@ -28,18 +26,10 @@ This package includes:
   * all the **libraries needed by the two test applications**, stored in the _modules_ folder
   * the ***data needed by the two test applications**, stored in the _data_ folder
 
-<div class="panel panel-info">
-**Note**
-{: .panel-heading}
-<div class="panel-body">
-
-The complete projects of these two test applications are available on the **SolAR Framework GitHub**:
+:warning: The complete projects of these two test applications are available on the **SolAR Framework GitHub**:
 
 https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Producer
 https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Viewer
-
-</div>
-</div>
 
 <div class="panel panel-Caution">
 **Caution**

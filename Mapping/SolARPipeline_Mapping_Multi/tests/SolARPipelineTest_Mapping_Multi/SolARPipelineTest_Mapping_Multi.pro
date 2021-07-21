@@ -3,6 +3,8 @@ QMAKE_PROJECT_DEPTH = 0
 QT       -= core gui
 CONFIG -= qt
 
+QMAKE_PROJECT_DEPTH = 0
+
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Multi
 VERSION=0.10.0

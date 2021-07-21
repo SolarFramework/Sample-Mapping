@@ -112,14 +112,14 @@ int main(int argc, char *argv[])
 		LOG_INFO("Started!");
 
 		// Load camera intrinsics parameters
-		CameraParameters camParams;
-        camParams = arDevice->getParameters(INDEX_USE_CAMERA);
+		CameraRigParameters camRigParams = arDevice->getCameraParameters();
+		CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
 		overlay3D->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		tracking->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		mapping->setCameraParameters(camParams.intrinsic, camParams.distortion);
+		mapping->setCameraParameters(camParams);
 		pnpRansac->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);

@@ -174,7 +174,7 @@ namespace MAPPING {
 
         m_bootstrapper->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 		m_tracking->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-        m_mapping->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
+        m_mapping->setCameraParameters(m_cameraParams);
         m_projector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_loopDetector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_loopCorrector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);

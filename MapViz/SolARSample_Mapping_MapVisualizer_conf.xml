@@ -74,7 +74,7 @@
             <property name="drawWorldAxis" type="uint" value="0"/>
             <property name="axisScale" type="float" value="0.01"/>
             <property name="pointSize" type="float" value="1.0"/>
-            <property name="cameraScale" type="float" value="0.075"/>
+            <property name="cameraScale" type="float" value="1.0"/>
             <property name="keyframeAsCamera" type="uint" value="1"/>
             <property name="framesColor" type="uint">
 				<value>128</value>

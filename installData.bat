@@ -16,4 +16,4 @@ curl https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/lo
 powershell Expand-Archive loopDesktopB.zip -DestinationPath .\data\data_hololens -F
 del loopDesktopB.zip
 
-curl https://artifact.b-com.com/solar-generic-local/captures/hololens/hololens_calibration.yml -L -o .\data\data_hololens\hololens_calibration.yml
+curl https://artifact.b-com.com/solar-generic-local/captures/hololens/hololens_calibration.json -L -o .\data\data_hololens\hololens_calibration.json

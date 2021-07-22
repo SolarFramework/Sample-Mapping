@@ -16,13 +16,22 @@ remaken install packagedependencies.txt
 remaken install packagedependencies.txt -c debug
 
 echo "**** Bundle dependencies in bin folder"
-FOR /D /R %%d IN (Map*) DO (
+ FOR /D /R %%d IN (SolARSample*) DO (
+    For %%f IN (%%~fd\*_conf.xml) DO (
+      echo "** Bundle sample configuration file %%f"
+      remaken bundleXpcf "%%f" -d ./bin/Release -s modules
+      remaken bundleXpcf "%%f" -d ./bin/Debug -s modules -c debug
+   )
+)
+
+FOR /D /R %%d IN (SolARPipeline*) DO (
    For %%f IN (%%~fd\*_conf.xml) DO (
       echo "** Bundle sample configuration file %%f"
       remaken bundleXpcf "%%f" -d ./bin/Release -s modules
       remaken bundleXpcf "%%f" -d ./bin/Debug -s modules -c debug
    )
 )
+
 
 echo "**** Zip bundles"
 "7z.exe" a -tzip bin\%filename%_debug.zip README.md

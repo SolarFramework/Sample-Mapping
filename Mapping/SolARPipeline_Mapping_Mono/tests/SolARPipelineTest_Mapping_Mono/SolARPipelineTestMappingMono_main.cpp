@@ -17,6 +17,7 @@
 #include <boost/log/core.hpp>
 #include <boost/thread/thread.hpp>
 #include <signal.h>
+#include <thread>
 
 #include "core/Log.h"
 #include "api/pipeline/IMappingPipeline.h"
@@ -79,7 +80,8 @@ auto fnClientProducer = []() {
             gMappingPipeline->mappingProcessRequest(image, pose);
 
             if (gImageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP) {
-                gClientProducerTask->stop();
+                std::thread t ([](){raise(SIGINT);} );
+                t.detach();
             }
         }
         else {

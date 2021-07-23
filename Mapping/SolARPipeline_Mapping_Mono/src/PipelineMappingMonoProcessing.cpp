@@ -171,12 +171,12 @@ namespace MAPPING {
     }
 
     FrameworkReturnCode PipelineMappingMonoProcessing::stop() {
-
-        LOG_DEBUG("PipelineMappingMonoProcessing::stop");
-
-        LOG_DEBUG("Stop mapping processing task");
-        m_mappingTask->stop();
-
+		LOG_DEBUG("PipelineMappingMonoProcessing::stop");
+		if (isBootstrapFinished()) {
+			globalBundleAdjustment();
+		}
+		LOG_DEBUG("Stop mapping processing task");
+		m_mappingTask->stop();
         return FrameworkReturnCode::_SUCCESS;
     }
 
@@ -357,9 +357,9 @@ namespace MAPPING {
                         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
                         if (m_loopDetector->detect(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
                             // detected loop keyframe
-                            LOG_DEBUG("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-                            LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-                            LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
+                            LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
+                            LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+                            LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
                             // performs loop correction
                             Transform3Df keyframeOldPose = keyframe->getPose();
                             m_loopCorrector->correct(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
@@ -381,18 +381,7 @@ namespace MAPPING {
                 if (keyframe) {
 					m_tracking->updateReferenceKeyframe(keyframe);
                 }
-            }
-            else {
-                LOG_DEBUG("***** No (image, pose) pair to process *****");
-
-                // Data to store ?
-                if (m_dataToStore) {
-                    m_dataToStore = false;
-
-                    // Bundle adjustment, map pruning and global map udate
-                    globalBundleAdjustment();
-                }
-            }
+            }         
         }
     }
 

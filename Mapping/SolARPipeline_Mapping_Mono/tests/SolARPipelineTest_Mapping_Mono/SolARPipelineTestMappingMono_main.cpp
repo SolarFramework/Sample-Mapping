@@ -12,13 +12,7 @@
  */
 
 #include <xpcf/xpcf.h>
-#include "xpcf/threading/BaseTask.h"
-#include <iostream>
 #include <boost/log/core.hpp>
-#include <boost/thread/thread.hpp>
-#include <signal.h>
-#include <thread>
-
 #include "core/Log.h"
 #include "api/pipeline/IMappingPipeline.h"
 #include "api/input/devices/IARDevice.h"
@@ -109,14 +103,14 @@ int main(int argc, char ** argv)
 			SRef<Image> image = images[INDEX_USE_CAMERA];
 			Transform3Df pose = poses[INDEX_USE_CAMERA];
 			// display image
-			if (gImageViewer->display(image) != FrameworkReturnCode::_SUCCESS) break;
+			if (gImageViewer->display(image) == FrameworkReturnCode::_STOP) break;
 			// mapping
 			gMappingPipeline->mappingProcessRequest(image, pose);
 			// get map
 			std::vector<SRef<CloudPoint>> pointCloud;
 			std::vector<Transform3Df> keyframePoses;
 			if (gMappingPipeline->getDataForVisualization(pointCloud, keyframePoses) == FrameworkReturnCode::_SUCCESS) {
-				if (g3DViewer->display(pointCloud, keyframePoses[keyframePoses.size() - 1], keyframePoses) != FrameworkReturnCode::_SUCCESS)
+				if (g3DViewer->display(pointCloud, keyframePoses[keyframePoses.size() - 1], keyframePoses) == FrameworkReturnCode::_STOP)
 					break;
 			}
 		}		

@@ -114,12 +114,12 @@ int main(int argc, char ** argv)
 			}
 		}
 
-		std::vector<SRef<CloudPoint>> pointCloud;
-		std::vector<Transform3Df> keyframePoses;
-		if (gMappingPipeline->getDataForVisualization(pointCloud, keyframePoses) == FrameworkReturnCode::_SUCCESS) {
-			LOG_INFO("Number of cloud points: {}", pointCloud.size());
-			LOG_INFO("Number of keyframes: {}", keyframePoses.size());
-			while (g3DViewer->display(pointCloud, keyframePoses[keyframePoses.size() - 1], keyframePoses) == FrameworkReturnCode::_SUCCESS);
+		while (true) {
+			std::vector<SRef<CloudPoint>> pointCloud;
+			std::vector<Transform3Df> keyframePoses;
+			if ((gMappingPipeline->getDataForVisualization(pointCloud, keyframePoses) != FrameworkReturnCode::_SUCCESS) ||
+				(g3DViewer->display(pointCloud, keyframePoses[keyframePoses.size() - 1], keyframePoses) == FrameworkReturnCode::_STOP))
+				break;
 		}
 		gMappingPipeline->stop();
     }

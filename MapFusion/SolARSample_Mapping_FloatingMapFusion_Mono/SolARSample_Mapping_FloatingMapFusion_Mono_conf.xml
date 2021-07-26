@@ -262,7 +262,7 @@
 			<property name="thresConfidence" type="float" value="0.25"/>
 		</configure>
 		<configure component="SolAROverlapDetector">
-			<property name="minNbInliers" type="int" value="50"/>
+			<property name="minNbInliers" type="int" value="40"/>
 		</configure>
 		<configure component="SolARMapFusionOpencv">
 			<property name="radius" type="float" value="0.2"/>

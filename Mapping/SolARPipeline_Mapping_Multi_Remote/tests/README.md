@@ -13,20 +13,20 @@ The Mapping Service is delivered as a package containing all the files you need 
 
 This package includes:
 
-- the **Docker image** of the remote service, available on a public docker repository (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest)
+* the **Docker image** of the remote service, available on a public docker repository (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest)
 
-- the **Kubernetes manifest file** to deploy the service on your own Cloud architecture (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-helm-virtual/mapping-service-manifest.yaml)
-- 
-- **two test client applications**, grouped in a compressed file (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-generic-local/mapping-service-tests/mapping_service_test_samples.tar.gz) which contains:
+* the **Kubernetes manifest file** to deploy the service on your own Cloud architecture (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-helm-virtual/mapping-service-manifest.yaml)
 
-* the **Producer client application** : _SolARPipelineTest_Mapping_Multi_Remote_Producer_
-* the **Producer client configuration** : _SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml_
-* a **script to launch the producer application**: _start_producer.sh_
-* the **Viewer client application** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_
-* the **Viewer client configuration** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_conf.xml_
-* a **script to launch the viewer application**: _start_viewer.sh_
-* all the **libraries needed by the two test applications**, stored in the _modules_ folder
-* a **script to install the data** needed by the two test applications: _install_data.sh_
+* **two test client applications**, grouped in a compressed file (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-generic-local/mapping-service-tests/mapping_service_test_samples.tar.gz) which contains:
+
+  * the **Producer client application** : _SolARPipelineTest_Mapping_Multi_Remote_Producer_
+  * the **Producer client configuration** : _SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml_
+  * a **script to launch the producer application**: _start_producer.sh_
+  * the **Viewer client application** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_
+  * the **Viewer client configuration** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_conf.xml_
+  * a **script to launch the viewer application**: _start_viewer.sh_
+  * all the **libraries needed by the two test applications**, stored in the _modules_ folder
+  * a **script to install the data** needed by the two test applications: _install_data.sh_
 
 > :information_source: The complete projects of these two test applications are available on the **SolAR Framework GitHub**:
 > * https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Producer
@@ -128,11 +128,9 @@ To help you easily deploy the mapping service on your own infrastructure, we hav
 
 * encapsulation of the remote mapping pipeline in a **Docker container**, which exposes its interface through a default port
 
-* generation of the corresponding **Docker image**
-
 * generation of the corresponding **Docker image**, which is available on this public docker repository: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest
 
-So, you are ready to deploy the service in your Cloud infrastructure, using Kubernetes. But before that, [underline]#you must have prepared your Cloud architecture#: set up a traffic manager, a load balancer, an application gateway, a firewall, servers, clusters, nodes...
+So, you are ready to deploy the service in your Cloud infrastructure, using Kubernetes. But before that, **you must have prepared your Cloud architecture**: set up a traffic manager, a load balancer, an application gateway, a firewall, servers, clusters, nodes...
 
 ### Kubernetes manifest file
 
@@ -445,9 +443,21 @@ Traces are displayed at runtime to follow the progress of the application. In ad
 
 > :warning:  you must have a graphical display manager ruuning in your system to manage the image visualization
 
+#### Install data files
+
+The producer client sample needs specific data to run (Hololens camera calibration and captured images with poses). 
+
+**To install this dataset from a remote repository, just use the _install_data.sh_ script included in the sample package.**
+
+This script file will download all the data and store it in a new **data** folder containing: 
+
+- the Hololens camera calibration file: _./data/data_hololens/hololens_calibration.yml_
+
+- two complete sets of images/poses captured by a Hololens device: _./data/data_hololens/loop_desktop_A_ and _./data/data_hololens/loop_desktop_B_
+
 #### Configure the producer application
 
-This sample application uses an XML configuration file to initialize at runtime: **SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml**
+This sample application uses an XML configuration file to initialize at runtime: **_SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml_**
 
 You need to edit this file to match your own configuration. 
 
@@ -478,9 +488,14 @@ And if you want to **change the Hololens dataset** used by the sample applicatio
     <property name="pathToData" type="string" value="[path to your dataset]"/>
 ```
 
+Example:
+```xml
+    <property name="pathToData" type="string" value="./data/data_hololens/loop_desktop_B"/>
+```
+
 #### Launch the producer application
 
-Once you have edited the XML configuration file, you are ready to launch the application. To do this, just use the predefined script file: *start_producer.sh*
+Once you have edited the XML configuration file, you are ready to launch the application. To do this, just use the predefined script file: **_start_producer.sh_**
 
 Then, you can verify that the application is running correctly by looking at its traces:
 
@@ -538,7 +553,7 @@ Traces are displayed at runtime to follow the progress of the application. In ad
 
 #### Configure the viewer application
 
-This sample application uses an XML configuration file to initialize at runtime: *_SolARPipelineTest_Mapping_Multi_Remote_Viewer_conf.xml_*
+This sample application uses an XML configuration file to initialize at runtime: **_SolARPipelineTest_Mapping_Multi_Remote_Viewer_conf.xml_**
 
 You need to edit this file to match your own configuration. 
 
@@ -555,7 +570,7 @@ Only the *gRPC proxy configuration* block of the *properties* part has to be mod
 
 #### Launch the viewer application
 
-Once you have edited the XML configuration file, you are ready to launch the application. To do this, just use the predefined script file: *start_viewer.sh*
+Once you have edited the XML configuration file, you are ready to launch the application. To do this, just use the predefined script file: **_start_viewer.sh_**
 
 Then, you can verify that the application is running correctly by looking at its traces:
 

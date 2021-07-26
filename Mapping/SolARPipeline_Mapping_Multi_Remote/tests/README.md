@@ -13,19 +13,20 @@ The Mapping Service is delivered as a package containing all the files you need 
 
 This package includes:
 
-- the **Docker image file** of the remote service: _mapping-multi-remote.tar_
+- the **Docker image** of the remote service, available on a public docker repository (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest)
 
-- **two test client applications**, grouped in the folder _SolARPipeline_Mapping_Multi_Clients_ which contains:
+- the **Kubernetes manifest file** to deploy the service on your own Cloud architecture (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-helm-virtual/mapping-service-manifest.yaml)
+- 
+- **two test client applications**, grouped in a compressed file (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-generic-local/mapping-service-tests/mapping_service_test_samples.tar.gz) which contains:
 
 * the **Producer client application** : _SolARPipelineTest_Mapping_Multi_Remote_Producer_
 * the **Producer client configuration** : _SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml_
-  * a **script to launch the producer application**: _start_producer.sh_
-  * the **Viewer client application** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_
-  * the **Producer client configuration** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_conf.xml_
-  * a **script to launch the viewer application**: _start_viewer.sh_
-  * all the **libraries needed by the two test applications**, stored in the _modules_ folder
-  * the ***data needed by the two test applications**, stored in the _data_ folder
-
+* a **script to launch the producer application**: _start_producer.sh_
+* the **Viewer client application** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_
+* the **Viewer client configuration** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_conf.xml_
+* a **script to launch the viewer application**: _start_viewer.sh_
+* all the **libraries needed by the two test applications**, stored in the _modules_ folder
+* a **script to install the data** needed by the two test applications: _install_data.sh_
 
 > :information_source: The complete projects of these two test applications are available on the **SolAR Framework GitHub**:
 > * https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Producer
@@ -113,13 +114,11 @@ The mapping pipeline sample is available on the *SolAR Framework GitHub* (multit
 
 ## The Mapping Service
 
+> :warning: In order to be able to perform the instructions presented in this part, you must have installed the Kubernetes command-line tool, **_kubectl_**, on your computer: https://kubernetes.io/docs/tasks/tools/
+
+### Mapping Service Docker image
+
 In fact, this service is a remote version of the mapping pipeline presented previously, designed to be deployed in a Cloud architecture, to provide AR device applications with an easy way to benefit from this powerful SolAR Framework spatial computing algorithm.
-
-### From the Docker image file
-
-> :warning: In order to be able to perform the instructions presented in this part, you must have installed Docker on your computer:
-> * for Windows: https://www.docker.com/products/docker-desktop 
-> * for Ubuntu: https://doc.ubuntu-fr.org/docker
 
 To help you easily deploy the mapping service on your own infrastructure, we have already performed some preliminary steps:
 
@@ -131,44 +130,15 @@ To help you easily deploy the mapping service on your own infrastructure, we hav
 
 * generation of the corresponding **Docker image**
 
-<ins>Step 1:</ins> Load the pre-built image in your Docker environment#
+* generation of the corresponding **Docker image**, which is available on this public docker repository: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest
 
-The result is a compressed file, *mapping-multi-remote.tar*, which must first be loaded in your own Docker environment to restore the image, using this command:
+So, you are ready to deploy the service in your Cloud infrastructure, using Kubernetes. But before that, [underline]#you must have prepared your Cloud architecture#: set up a traffic manager, a load balancer, an application gateway, a firewall, servers, clusters, nodes...
 
-```command
-docker load -i mapping-multi-remote.tar
-```
+### Kubernetes manifest file
 
-Then, you can check if the image loaded correctly by listing all the images in your Docker system:
+A **Kubernetes manifest file sample** is available at this public URL: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-helm-virtual/mapping-service-manifest.yaml
 
-```command
-docker image ls
-REPOSITORY                                    TAG               IMAGE ID       CREATED        SIZE
-artwin/solar/pipeline/mapping-multi-remote    latest            f613562d92a8   26 hours ago   2.05GB
-```
-
-<ins>Step 2</ins>: Upload the new image to your Docker registry
-
-The next step is to upload the mapping pipeline image to your own Docker repository, to make it available for deployment:
-
-```command
-docker login [repository name]
-docker push artwin/solar/pipeline/mapping-multi-remote:latest
-```
-
-Then, check that this image is now available in your repository.
-
-### Deployment with Kubernetes
-
-> :warning: In order to be able to perform the instructions presented in this part, you must have installed the Kubernetes command-line tool, *kubectl*, on your computer:
-> https://kubernetes.io/docs/tasks/tools/
-
-
-When the mapping service Docker image is available on your registry, you are ready to deploy the service in your Cloud infrastructure, using Kubernetes. But before that, <ins>you must have prepared your Cloud architecture</ins>: set up a traffic manager, a load balancer, an application gateway, a firewall, servers, clusters, nodes...
-
-#### Kubernetes manifest file
-
-Then, you can use this **manifest sample** (in YAML format) to deploy the service:
+So, you can use this manifest sample (in YAML format) to deploy the service:
 
 ```yaml
 apiVersion: apps/v1
@@ -189,7 +159,7 @@ spec:
       - name: regcredsupra
       containers:
       - name: mapping-pipeline
-        image: supra-docker-virtual.repository.b-com.com/artwin/solar/pipeline/mapping-multi-remote:latest
+        image: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest
         env:
         - name: XPCF_GRPC_SERVER_LOG_LEVEL
           value: INFO
@@ -285,7 +255,7 @@ metadata:
       labels:
         app: mapping-pipeline
 ```
-- **container parameters**: this part is important because it defines the Docker image you want to deploy (in this sample *image: supra-docker-virtual.repository.b-com.com/artwin/solar/pipeline/mapping-multi-remote:latest*), 
+- **container parameters**: this part is important because it defines the Docker image you want to deploy (in this sample _image: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest_), 
 and some parameters of the Docker container used at runtime:
 
 * XPCF_GRPC_SERVER_LOG_LEVEL: the log level of the mapping pipeline (DEBUG, CRITICAL, ERROR, INFO, TRACE, WARNING)
@@ -296,7 +266,7 @@ and some parameters of the Docker container used at runtime:
 ```yaml
       containers:
       - name: mapping-pipeline
-        image: supra-docker-virtual.repository.b-com.com/artwin/solar/pipeline/mapping-multi-remote:latest
+        image: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest
         env:
         - name: XPCF_GRPC_SERVER_LOG_LEVEL
           value: INFO
@@ -360,7 +330,7 @@ spec:
         pathType: Prefix
 ```
 
-#### kubectl commands
+### kubectl commands
 
 To deploy or re-deploy the mapping service in your infrastructure, when your manifest file is correctly filled in, you can use the *kubectl* command-line tool to:
 
@@ -445,6 +415,14 @@ kubectl set env deployment [deployment name] SOLAR_LOG_LEVEL=INFO
 ## Mapping Service test samples
 
 To verify if your Mapping Service is deployed correctly and is running as expected, we provide you with two client samples bundled with all the files (configurations, libraries, etc.) needed to run them as stand-alone applications.
+
+**These samples are packaged in a compressed file, available at this public URL**: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-generic-local/mapping-service-tests/mapping_service_test_samples.tar.gz
+
+Once you have downloaded this compressed file, extract all of its contents in your own directory: 
+
+```command
+tar -zxvf mapping_service_test_samples.tar.gz
+```
 
 ### Producer client sample
 

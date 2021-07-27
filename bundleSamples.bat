@@ -1,7 +1,7 @@
 @echo off
 SETLOCAL EnableDelayedExpansion
 
-SET version=0.9.4
+SET version=0.10.0
 
 SET filename=SolAR_Mapping_%version%
 SET arg1=%1
@@ -36,6 +36,8 @@ FOR /D /R %%d IN (SolARPipeline*) DO (
 echo "**** Zip bundles"
 "7z.exe" a -tzip bin\%filename%_debug.zip README.md
 "7z.exe" a -tzip bin\%filename%_release.zip README.md
+"7z.exe" a -tzip bin\%filename%_debug.zip LICENSE
+"7z.exe" a -tzip bin\%filename%_release.zip LICENSE
 "7z.exe" a -tzip bin\%filename%_debug.zip installData.bat
 "7z.exe" a -tzip bin\%filename%_release.zip installData.bat
 "7z.exe" a -tzip bin\%filename%_debug.zip bin\Debug

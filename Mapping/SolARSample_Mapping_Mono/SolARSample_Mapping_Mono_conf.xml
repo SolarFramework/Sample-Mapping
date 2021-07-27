@@ -240,7 +240,7 @@
 		<configure component="SolARDeviceDataLoader">
 			<property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
 			<property name="pathToData" type="string" value="../../data/data_hololens/loop_desktop_A"/>
-			<property name="delayTime" type="int" value="1"/>
+			<property name="delayTime" type="int" value="300"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
 			<property name="hasPose" type="int" value="1"/>

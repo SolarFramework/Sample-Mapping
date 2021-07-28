@@ -251,7 +251,7 @@
 			<property name="thresConfidence" type="float" value="0.25"/>
 		</configure>
 		<configure component="SolARMapper" name="fusionMapper">
-			<property name="directory" type="string" value="../../data/map_hololens/mapAB"/>
+			<property name="directory" type="string" value="output/fusion-floating-map"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
@@ -262,7 +262,7 @@
 			<property name="thresConfidence" type="float" value="0.25"/>
 		</configure>
 		<configure component="SolAROverlapDetector">
-			<property name="minNbInliers" type="int" value="50"/>
+			<property name="minNbInliers" type="int" value="40"/>
 		</configure>
 		<configure component="SolARMapFusionOpencv">
 			<property name="radius" type="float" value="0.2"/>

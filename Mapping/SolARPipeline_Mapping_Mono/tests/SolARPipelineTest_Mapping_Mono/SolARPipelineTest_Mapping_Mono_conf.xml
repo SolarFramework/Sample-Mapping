@@ -278,7 +278,7 @@
 			<property name="minTrackedPoints" type="int" value="200"/>
 		</configure>
 		<configure component="SolARMapper">
-			<property name="directory" type="string" value="mapA"/>
+			<property name="directory" type="string" value="output/pipelinetest-mono-map"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>

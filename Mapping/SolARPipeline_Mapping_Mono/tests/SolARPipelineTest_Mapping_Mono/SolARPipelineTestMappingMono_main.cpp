@@ -122,6 +122,13 @@ int main(int argc, char ** argv)
 				(g3DViewer->display(pointCloud, keyframePoses[keyframePoses.size() - 1], keyframePoses) == FrameworkReturnCode::_STOP))
 				break;
 		}
+
+		std::vector<SRef<CloudPoint>> pointCloud;
+		std::vector<Transform3Df> keyframePoses;
+		gMappingPipeline->getDataForVisualization(pointCloud, keyframePoses);
+		LOG_INFO("Number of cloud points: {}", pointCloud.size());
+		LOG_INFO("Number of keyframes: {}", keyframePoses.size());
+
 		gMappingPipeline->stop();
     }
     catch (xpcf::Exception & e) {

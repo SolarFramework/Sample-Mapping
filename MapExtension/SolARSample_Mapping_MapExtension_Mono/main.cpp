@@ -400,7 +400,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Save map extension
-		mapper->bindTo<xpcf::IConfigurable>()->getProperty("directory")->setStringValue("mapExtension");
+		mapper->bindTo<xpcf::IConfigurable>()->getProperty("directory")->setStringValue("output/extension-map");
 		mapper->saveToFile();
     }
 

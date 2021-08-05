@@ -32,7 +32,7 @@ namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
 #define NB_IMAGES_BETWEEN_RELOCALIZATION 10  // number of read images between 2 requests for relocalization
-#define NB_IMAGES_BEFORE_MAPPING 50         // number of read images before mapping (if relocalization failed)
+#define NB_RELOCALIZATION_REQUESTS 10        // number of requests for relocalization
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -303,7 +303,7 @@ int main(int argc, char* argv[])
 
                 LOG_INFO("\n\n***** Control+C to stop *****\n");
 
-                uint32_t nbImagesRelocalization = NB_IMAGES_BETWEEN_RELOCALIZATION, nbImagesMapping = 0;
+                uint32_t nbImagesRelocalization = NB_IMAGES_BETWEEN_RELOCALIZATION, nbRelocalizationRequests = 0;
 
                 while (true) {
 
@@ -314,7 +314,6 @@ int main(int argc, char* argv[])
                     if (AR_device->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
 
                         nbImagesRelocalization ++;
-                        nbImagesMapping ++;
 
                         SRef<Image> image = images[INDEX_USE_CAMERA];
                         Transform3Df pose = poses[INDEX_USE_CAMERA];
@@ -324,24 +323,23 @@ int main(int argc, char* argv[])
                         // Send images to relocalization service if less then 'n' images have been read
                         // and if relocalization is still not ok
                         if (!gRelocalizationSucceed && (nbImagesRelocalization > NB_IMAGES_BETWEEN_RELOCALIZATION)
-                            && (nbImagesMapping < NB_IMAGES_BEFORE_MAPPING)){
+                            && (nbRelocalizationRequests < NB_RELOCALIZATION_REQUESTS)){
                             nbImagesRelocalization = 0;
+                            nbRelocalizationRequests ++;
 
                             LOG_INFO("Add image to input drop buffer for relocalization");
                             m_dropBufferCamImageRelocalization.push(std::make_pair(image, pose));
                         }
 
-                        // Send images to mapping service if relocalization ok
-                        // or if 'n' images have already been read
-                        if (gRelocalizationSucceed || (nbImagesMapping >= NB_IMAGES_BEFORE_MAPPING)) {
-
-                            if ((nbImagesMapping == NB_IMAGES_BEFORE_MAPPING) && !gRelocalizationSucceed) {
-                                LOG_INFO("=> Relocalization failed");
-                            }
-
-                            LOG_INFO("Add pair (image, pose) to input drop buffer for mapping");
-                            m_dropBufferCamImagePoseMapping.push(std::make_pair(image, pose * T_M_W));
+                        if ((nbRelocalizationRequests == NB_RELOCALIZATION_REQUESTS) && !gRelocalizationSucceed) {
+                            LOG_INFO("=> Relocalization failed");
+                            nbRelocalizationRequests ++;
                         }
+
+                        // Send images to mapping service
+
+                        LOG_INFO("Add pair (image, pose) to input drop buffer for mapping");
+                        m_dropBufferCamImagePoseMapping.push(std::make_pair(image, pose * T_M_W));
                     }
                 }
             }

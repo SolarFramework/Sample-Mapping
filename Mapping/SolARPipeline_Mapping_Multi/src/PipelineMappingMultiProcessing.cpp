@@ -377,12 +377,15 @@ namespace MAPPING {
 
         std::vector<Keypoint> keypoints, undistortedKeypoints;
         m_keypointsDetector->detect(imagePose.first, keypoints);
-		m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+        LOG_DEBUG("PipelineMappingMultiProcessing::keypointsDetection->detect elapsed time = {} ms", processing_timer.elapsed() * 1000);
+        processing_timer.restart();
+        m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+        LOG_DEBUG("PipelineMappingMultiProcessing::keypointsDetection->undistort elapsed time = {} ms", processing_timer.elapsed() * 1000);
         if (keypoints.size() > 0) {
             m_dropBufferKeypoints.push(xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, nullptr, imagePose.first, nullptr, imagePose.second));
         }
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::keypointsDetection elapsed time = {} ms", processing_timer.elapsed() * 1000);
+//        LOG_DEBUG("PipelineMappingMultiProcessing::keypointsDetection elapsed time = {} ms", processing_timer.elapsed() * 1000);
     }
 
     void PipelineMappingMultiProcessing::featureExtraction() {

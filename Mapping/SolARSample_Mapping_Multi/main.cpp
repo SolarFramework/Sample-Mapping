@@ -61,6 +61,8 @@ int main(int argc, char *argv[])
 
     LOG_ADD_LOG_TO_CONSOLE();
 
+    LOG_SET_DEBUG_LEVEL();
+
     try {
         /* instantiate component manager*/
         /* this is needed in dynamic mode */

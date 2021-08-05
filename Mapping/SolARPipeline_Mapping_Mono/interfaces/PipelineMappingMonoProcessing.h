@@ -18,13 +18,13 @@
 #define PipelineMappingMonoProcessing_H
 
 #if _WIN32
-#ifdef SolARPipelineMappingMono_API_DLLEXPORT
-#define SolARPipelineMappingMono_EXPORT_API __declspec(dllexport)
-#else // SolARPipelineMappingMono_API_DLLEXPORT
-#define SolARPipelineMappingMono_EXPORT_API __declspec(dllimport)
-#endif // SolARPipelineMappingMono_API_DLLEXPORT
+#ifdef SolARPipeline_Mapping_Mono_API_DLLEXPORT
+#define SOLARPIPELINE_MAPPING_MONO_EXPORT_API __declspec(dllexport)
+#else // SolARPipeline_Mapping_Mono_API_DLLEXPORT
+#define SOLARPIPELINE_MAPPING_MONO_EXPORT_API __declspec(dllimport)
+#endif // SolARPipeline_Mapping_Mono_API_DLLEXPORT
 #else //_WIN32
-#define SolARPipelineMappingMono_EXPORT_API
+#define SOLARPIPELINE_MAPPING_MONO_EXPORT_API
 #endif //_WIN32
 
 #include "xpcf/component/ConfigurableBase.h"
@@ -90,7 +90,7 @@ namespace MAPPING {
      *
      */
 
-    class SolARPipelineMappingMono_EXPORT_API PipelineMappingMonoProcessing : public org::bcom::xpcf::ConfigurableBase,
+    class SOLARPIPELINE_MAPPING_MONO_EXPORT_API PipelineMappingMonoProcessing : public org::bcom::xpcf::ConfigurableBase,
             public api::pipeline::IMappingPipeline
     {
     public:

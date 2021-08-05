@@ -1,11 +1,9 @@
 ## global defintions : target lib name, version
-TARGET = SolARPipeline_Mapping_Multi_Remote
+TARGET = SolARPipelineTest_Mapping_Multi_Relocalization_Remote
 VERSION=0.10.0
 
-## remove Qt dependencies
 CONFIG += c++1z
 CONFIG += console
-CONFIG += verbose
 CONFIG -= qt
 
 DEFINES += MYVERSION=\"\\\"$${VERSION}\\\"\"
@@ -14,32 +12,31 @@ DEFINES += WITHREMOTING
 include(findremakenrules.pri)
 
 CONFIG(debug,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../../bin/Debug
+    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
 
 CONFIG(release,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../../bin/Release
+    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Release
+    DEFINES += _NDEBUG=1
     DEFINES += NDEBUG=1
 }
 
 win32:CONFIG -= static
 win32:CONFIG += shared
+
 QMAKE_TARGET.arch = x86_64 #must be defined prior to include
+
 DEPENDENCIESCONFIG = shared install_recurse
+
 PROJECTCONFIG = QTVS
 
-#NOTE : CONFIG as staticlib or sharedlib,  DEPENDENCIESCONFIG as staticlib or sharedlib, QMAKE_TARGET.arch and PROJECTDEPLOYDIR MUST BE DEFINED BEFORE templatelibconfig.pri inclusion
+#NOTE : CONFIG as staticlib or sharedlib, DEPENDENCIESCONFIG as staticlib or sharedlib, QMAKE_TARGET.arch and PROJECTDEPLOYDIR MUST BE DEFINED BEFORE templatelibconfig.pri inclusion
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/templateappconfig.pri)))  # Shell_quote & shell_path required for visual on windows
 
-HEADERS += \
-    GrpcServerManager.h
-
-
 SOURCES += \
-    GrpcServerManager.cpp\
-    SolARPipeline_Mapping_Multi_Remote.cpp
+    SolARPipelineTest_Mapping_Multi_Relocalization_Remote.cpp
 
 unix {
     LIBS += -ldl
@@ -48,10 +45,9 @@ unix {
 
 linux {
     LIBS += -ldl
-    LIBS += -L/home/linuxbrew/.linuxbrew/lib # temporary fix caused by grpc with -lre2 ... without -L in grpc.pc
     INCLUDEPATH += /home/christophe/Dev/xpcf/libs/cppast/external/cxxopts/include
+    LIBS += -L/home/linuxbrew/.linuxbrew/lib # temporary fix caused by grpc with -lre2 ... without -L in grpc.pc
 }
-
 
 macx {
     DEFINES += _MACOS_TARGET_
@@ -62,6 +58,7 @@ macx {
     INCLUDEPATH += ../../libs/cppast/external/cxxopts/include
     LIBS += -lstdc++ -lc -lpthread
     LIBS += -L/usr/local/lib
+    INCLUDEPATH += $${REMAKENDEPSFOLDER}/$${BCOM_TARGET_PLATFORM}/xpcfSampleComponent/$$VERSION/interfaces
 }
 
 win32 {
@@ -75,14 +72,12 @@ win32 {
 }
 
 DISTFILES += \
-    SolARPipeline_Mapping_Multi_Remote_modules.xml \
-    SolARPipeline_Mapping_Multi_Remote_properties.xml \
-    packagedependencies.txt \
-    start_mapping_multi_service.sh
+    SolARPipelineTest_Mapping_Multi_Relocalization_Remote_conf.xml \
+    packagedependencies.txt
 
 xml_files.path = $${TARGETDEPLOYDIR}
-xml_files.files =  SolARPipeline_Mapping_Multi_Remote_modules.xml \
-                   SolARPipeline_Mapping_Multi_Remote_properties.xml
+xml_files.files =  SolARPipelineTest_Mapping_Multi_Relocalization_Remote_conf.xml
 
 INSTALLS += xml_files
+
 

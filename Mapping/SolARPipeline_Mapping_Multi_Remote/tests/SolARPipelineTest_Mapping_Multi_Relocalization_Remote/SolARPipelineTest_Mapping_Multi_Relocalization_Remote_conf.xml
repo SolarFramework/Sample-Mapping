@@ -8,6 +8,11 @@
             <interface uuid="98dba14f-6ef9-462e-a387-34756b4cba80" name="XPCF::IConfigurable" description="Provides generic configuration ability to any component through metadata parameters"/>
             <interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>
         </component>
+        <component uuid="597d510d-452a-4da2-9c3a-8d4b8d15c584" name="IRelocalizationPipeline_grpcProxy" description="IRelocalizationPipeline_grpcProxy grpc client proxy component">
+            <interface uuid="6c5b9edc-c78b-47fd-8cb2-2bf8d7ede4ea" name="XPCF::IInjectable" description="Provides dependency injection interface"/>
+            <interface uuid="98dba14f-6ef9-462e-a387-34756b4cba80" name="XPCF::IConfigurable" description="Provides generic configuration ability to any component through metadata parameters"/>
+            <interface uuid="ef2a631d-93c9-4979-ad1e-5fa16d5d00ef" name="IRelocalizationPipeline" description="The interface to define a relocalization processing pipeline"/>
+        </component>
     </module>
 
     <!-- Module used by the remote client -->
@@ -29,10 +34,14 @@
             <!--property name="channelUrl" access="rw" type="string" value="mapping-pipeline.artwin.b-com.com:31956"/-->
             <property name="channelCredentials" access="rw" type="uint" value="0"/>
         </configure>
+        <configure component="597d510d-452a-4da2-9c3a-8d4b8d15c584">
+                <property name="channelUrl" access="rw" type="string" value="0.0.0.0:50052"/>
+                <property name="channelCredentials" access="rw" type="uint" value="0"/>
+        </configure>
         <!-- Remote client configuration-->
         <configure component="SolARDeviceDataLoader">
             <property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
-            <property name="pathToData" type="string" value="../../data/data_hololens/loop_desktop_B"/>
+            <property name="pathToData" type="string" value="../../data/data_hololens/loop_desktop_A"/>
             <property name="delayTime" type="int" value="250"/>
         </configure>
         <configure component="SolARImageViewerOpencv">

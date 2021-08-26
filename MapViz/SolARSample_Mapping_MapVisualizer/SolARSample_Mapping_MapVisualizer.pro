@@ -4,7 +4,7 @@ CONFIG -= qt
 
 ## global defintions : target lib name, version
 TARGET = SolARSample_Mapping_MapVisualizer
-VERSION=0.9.0
+VERSION=0.9.1
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z
@@ -13,13 +13,13 @@ CONFIG += console
 include(findremakenrules.pri)
 
 CONFIG(debug,debug|release) {
-	TARGETDEPLOYDIR = $${PWD}/../bin/Debug
+	TARGETDEPLOYDIR = $${PWD}/../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
 
 CONFIG(release,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../bin/Release
+    TARGETDEPLOYDIR = $${PWD}/../../bin/Release
     DEFINES += _NDEBUG=1
     DEFINES += NDEBUG=1
 }
@@ -73,12 +73,12 @@ INSTALLS += configfile
 
 linux {
   run_install.path = $${TARGETDEPLOYDIR}
-  run_install.files = $${PWD}/../run.sh
+  run_install.files = $${PWD}/../../run.sh
   CONFIG(release,debug|release) {
-    run_install.extra = cp $$files($${PWD}/../runRelease.sh) $${PWD}/../run.sh
+    run_install.extra = cp $$files($${PWD}/../../runRelease.sh) $${PWD}/../../run.sh
   }
   CONFIG(debug,debug|release) {
-    run_install.extra = cp $$files($${PWD}/../runDebug.sh) $${PWD}/../run.sh
+    run_install.extra = cp $$files($${PWD}/../../runDebug.sh) $${PWD}/../../run.sh
   }
   INSTALLS += run_install
 }

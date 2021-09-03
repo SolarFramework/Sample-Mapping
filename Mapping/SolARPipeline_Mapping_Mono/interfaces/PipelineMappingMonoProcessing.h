@@ -18,11 +18,11 @@
 #define PipelineMappingMonoProcessing_H
 
 #if _WIN32
-#ifdef SolARPipeline_Mapping_Mono_API_DLLEXPORT
+#ifdef SolARPipelineMappingMono_API_DLLEXPORT
 #define SOLARPIPELINE_MAPPING_MONO_EXPORT_API __declspec(dllexport)
-#else // SolARPipeline_Mapping_Mono_API_DLLEXPORT
+#else // SolARPipelineMappingMono_API_DLLEXPORT
 #define SOLARPIPELINE_MAPPING_MONO_EXPORT_API __declspec(dllimport)
-#endif // SolARPipeline_Mapping_Mono_API_DLLEXPORT
+#endif // SolARPipelineMappingMono_API_DLLEXPORT
 #else //_WIN32
 #define SOLARPIPELINE_MAPPING_MONO_EXPORT_API
 #endif //_WIN32

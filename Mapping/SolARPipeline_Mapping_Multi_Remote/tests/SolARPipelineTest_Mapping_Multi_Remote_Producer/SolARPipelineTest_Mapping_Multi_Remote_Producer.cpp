@@ -13,6 +13,7 @@
 #include <xpcf/core/helpers.h>
 #include <boost/thread/thread.hpp>
 #include <boost/log/core.hpp>
+#include <boost/timer.hpp>
 #include <signal.h>
 
 #include "core/Log.h"
@@ -25,6 +26,7 @@ using namespace SolAR;
 using namespace SolAR::api;
 using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
+
 
 #define INDEX_USE_CAMERA 0
 
@@ -44,6 +46,10 @@ SRef<display::IImageViewer> gImageViewer = 0;
 bool gImageToSend = true;
 // Nb of images sent by producer client
 int gNbImages = 0;
+// Delay between to images sent
+boost::timer delay_between_images;
+// gRPC request duration
+boost::timer grpc_request_duration;
 
 // print help options
 void print_help(const cxxopts::Options& options)
@@ -70,7 +76,7 @@ auto fnClientProducer = []() {
         if (gArDevice->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
 
             gNbImages ++;
-            LOG_INFO("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
+//            LOG_INFO("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
 
             SRef<Image> image = images[INDEX_USE_CAMERA];
             Transform3Df pose = poses[INDEX_USE_CAMERA];
@@ -86,7 +92,18 @@ auto fnClientProducer = []() {
 
             LOG_DEBUG("Pose rows/cols = {}/{}", pose.rows(), pose.cols());
 */
+            if (gNbImages > 1) {
+                LOG_INFO("Producer client: Delay between 2 images sent = {} ms", delay_between_images.elapsed() * 1000);
+            }
+
+            delay_between_images.restart();
+
+            grpc_request_duration.restart();
+
             gMappingPipelineMulti->mappingProcessRequest(image, pose);
+
+            LOG_INFO("Producer client: gRPC request for (image, pose) number {} takes {} ms",
+                     gNbImages, grpc_request_duration.elapsed() * 1000);
 
             if (gImageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP) {
                 gClientProducerTask->stop();

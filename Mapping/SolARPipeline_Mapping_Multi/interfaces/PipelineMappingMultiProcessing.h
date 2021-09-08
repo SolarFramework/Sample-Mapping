@@ -18,11 +18,11 @@
 #define PIPELINEMAPPINGMULTIPROCESSING_H
 
 #if _WIN32
-#ifdef SolARPipeline_Mapping_Multi_API_DLLEXPORT
+#ifdef SolARPipelineMappingMulti_API_DLLEXPORT
 #define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API __declspec(dllexport)
 #else // SolARPipelineMappingMulti_API_DLLEXPORT
 #define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API __declspec(dllimport)
-#endif //SolARPipeline_Mapping_Multi_API_DLLEXPORT
+#endif //SolARPipelineMappingMulti_API_DLLEXPORT
 #else //_WIN32
 #define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API
 #endif //_WIN32

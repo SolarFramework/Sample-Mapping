@@ -12,3 +12,5 @@ rm loopDesktopA.zip
 curl https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/loopDesktopB.zip -L -o loopDesktopB.zip
 unzip -o loopDesktopB.zip -d ./data/data_hololens
 rm loopDesktopB.zip
+
+curl https://artifact.b-com.com/solar-generic-local/captures/hololens/hololens_calibration.json -L -o .\data\data_hololens\hololens_calibration.json

@@ -188,8 +188,8 @@ int main(int argc, char ** argv)
             if (gArDevice->start() == FrameworkReturnCode::_SUCCESS) {
 
                 // Load camera intrinsics parameters
-                CameraParameters camParams;
-                camParams = gArDevice->getParameters(0);
+				CameraRigParameters camRigParams = gArDevice->getCameraParameters();
+				CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
 
                 LOG_INFO("Producer client: Set mapping pipeline camera parameters");
                 gMappingPipeline->setCameraParameters(camParams);

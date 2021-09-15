@@ -45,12 +45,7 @@ namespace MAPPING {
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
 			declareInjectable<api::storage::ICovisibilityGraphManager>(m_covisibilityGraphManager);
 			declareInjectable<api::storage::IMapManager>(m_mapManager);
-            declareInjectable<api::features::IKeypointDetector>(m_keypointsDetector);
-            declareInjectable<api::features::IDescriptorsExtractor>(m_descriptorExtractor);
-            declareInjectable<api::features::IDescriptorMatcher>(m_matcher);
-            declareInjectable<api::features::IMatchesFilter>(m_matchesFilter);
-            declareInjectable<api::solver::pose::I2D3DCorrespondencesFinder>(m_corr2D3DFinder);
-            declareInjectable<api::geom::IProject>(m_projector);            
+            declareInjectable<api::features::IDescriptorsExtractorFromImage>(m_descriptorExtractor);
             declareInjectable<api::loop::ILoopClosureDetector>(m_loopDetector);
             declareInjectable<api::loop::ILoopCorrector>(m_loopCorrector);
 
@@ -114,8 +109,7 @@ namespace MAPPING {
         m_cameraParams = cameraParams;
 
         m_bootstrapper->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-        m_mapping->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-        m_projector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
+        m_mapping->setCameraParameters(m_cameraParams);
         m_loopDetector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_loopCorrector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 		m_undistortKeypoints->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -254,13 +248,11 @@ namespace MAPPING {
 		Transform3Df pose = image_pose_pair.second;
 		// feature extraction image
 		std::vector<Keypoint> keypoints, undistortedKeypoints;
-		m_keypointsDetector->detect(image, keypoints);
-		if (keypoints.size() == 0)
-			return;
-		m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
-		LOG_DEBUG("Keypoints size = {}", keypoints.size());
 		SRef<DescriptorBuffer> descriptors;
-		m_descriptorExtractor->extract(image, keypoints, descriptors);
+		if (m_descriptorExtractor->extract(image, keypoints, descriptors) != FrameworkReturnCode::_SUCCESS)
+			return;		
+		m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+		LOG_DEBUG("Keypoints size = {}", keypoints.size());		
 		SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
 
         if (!isBootstrapFinished()) {

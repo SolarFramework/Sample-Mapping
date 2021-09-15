@@ -22,10 +22,8 @@
 #include "api/input/devices/IARDevice.h"
 #include "api/display/IImageViewer.h"
 #include "api/display/I3DOverlay.h"
-#include "api/display/I2DOverlay.h"
 #include "api/display/I3DPointsViewer.h"
-#include "api/features/IKeypointDetector.h"
-#include "api/features/IDescriptorsExtractor.h"
+#include "api/features/IDescriptorsExtractorFromImage.h"
 #include "api/storage/IMapManager.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
@@ -87,8 +85,7 @@ int main(int argc, char *argv[])
 		auto covisibilityGraphManager = xpcfComponentManager->resolve<ICovisibilityGraphManager>();
 		auto keyframeRetriever = xpcfComponentManager->resolve<IKeyframeRetriever>();
 		auto mapManager = xpcfComponentManager->resolve<IMapManager>();
-		auto keypointsDetector = xpcfComponentManager->resolve<features::IKeypointDetector>();
-		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractor>();
+		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractorFromImage>();
 		auto bundler = xpcfComponentManager->resolve<api::solver::map::IBundler>("BundleFixedKeyframes");
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
 		auto undistortKeypoints = xpcfComponentManager->resolve<api::geom::IUndistortPoints>();
@@ -110,14 +107,14 @@ int main(int argc, char *argv[])
 		LOG_INFO("Started!");
 
 		// Load camera intrinsics parameters
-		CameraParameters camParams;
-		camParams = arDevice->getParameters(INDEX_USE_CAMERA);
+		CameraRigParameters camRigParams = arDevice->getCameraParameters();
+		CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
 		overlay3D->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		tracking->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		mapping->setCameraParameters(camParams.intrinsic, camParams.distortion);
+		mapping->setCameraParameters(camParams);
 		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
@@ -145,7 +142,6 @@ int main(int argc, char *argv[])
 			
 		// buffers
 		xpcf::DropBuffer<std::pair<SRef<Image>, Transform3Df>>						m_dropBufferCamImagePoseCapture;
-		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferKeypoints;
 		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferFrame;
 		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferFrameBootstrap;
 		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferAddKeyframe;
@@ -231,36 +227,26 @@ int main(int argc, char *argv[])
 			m_dropBufferCamImagePoseCapture.push(std::make_pair(image, pose));			
 		};
 
-		// Keypoint detection task
-		auto fnDetection = [&]()
-		{						
+		// Feature extraction task
+		auto fnExtraction = [&]()
+		{			
 			std::pair<SRef<Image>, Transform3Df> imagePose;
 			if (!m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
 				xpcf::DelegateTask::yield();
 				return;
 			}
+			SRef<Image> image = imagePose.first;
+			Transform3Df pose = imagePose.second;
 			std::vector<Keypoint> keypoints, undistortedKeypoints;
-			keypointsDetector->detect(imagePose.first, keypoints);
-			undistortKeypoints->undistort(keypoints, undistortedKeypoints);
-			if (keypoints.size() > 0)
-				m_dropBufferKeypoints.push(xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, nullptr, imagePose.first, nullptr, imagePose.second));
-		};
-
-		// Feature extraction task
-		auto fnExtraction = [&]()
-		{			
-			SRef<Frame> frame;
-			if (!m_dropBufferKeypoints.tryPop(frame)) {
-				xpcf::DelegateTask::yield();
-				return;
-			}
 			SRef<DescriptorBuffer> descriptors;
-			descriptorExtractor->extract(frame->getView(), frame->getKeypoints(), descriptors);
-			frame->setDescriptors(descriptors);
-			if (bootstrapOk)
-				m_dropBufferFrame.push(frame);
-			else
-				m_dropBufferFrameBootstrap.push(frame);
+			if (descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
+				undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+				SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
+				if (bootstrapOk)
+					m_dropBufferFrame.push(frame);
+				else
+					m_dropBufferFrameBootstrap.push(frame);
+			}
 		};
 
 		// Update visibilities task					
@@ -383,14 +369,12 @@ int main(int argc, char *argv[])
 		xpcf::DelegateTask taskCamImageCapture(fnCamImageCapture);
 		xpcf::DelegateTask taskBootstrap(fnBootstrap);		
 		xpcf::DelegateTask taskUpdateVisibilities(fnUpdateVisibilities);
-		xpcf::DelegateTask taskDetection(fnDetection);
 		xpcf::DelegateTask taskExtraction(fnExtraction);
 		xpcf::DelegateTask taskMapping(fnMapping);
 		xpcf::DelegateTask taskLoopClosure(fnLoopClosure);
 
 		taskCamImageCapture.start();
 		taskBootstrap.start();		
-		taskDetection.start();
 		taskExtraction.start();
 		taskUpdateVisibilities.start();
 		taskMapping.start();
@@ -418,7 +402,6 @@ int main(int argc, char *argv[])
 		// Stop tasks
 		taskCamImageCapture.stop();
 		taskBootstrap.stop();
-		taskDetection.stop();
 		taskExtraction.stop();
 		taskUpdateVisibilities.stop();
 		taskMapping.stop();

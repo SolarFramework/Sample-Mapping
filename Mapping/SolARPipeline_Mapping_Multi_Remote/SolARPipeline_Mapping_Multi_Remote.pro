@@ -1,6 +1,6 @@
 ## global defintions : target lib name, version
 TARGET = SolARPipeline_Mapping_Multi_Remote
-VERSION = 0.9.3
+VERSION=0.10.0
 
 ## remove Qt dependencies
 CONFIG += c++1z
@@ -41,6 +41,10 @@ SOURCES += \
     GrpcServerManager.cpp\
     SolARPipeline_Mapping_Multi_Remote.cpp
 
+unix {
+    LIBS += -ldl
+    QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
+}
 
 linux {
     LIBS += -ldl

@@ -1,6 +1,6 @@
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Multi_Remote_Viewer
-VERSION=0.9.3
+VERSION=0.10.0
 
 CONFIG += c++1z
 CONFIG += console
@@ -38,6 +38,10 @@ include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/templateappconf
 SOURCES += \
     SolARPipelineTest_Mapping_Multi_Remote_Viewer.cpp
 
+unix {
+    LIBS += -ldl
+    QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
+}
 
 linux {
     LIBS += -ldl

@@ -19,12 +19,12 @@
 
 #if _WIN32
 #ifdef SolARPipelineMappingMulti_API_DLLEXPORT
-#define SolARPipelineMappingMulti_EXPORT_API __declspec(dllexport)
+#define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API __declspec(dllexport)
 #else // SolARPipelineMappingMulti_API_DLLEXPORT
-#define SolARPipelineMappingMulti_EXPORT_API __declspec(dllimport)
+#define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API __declspec(dllimport)
 #endif //SolARPipelineMappingMulti_API_DLLEXPORT
 #else //_WIN32
-#define SolARPipelineMappingMulti_EXPORT_API
+#define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API
 #endif //_WIN32
 
 #include "xpcf/component/ConfigurableBase.h"
@@ -44,18 +44,9 @@
 #include "api/storage/IPointCloudManager.h"
 #include "api/storage/ICovisibilityGraphManager.h"
 #include "api/storage/IMapManager.h"
-#include "api/features/IKeypointDetector.h"
-#include "api/features/IDescriptorsExtractor.h"
-#include "api/features/IDescriptorMatcher.h"
-#include "api/features/IMatchesFilter.h"
-#include "api/solver/pose/I2D3DCorrespondencesFinder.h"
-#include "api/geom/IProject.h"
+#include "api/features/IDescriptorsExtractorFromImage.h"
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
-#include "datastructure/CameraDefinitions.h"
-#include "datastructure/Image.h"
-#include "datastructure/CloudPoint.h"
-#include "datastructure/Keypoint.h"
 #include "api/pipeline/IMapUpdatePipeline.h"
 
 namespace SolAR {
@@ -88,7 +79,7 @@ namespace MAPPING {
      *
      */
 
-    class SolARPipelineMappingMulti_EXPORT_API PipelineMappingMultiProcessing : public org::bcom::xpcf::ConfigurableBase,
+    class SOLARPIPELINE_MAPPING_MULTI_EXPORT_API PipelineMappingMultiProcessing : public org::bcom::xpcf::ConfigurableBase,
             public api::pipeline::IMappingPipeline
     {
     public:
@@ -143,9 +134,6 @@ namespace MAPPING {
 		/// until the bootstrap process is finished (i.e. m_isBootstrapFinished is True)
 		void correctPoseAndBootstrap();
 
-		/// @brief Detection of keypoints
-		void keypointsDetection();
-
 		/// @brief Feature extraction
 		void featureExtraction();
 
@@ -188,12 +176,7 @@ namespace MAPPING {
 		SRef<api::storage::ICovisibilityGraphManager>		m_covisibilityGraphManager;
 		SRef<api::storage::IMapManager>						m_mapManager;
         SRef<api::pipeline::IMapUpdatePipeline>				m_mapUpdatePipeline;
-        SRef<api::features::IKeypointDetector>				m_keypointsDetector;
-        SRef<api::features::IDescriptorsExtractor>			m_descriptorExtractor;
-        SRef<api::features::IDescriptorMatcher>				m_matcher;
-        SRef<api::features::IMatchesFilter>					m_matchesFilter;
-        SRef<api::solver::pose::I2D3DCorrespondencesFinder> m_corr2D3DFinder;
-        SRef<api::geom::IProject>							m_projector;        
+        SRef<api::features::IDescriptorsExtractorFromImage>	m_descriptorExtractor;
         SRef<api::loop::ILoopClosureDetector>				m_loopDetector;
         SRef<api::loop::ILoopCorrector>						m_loopCorrector;
 		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
@@ -205,7 +188,6 @@ namespace MAPPING {
 
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;
-        xpcf::DelegateTask * m_keypointsDetectionTask = nullptr;
         xpcf::DelegateTask * m_featureExtractionTask = nullptr;
         xpcf::DelegateTask * m_updateVisibilityTask = nullptr;
         xpcf::DelegateTask * m_mappingTask = nullptr;
@@ -213,7 +195,6 @@ namespace MAPPING {
 
         // Drop buffers used by mapping processing
         xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCapture;
-        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferKeypoints;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrame;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameBootstrap;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;

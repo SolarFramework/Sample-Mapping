@@ -20,10 +20,8 @@
 #include "api/input/devices/IARDevice.h"
 #include "api/display/IImageViewer.h"
 #include "api/display/I3DOverlay.h"
-#include "api/display/I2DOverlay.h"
 #include "api/display/I3DPointsViewer.h"
-#include "api/features/IKeypointDetector.h"
-#include "api/features/IDescriptorsExtractor.h"
+#include "api/features/IDescriptorsExtractorFromImage.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
 #include "api/reloc/IKeyframeRetriever.h"
@@ -85,8 +83,7 @@ int main(int argc, char *argv[])
 		auto covisibilityGraphManager = xpcfComponentManager->resolve<ICovisibilityGraphManager>();
 		auto keyframeRetriever = xpcfComponentManager->resolve<IKeyframeRetriever>();
 		auto mapManager = xpcfComponentManager->resolve<IMapManager>();
-		auto keypointsDetector = xpcfComponentManager->resolve<features::IKeypointDetector>();
-		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractor>();
+		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractorFromImage>();
 		auto bundler = xpcfComponentManager->resolve<api::solver::map::IBundler>("BundleFixedKeyframes");
 		auto globalBundler = xpcfComponentManager->resolve<api::solver::map::IBundler>();
 		auto undistortKeypoints = xpcfComponentManager->resolve<api::geom::IUndistortPoints>();
@@ -108,14 +105,14 @@ int main(int argc, char *argv[])
 		LOG_INFO("Started!");
 
 		// Load camera intrinsics parameters
-		CameraParameters camParams;
-        camParams = arDevice->getParameters(INDEX_USE_CAMERA);
+		CameraRigParameters camRigParams = arDevice->getCameraParameters();
+		CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
 		overlay3D->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		tracking->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		mapping->setCameraParameters(camParams.intrinsic, camParams.distortion);
+		mapping->setCameraParameters(camParams);
 		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
@@ -195,11 +192,11 @@ int main(int argc, char *argv[])
 			pose = T_M_W * pose;
 			
 			// feature extraction image
-			std::vector<Keypoint> keypoints, undistortedKeypoints;
-			keypointsDetector->detect(image, keypoints);
-			undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+			std::vector<Keypoint> keypoints, undistortedKeypoints;			
 			SRef<DescriptorBuffer> descriptors;
-			descriptorExtractor->extract(image, keypoints, descriptors);
+			if (descriptorExtractor->extract(image, keypoints, descriptors) != FrameworkReturnCode::_SUCCESS)
+				continue;
+			undistortKeypoints->undistort(keypoints, undistortedKeypoints);
 			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
 			framePoses.push_back(pose);
 

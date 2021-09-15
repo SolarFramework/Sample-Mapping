@@ -19,12 +19,12 @@
 
 #if _WIN32
 #ifdef SolARPipelineMappingMono_API_DLLEXPORT
-#define SolARPipelineMappingMono_EXPORT_API __declspec(dllexport)
+#define SOLARPIPELINE_MAPPING_MONO_EXPORT_API __declspec(dllexport)
 #else // SolARPipelineMappingMono_API_DLLEXPORT
-#define SolARPipelineMappingMono_EXPORT_API __declspec(dllimport)
+#define SOLARPIPELINE_MAPPING_MONO_EXPORT_API __declspec(dllimport)
 #endif // SolARPipelineMappingMono_API_DLLEXPORT
 #else //_WIN32
-#define SolARPipelineMappingMono_EXPORT_API
+#define SOLARPIPELINE_MAPPING_MONO_EXPORT_API
 #endif //_WIN32
 
 #include "xpcf/component/ConfigurableBase.h"
@@ -44,21 +44,9 @@
 #include "api/storage/IPointCloudManager.h"
 #include "api/storage/ICovisibilityGraphManager.h"
 #include "api/storage/IMapManager.h"
-#include "api/features/IKeypointDetector.h"
-#include "api/features/IDescriptorsExtractor.h"
-#include "api/features/IDescriptorMatcher.h"
-#include "api/features/IMatchesFilter.h"
-#include "api/solver/pose/I2D3DCorrespondencesFinder.h"
-#include "api/geom/IProject.h"
+#include "api/features/IDescriptorsExtractorFromImage.h"
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
-#include "datastructure/CameraDefinitions.h"
-#include "datastructure/Image.h"
-#include "datastructure/CloudPoint.h"
-#include "datastructure/Keypoint.h"
-#include "datastructure/Trackable.h"
-#include "datastructure/FiducialMarker.h"
-
 
 namespace SolAR {
 namespace PIPELINES {
@@ -90,7 +78,7 @@ namespace MAPPING {
      *
      */
 
-    class SolARPipelineMappingMono_EXPORT_API PipelineMappingMonoProcessing : public org::bcom::xpcf::ConfigurableBase,
+    class SOLARPIPELINE_MAPPING_MONO_EXPORT_API PipelineMappingMonoProcessing : public org::bcom::xpcf::ConfigurableBase,
             public api::pipeline::IMappingPipeline
     {
     public:
@@ -175,12 +163,7 @@ namespace MAPPING {
         SRef<api::storage::IPointCloudManager> m_pointCloudManager;
 		SRef<api::storage::ICovisibilityGraphManager> m_covisibilityGraphManager;
 		SRef<api::storage::IMapManager> m_mapManager;
-        SRef<api::features::IKeypointDetector> m_keypointsDetector;
-        SRef<api::features::IDescriptorsExtractor> m_descriptorExtractor;
-        SRef<api::features::IDescriptorMatcher> m_matcher;
-        SRef<api::features::IMatchesFilter> m_matchesFilter;
-        SRef<api::solver::pose::I2D3DCorrespondencesFinder> m_corr2D3DFinder;
-        SRef<api::geom::IProject> m_projector;        
+        SRef<api::features::IDescriptorsExtractorFromImage> m_descriptorExtractor;
         SRef<api::loop::ILoopClosureDetector> m_loopDetector;
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
 		SRef<api::geom::IUndistortPoints> m_undistortKeypoints;

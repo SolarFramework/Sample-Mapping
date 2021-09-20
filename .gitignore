@@ -104,6 +104,7 @@ MapFusion/data/map_hololens/*
 MapFusion/data/fbow_voc/*
 run.sh
 start_service.sh
+*.json
 
 MapFusion/floatingMapFusionStandAlone/conf_floatingMapFusion_original.xml
 MapFusion/floatingMapFusionStandAlone/TransformLocalToGlobal.txt

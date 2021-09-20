@@ -13,4 +13,6 @@ curl https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/lo
 unzip -o loopDesktopB.zip -d ./data/data_hololens
 rm loopDesktopB.zip
 
-curl https://artifact.b-com.com/solar-generic-local/captures/hololens/hololens_calibration.json -L -o .\data\data_hololens\hololens_calibration.json
+# Download calibration file
+echo Download calibration file
+curl https://artifact.b-com.com/solar-generic-local/captures/hololens/hololens_calibration.json -L -o ./data/data_hololens/hololens_calibration.json

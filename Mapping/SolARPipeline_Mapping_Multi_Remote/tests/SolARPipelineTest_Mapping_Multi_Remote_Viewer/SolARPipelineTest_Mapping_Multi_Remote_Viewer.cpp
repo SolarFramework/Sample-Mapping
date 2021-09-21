@@ -130,6 +130,38 @@ int main(int argc, char* argv[])
     }
 
     try {
+        // Check if log level is defined in environment variable SOLAR_LOG_LEVEL
+        char * log_level = getenv("SOLAR_LOG_LEVEL");
+        std::string str_log_level = "INFO(default)";
+
+        if (log_level != nullptr) {
+            str_log_level = std::string(log_level);
+
+            if (str_log_level == "DEBUG"){
+                LOG_SET_DEBUG_LEVEL();
+            }
+            else if (str_log_level == "CRITICAL"){
+                LOG_SET_CRITICAL_LEVEL();
+            }
+            else if (str_log_level == "ERROR"){
+                LOG_SET_ERROR_LEVEL();
+            }
+            else if (str_log_level == "INFO"){
+                LOG_SET_INFO_LEVEL();
+            }
+            else if (str_log_level == "TRACE"){
+                LOG_SET_TRACE_LEVEL();
+            }
+            else if (str_log_level == "WARNING"){
+                LOG_SET_WARNING_LEVEL();
+            }
+            else {
+                LOG_ERROR ("'SOLAR_LOG_LEVEL' environment variable: invalid value");
+                LOG_ERROR ("Expected values are: DEBUG, CRITICAL, ERROR, INFO, TRACE or WARNING");
+            }
+
+            LOG_DEBUG("Environment variable SOLAR_LOG_LEVEL={}", str_log_level);
+        }
 
         LOG_INFO("Get component manager instance");
         gXpcfComponentManager = xpcf::getComponentManagerInstance();

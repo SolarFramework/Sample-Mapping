@@ -31,7 +31,7 @@
         </configure>
         <!-- Remote client configuration-->
         <configure component="SolARDeviceDataLoader">
-            <property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
+            <property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.json"/>
             <property name="pathToData" type="string" value="../../data/data_hololens/loop_desktop_B"/>
             <property name="delayTime" type="int" value="250"/>
         </configure>

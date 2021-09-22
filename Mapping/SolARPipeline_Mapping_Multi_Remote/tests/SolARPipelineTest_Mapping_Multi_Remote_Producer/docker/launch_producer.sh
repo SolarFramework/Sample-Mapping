@@ -24,12 +24,12 @@ fi
 export DISPLAY=$2:0.0
 
 # Get image data set from parameters
-if [ "$2" ]
+if [ "$3" ]
 then
     # Set image data set
-    export HOLOLENS_DATA_SET=$2
+    export HOLOLENS_DATA_SET=$3
 else
-    echo "You can choose Hololens data set to use by setting A or B as second parameter (A by default)"
+    echo "You can choose Hololens data set to use by setting A or B as third parameter (A by default)"
     # Set image data set to default
     export HOLOLENS_DATA_SET="A"
 fi

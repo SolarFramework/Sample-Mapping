@@ -28,6 +28,10 @@
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="c0e49ff1-0696-4fe6-85a8-9b2c1e155d2e" name="IDescriptorsExtractor" description="IDescriptorsExtractor"/>
 		</component>
+		<component uuid="cf2721f2-0dc9-4442-ad1e-90c0ab12b0ff" name="SolARDescriptorsExtractorFromImageOpencv" description="SolARDescriptorsExtractorFromImageOpencv">
+			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+			<interface uuid="1cd4f5f1-6b74-413b-9725-69653aee48ef" name="IDescriptorsExtractorFromImage" description="IDescriptorsExtractorFromImage"/>
+		</component>
 		<component uuid="7823dac8-1597-41cf-bdef-59aa22f3d40a" name="SolARDescriptorMatcherKNNOpencv" description="SolARDescriptorMatcherKNNOpencv">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="dda38a40-c50a-4e7d-8433-0f04c7c98518" name="IDescriptorMatcher" description="IDescriptorMatcher"/>
@@ -207,9 +211,9 @@
 
 	<factory>
 		<bindings>
-			<bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv"/>
+			<bind interface="IDescriptorsExtractorFromImage" to="SolARDescriptorsExtractorFromImageOpencv" />
 			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv"/>
-			<bind interface="IKeyframeSelector" to="SolARKeyframeSelector"/>
+			<bind interface="I3DTransform" to="SolAR3DTransform"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" range="default|all" properties="BundleFixedKeyframesProperties"/>
 			<bind interface="IMapManager" to="SolARMapManager" scope="Singleton"/>
@@ -218,9 +222,14 @@
 			<bind interface="ICovisibilityGraphManager" to="SolARCovisibilityGraphManager" scope="Singleton"/>
 			<bind interface="IKeyframeRetriever" to="SolARKeyframeRetrieverFBOW" scope="Singleton"/>
 		</bindings>
-		<injects>
-			<inject to="SolARSLAMBootstrapper">
-				<bind interface="IKeyframeSelector" to="SolARKeyframeSelector" properties="BootstrapProperties"/>
+		<injects>		
+			<inject to="SolARDescriptorsExtractorFromImageOpencv">
+				<bind interface="IKeypointDetector" to="SolARKeypointDetectorOpencv"/>
+				<bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv"/>
+			</inject>
+			<inject to="SolARSLAMTracking">
+				<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
+				<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Red" properties="RedProperties"/>
 			</inject>
 		</injects>
 	</factory>
@@ -319,7 +328,7 @@
 			<property name="maxTriangulationAngle" type="float" value="2.0"/>
 			<property name="cheiralityCheck" type="int" value="1"/>
 		</configure>
-		<configure component="SolARKeyframeSelector" name="BootstrapProperties">
+		<configure component="SolARKeyframeSelector">
 			<property name="minNbMatchesIsKeyframe" type="int" value="50"/>
 			<property name="minMeanDistanceIsKeyframe" type="float" value="0.04"/>
 		</configure>

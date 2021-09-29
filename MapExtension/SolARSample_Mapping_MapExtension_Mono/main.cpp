@@ -20,10 +20,8 @@
 #include "api/input/devices/IARDevice.h"
 #include "api/display/IImageViewer.h"
 #include "api/display/I3DOverlay.h"
-#include "api/display/I2DOverlay.h"
 #include "api/display/I3DPointsViewer.h"
-#include "api/features/IKeypointDetector.h"
-#include "api/features/IDescriptorsExtractor.h"
+#include "api/features/IDescriptorsExtractorFromImage.h"
 #include "api/features/IDescriptorMatcher.h"
 #include "api/features/IMatchesFilter.h"
 #include "api/solver/pose/I3DTransformSACFinderFrom2D3D.h"
@@ -87,8 +85,7 @@ int main(int argc, char *argv[])
 		auto covisibilityGraphManager = xpcfComponentManager->resolve<ICovisibilityGraphManager>();
 		auto keyframeRetriever = xpcfComponentManager->resolve<IKeyframeRetriever>();
 		auto mapManager = xpcfComponentManager->resolve<IMapManager>();
-		auto keypointsDetector = xpcfComponentManager->resolve<features::IKeypointDetector>();
-		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractor>();
+		auto descriptorExtractor = xpcfComponentManager->resolve<features::IDescriptorsExtractorFromImage>();
 		auto matcher = xpcfComponentManager->resolve<features::IDescriptorMatcher>();
 		auto corr2D3DFinder = xpcfComponentManager->resolve<solver::pose::I2D3DCorrespondencesFinder>();
 		auto pnpRansac = xpcfComponentManager->resolve<api::solver::pose::I3DTransformSACFinderFrom2D3D>();
@@ -162,11 +159,11 @@ int main(int argc, char *argv[])
 			SRef<Image> displayImage = image->copy();
 
 			// feature extraction image
-			std::vector<Keypoint> keypoints, undistortedKeypoints;
-			keypointsDetector->detect(image, keypoints);
-			undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+			std::vector<Keypoint> keypoints, undistortedKeypoints;			
 			SRef<DescriptorBuffer> descriptors;
-			descriptorExtractor->extract(image, keypoints, descriptors);
+			if (descriptorExtractor->extract(image, keypoints, descriptors) != FrameworkReturnCode::_SUCCESS)
+				continue;
+			undistortKeypoints->undistort(keypoints, undistortedKeypoints);
 			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, refKeyframe, pose);
 
 			// Relocalization

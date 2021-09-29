@@ -44,21 +44,9 @@
 #include "api/storage/IPointCloudManager.h"
 #include "api/storage/ICovisibilityGraphManager.h"
 #include "api/storage/IMapManager.h"
-#include "api/features/IKeypointDetector.h"
-#include "api/features/IDescriptorsExtractor.h"
-#include "api/features/IDescriptorMatcher.h"
-#include "api/features/IMatchesFilter.h"
-#include "api/solver/pose/I2D3DCorrespondencesFinder.h"
-#include "api/geom/IProject.h"
+#include "api/features/IDescriptorsExtractorFromImage.h"
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
-#include "datastructure/CameraDefinitions.h"
-#include "datastructure/Image.h"
-#include "datastructure/CloudPoint.h"
-#include "datastructure/Keypoint.h"
-#include "datastructure/Trackable.h"
-#include "datastructure/FiducialMarker.h"
-
 
 namespace SolAR {
 namespace PIPELINES {
@@ -135,6 +123,30 @@ namespace MAPPING {
         FrameworkReturnCode getDataForVisualization(std::vector<SRef<datastructure::CloudPoint>> & outputPointClouds,
                                                     std::vector<datastructure::Transform3Df> & keyframePoses) const override;
 
+	private:
+		/// @brief Correct pose and do bootstrap using an image and the associated pose
+		/// This method must be called with successive pairs of (image, pose)
+		/// until the bootstrap process is finished (i.e. m_isBootstrapFinished is True)
+		/// @param[in] frame the input frame to process
+		/// @return true if bootstrap is finished
+		bool correctPoseAndBootstrap(const SRef<datastructure::Frame> & frame);
+
+		/// @brief Process to bundle adjustment, map pruning
+		/// and update global map
+		void globalBundleAdjustment();
+
+		/// @brief method that implementes the full maping processing
+		void processMapping();
+
+		/// @brief returns the status of bootstrap
+		/// @return true if bootstrap is finished (m_isBootstrapFinished value)
+		bool isBootstrapFinished() const;
+
+		/// @brief sets the bootstrap status
+		/// (the m_isBootstrapFinished variable value)
+		/// @param status: true (finished) or false (not finished)
+		void setBootstrapSatus(const bool status);
+
     private:
 
         bool m_isBootstrapFinished; // indicates if the bootstrap step is finished
@@ -151,12 +163,7 @@ namespace MAPPING {
         SRef<api::storage::IPointCloudManager> m_pointCloudManager;
 		SRef<api::storage::ICovisibilityGraphManager> m_covisibilityGraphManager;
 		SRef<api::storage::IMapManager> m_mapManager;
-        SRef<api::features::IKeypointDetector> m_keypointsDetector;
-        SRef<api::features::IDescriptorsExtractor> m_descriptorExtractor;
-        SRef<api::features::IDescriptorMatcher> m_matcher;
-        SRef<api::features::IMatchesFilter> m_matchesFilter;
-        SRef<api::solver::pose::I2D3DCorrespondencesFinder> m_corr2D3DFinder;
-        SRef<api::geom::IProject> m_projector;        
+        SRef<api::features::IDescriptorsExtractorFromImage> m_descriptorExtractor;
         SRef<api::loop::ILoopClosureDetector> m_loopDetector;
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
 		SRef<api::geom::IUndistortPoints> m_undistortKeypoints;
@@ -169,32 +176,7 @@ namespace MAPPING {
         xpcf::DelegateTask * m_mappingTask = nullptr;
 
         // Drop buffer containing (image,pose) pairs sent by client
-        xpcf::SharedFifo<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_inputImagePoseBuffer;
-
-        /// @brief Correct pose and do bootstrap using an image and the associated pose
-        /// This method must be called with successive pairs of (image, pose)
-        /// until the bootstrap process is finished (i.e. m_isBootstrapFinished is True)
-        /// @param[in] image: the input image to process
-        /// @param[in] pose: the input pose to process
-        /// @return true if bootstrap is finished
-        bool correctPoseAndBootstrap(const SRef<datastructure::Image> & image, const datastructure::Transform3Df & pose);
-
-        /// @brief Process to bundle adjustment, map pruning
-        /// and update global map
-        void globalBundleAdjustment();
-
-        /// @brief method that implementes the full maping processing
-        void processMapping();
-
-        /// @brief returns the status of bootstrap
-        /// @return true if bootstrap is finished (m_isBootstrapFinished value)
-        bool isBootstrapFinished() const;
-
-        /// @brief sets the bootstrap status
-        /// (the m_isBootstrapFinished variable value)
-        /// @param status: true (finished) or false (not finished)
-        void setBootstrapSatus(const bool status);
-
+        xpcf::SharedFifo<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_inputImagePoseBuffer;       
     };
 
 }

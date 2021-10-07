@@ -8,7 +8,7 @@ node("master") {
         dirName="SolARBuild"
         buildDir="Mapping/SolARPipeline_Mapping_Mono"
         android=true
-        makeTarget="install install_deps"       
+        makeTarget="install"       
     }
 
     SolArModulePipeline {
@@ -16,7 +16,7 @@ node("master") {
         dirName="SolARBuild"
         buildDir="Mapping/SolARPipeline_Mapping_Multi"
         android=true
-        makeTarget="install install_deps"
+        makeTarget="install"
     }
 
 

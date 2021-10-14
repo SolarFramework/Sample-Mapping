@@ -22,26 +22,17 @@ else
     exit 1
 fi
 
-# Get host IP for display
-if [ "$3" ]
-then
-    echo "Display IP = $3"
-else
-    echo "You need to give host IP address for display as third parameter!"
-    exit 1
-fi
-
 # Set Display IP
-export DISPLAY=$3:0.0
-
+export DISPLAY=${DISPLAY}
+xhost local:docker
 
 # Get image data set from parameters
-if [ "$4" ]
+if [ "$3" ]
 then
     # Set image data set
-    export HOLOLENS_DATA_SET=$4
+    export HOLOLENS_DATA_SET=$3
 else
-    echo "You can choose Hololens data set to use by setting A or B as 4th parameter (A by default)"
+    echo "You can choose Hololens data set to use by setting A or B as 3rd parameter (A by default)"
     # Set image data set to default
     export HOLOLENS_DATA_SET="A"
 fi

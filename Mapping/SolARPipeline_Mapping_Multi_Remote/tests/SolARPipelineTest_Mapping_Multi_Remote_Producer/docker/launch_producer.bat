@@ -39,6 +39,6 @@ REM Log level expected: DEBUG, CRITICAL, ERROR, INFO, TRACE, WARNING
 SET SOLAR_LOG_LEVEL=INFO
 
 docker rm -f solarpipelinemappingmultiproducer
-docker run -it -d -e DISPLAY -e MAPPING_SERVICE_URL -e HOLOLENS_DATA_SET -e SOLAR_LOG_LEVEL -e "SERVICE_NAME=SolARPipelineMappingMultiProducer" -v /tmp/.X11-unix:/tmp/.X11-unix --log-opt max-size=50m -e "SERVICE_TAGS=SolAR" --name solarpipelinemappingmultiproducer artwin/solar/pipeline/mapping-multi-producer:latest
+docker run -it -d -e DISPLAY -e MAPPING_SERVICE_URL -e HOLOLENS_DATA_SET -e SOLAR_LOG_LEVEL -e "SERVICE_NAME=SolARPipelineMappingMultiProducer" -v /tmp/.X11-unix:/tmp/.X11-unix --net=host --log-opt max-size=50m -e "SERVICE_TAGS=SolAR" --name solarpipelinemappingmultiproducer artwin/solar/pipeline/mapping-multi-producer:latest
 
 :end

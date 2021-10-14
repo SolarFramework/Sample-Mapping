@@ -51,6 +51,6 @@ REM Log level expected: DEBUG, CRITICAL, ERROR, INFO, TRACE, WARNING
 SET SOLAR_LOG_LEVEL=INFO
 
 docker rm -f solarpipelinemappingmultirelocalizationclient
-docker run -it -d -e DISPLAY -e RELOCALIZATION_SERVICE_URL -e MAPPING_SERVICE_URL -e HOLOLENS_DATA_SET -e SOLAR_LOG_LEVEL -e "SERVICE_NAME=SolARPipelineMappingMultiRelocalizationClient" -v /tmp/.X11-unix:/tmp/.X11-unix --net=host --log-opt max-size=50m -e "SERVICE_TAGS=SolAR" --name solarpipelinemappingmultirelocalizationclient artwin/solar/pipeline/mapping-multi-relocalization-client:latest
+docker run -it -d -e DISPLAY={DISPLAY} -e RELOCALIZATION_SERVICE_URL -e MAPPING_SERVICE_URL -e HOLOLENS_DATA_SET -e SOLAR_LOG_LEVEL -e "SERVICE_NAME=SolARPipelineMappingMultiRelocalizationClient" -v /tmp/.X11-unix:/tmp/.X11-unix --net=host --log-opt max-size=50m -e "SERVICE_TAGS=SolAR" --name solarpipelinemappingmultirelocalizationclient artwin/solar/pipeline/mapping-multi-relocalization-client:latest
 
 :end

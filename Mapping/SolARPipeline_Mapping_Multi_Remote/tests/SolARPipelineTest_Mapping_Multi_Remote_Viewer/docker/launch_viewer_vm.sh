@@ -11,17 +11,9 @@ else
     exit 1
 fi
 
-# Get host IP for display
-if [ "$2" ]
-then
-    echo "Display IP = $2"
-else
-    echo "You need to give host IP address for display as second parameter!"
-    exit 1
-fi
-
 # Set Display IP
-export DISPLAY=$2:0.0
+export DISPLAY=${DISPLAY}
+xhost local:docker
 
 # Set application log level
 # Log level expected: DEBUG, CRITICAL, ERROR, INFO, TRACE, WARNING

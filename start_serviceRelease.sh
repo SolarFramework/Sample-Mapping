@@ -19,7 +19,7 @@ export SOLAR_LOG_LEVEL=INFO
 # include dependencies path to ld_library_path
 ld_library_path="./"
 if [ -f "$PWD/SolARPipeline_$1_Remote_modules.xml" ]; then
-	for modulePath in $(grep -o "\$XPCF_MODULE_ROOT.*lib" SolARPipeline_$1_Remote_modules.xml)
+	for modulePath in $(grep -o "\$XPCF_MODULE_ROOT.*lib" SolARService_$1_modules.xml)
 	do
 	   modulePath=${modulePath/"\$XPCF_MODULE_ROOT"/${XPCF_MODULE_ROOT}}
 	   if ! [[ $ld_library_path =~ "$modulePath/x86_64/shared/release" ]]
@@ -31,5 +31,5 @@ fi
 
 echo LD_LIBRARY_PATH $ld_library_path
 
-LD_LIBRARY_PATH=$ld_library_path ./SolARPipeline_$1_Remote -m SolARPipeline_$1_Remote_modules.xml -p SolARPipeline_$1_Remote_properties.xml
+LD_LIBRARY_PATH=$ld_library_path ./SolARService_$1 -m SolARService_$1_modules.xml -p SolARService_$1_properties.xml
 

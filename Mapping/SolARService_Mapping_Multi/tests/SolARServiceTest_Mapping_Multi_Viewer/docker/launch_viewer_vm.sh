@@ -20,4 +20,4 @@ xhost local:docker
 export SOLAR_LOG_LEVEL=INFO
 
 docker rm -f solarservicemappingmultiviewer
-docker run -it -d -e DISPLAY -e MAPPING_SERVICE_URL -e SOLAR_LOG_LEVEL -e "SERVICE_NAME=SolARServiceMappingMultiViewer" -v /tmp/.X11-unix:/tmp/.X11-unix --net=host --log-opt max-size=50m -e "SERVICE_TAGS=SolAR" --name solarservicemappingmultiviewer artwin/solar/pipeline/mapping-multi-viewer:latest
+docker run -it -d -e DISPLAY -e MAPPING_SERVICE_URL -e SOLAR_LOG_LEVEL -e "SERVICE_NAME=SolARServiceMappingMultiViewer" -v /tmp/.X11-unix:/tmp/.X11-unix --net=host --log-opt max-size=50m -e "SERVICE_TAGS=SolAR" --name solarservicemappingmultiviewer artwin/solar/services/mapping-multi-viewer:latest

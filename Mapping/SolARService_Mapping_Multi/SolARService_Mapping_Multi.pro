@@ -87,7 +87,13 @@ DISTFILES += \
     SolARService_Mapping_Multi_modules.xml \
     SolARService_Mapping_Multi_properties.xml \
     packagedependencies.txt \
-    start_mapping_multi_service.sh
+    start_mapping_multi_service.sh \
+    docker/build.sh \
+    docker/launch.bat \
+    docker/launch.sh \
+    docker/mapping-service-manifest.yaml \
+    docker/SolARServiceMappingMulti.dockerfile \
+    docker/start_server.sh
 
 xml_files.path = $${TARGETDEPLOYDIR}
 xml_files.files =  SolARService_Mapping_Multi_modules.xml \

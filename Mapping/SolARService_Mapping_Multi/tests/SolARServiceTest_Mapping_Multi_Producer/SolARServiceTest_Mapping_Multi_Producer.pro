@@ -85,7 +85,13 @@ linux {
 
 DISTFILES += \
     SolARServiceTest_Mapping_Multi_Producer_conf.xml \
-    packagedependencies.txt
+    packagedependencies.txt \
+    docker/build_producer.sh \
+    docker/launch_producer.bat \
+    docker/launch_producer.sh \
+    docker/launch_producer_vm.sh \
+    docker/SolARServiceMappingMultiProducer.dockerfile \
+    docker/start_producer.sh
 
 xml_files.path = $${TARGETDEPLOYDIR}
 xml_files.files =  SolARServiceTest_Mapping_Multi_Producer_conf.xml

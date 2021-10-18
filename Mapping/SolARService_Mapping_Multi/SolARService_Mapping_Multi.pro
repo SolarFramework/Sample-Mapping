@@ -21,6 +21,7 @@ CONFIG(debug,debug|release) {
 
 CONFIG(release,debug|release) {
     TARGETDEPLOYDIR = $${PWD}/../../bin/Release
+    DEFINES += _NDEBUG=1
     DEFINES += NDEBUG=1
 }
 

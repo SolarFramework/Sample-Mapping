@@ -16,9 +16,9 @@ spec:
       - name: regcredsupra
       containers:
       - name: mapping-service
-        image: solar-docker-local.artifact.b-com.com/mapping/0.10.0/mapping-multi:latest
+        image: solar-docker-local.artifact.b-com.com/mapping/0.10.0/mapping-multi-service:latest
         env:
-        - name: XPCF_GRPC_SERVER_LOG_LEVEL
+        - name: SOLAR_LOG_LEVEL
           value: INFO
         - name: XPCF_GRPC_MAX_RECV_MSG_SIZE
           value: "7000000"

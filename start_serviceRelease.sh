@@ -18,7 +18,7 @@ export SOLAR_LOG_LEVEL=INFO
 
 # include dependencies path to ld_library_path
 ld_library_path="./"
-if [ -f "$PWD/SolARPipeline_$1_Remote_modules.xml" ]; then
+if [ -f "$PWD/SolARService_$1_modules.xml" ]; then
 	for modulePath in $(grep -o "\$XPCF_MODULE_ROOT.*lib" SolARService_$1_modules.xml)
 	do
 	   modulePath=${modulePath/"\$XPCF_MODULE_ROOT"/${XPCF_MODULE_ROOT}}

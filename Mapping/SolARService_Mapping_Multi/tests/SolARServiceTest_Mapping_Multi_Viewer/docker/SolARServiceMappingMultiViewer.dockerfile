@@ -22,7 +22,7 @@ ADD modules/* /SolARServiceMappingMultiViewer/modules/
 ADD SolARServiceTest_Mapping_Multi_Viewer /SolARServiceMappingMultiViewer/
 RUN chmod +x /SolARServiceMappingMultiViewer/SolARServiceTest_Mapping_Multi_Viewer
 RUN mkdir .xpcf
-ADD *.xml /.xpcf
+ADD *.xml /.xpcf/
 ADD docker/start_viewer.sh .
 RUN chmod +x start_viewer.sh
 

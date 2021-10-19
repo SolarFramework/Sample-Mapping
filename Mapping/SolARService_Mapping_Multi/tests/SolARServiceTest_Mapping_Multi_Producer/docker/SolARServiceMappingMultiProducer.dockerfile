@@ -39,7 +39,7 @@ ADD modules/* /SolARServiceMappingMultiProducer/modules/
 ADD SolARServiceTest_Mapping_Multi_Producer /SolARServiceMappingMultiProducer/
 RUN chmod +x /SolARServiceMappingMultiProducer/SolARServiceTest_Mapping_Multi_Producer
 RUN mkdir .xpcf
-ADD *.xml /.xpcf
+ADD *.xml /.xpcf/
 ADD docker/start_producer.sh .
 RUN chmod +x start_producer.sh
 

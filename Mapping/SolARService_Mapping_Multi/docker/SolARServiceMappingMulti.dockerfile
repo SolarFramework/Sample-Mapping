@@ -23,7 +23,7 @@ ADD modules/* /SolARServiceMappingMulti/modules/
 ADD SolARService_Mapping_Multi /SolARServiceMappingMulti/
 RUN chmod +x /SolARServiceMappingMulti/SolARService_Mapping_Multi
 RUN mkdir .xpcf
-ADD *.xml /.xpcf
+ADD *.xml /.xpcf/
 ADD docker/start_server.sh .
 RUN chmod +x start_server.sh
 

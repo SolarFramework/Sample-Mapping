@@ -82,6 +82,7 @@ linux {
 
 DISTFILES += \
     SolARServiceTest_Mapping_Multi_Viewer_conf.xml \
+    docker/build_viewer.sh \
     packagedependencies.txt \
     docker/build_viewer.sh \
     docker/launch_viewer.bat \

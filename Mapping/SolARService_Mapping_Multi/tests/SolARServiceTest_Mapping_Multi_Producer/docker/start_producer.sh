@@ -15,7 +15,7 @@ fi
 
 echo "Try to replace the Mapping Service URL in the XML configuration file..."
 
-sed -i -e "s/MAPPING_SERVICE_URL/$MAPPING_SERVICE_URL/g" /.xpcf/SolAServiceTest_Mapping_Multi_Producer_conf.xml
+sed -i -e "s/MAPPING_SERVICE_URL/$MAPPING_SERVICE_URL/g" /.xpcf/SolARServiceTest_Mapping_Multi_Producer_conf.xml
 
 ## Detect PATH_TO_IMAGE_DATA var and use its value 
 ## to set the path to the Hololens image set in XML configuration file

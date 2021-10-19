@@ -85,6 +85,7 @@ linux {
 
 DISTFILES += \
     SolARServiceTest_Mapping_Multi_Producer_conf.xml \
+    docker/build_producer.sh \
     packagedependencies.txt \
     docker/build_producer.sh \
     docker/launch_producer.bat \

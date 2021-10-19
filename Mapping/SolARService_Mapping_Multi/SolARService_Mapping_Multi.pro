@@ -73,28 +73,30 @@ win32 {
 }
 
 linux {
-  start_service_install.path = $${TARGETDEPLOYDIR}
-  start_service_install.files = $${PWD}/../../start_service.sh
-  CONFIG(release,debug|release) {
-    start_service_install.extra = cp $$files($${PWD}/../../start_serviceRelease.sh) $${PWD}/../../start_service.sh
-  }
-  CONFIG(debug,debug|release) {
-    start_service_install.extra = cp $$files($${PWD}/../../start_serviceDebug.sh) $${PWD}/../../start_service.sh
-  }
-  INSTALLS += start_service_install
+    run_install.path = $${TARGETDEPLOYDIR}
+    run_install.files = $${PWD}/start_mapping_multi_service.sh
+    CONFIG(release,debug|release) {
+        run_install.extra = cp $$files($${PWD}/start_mapping_multi_service_release.sh) $${PWD}/start_mapping_multi_service.sh
+    }
+    CONFIG(debug,debug|release) {
+        run_install.extra = cp $$files($${PWD}/start_mapping_multi_service_debug.sh) $${PWD}/start_mapping_multi_service.sh
+    }
+    INSTALLS += run_install
 }
 
 DISTFILES += \
     SolARService_Mapping_Multi_modules.xml \
     SolARService_Mapping_Multi_properties.xml \
+    docker/build.sh \
     packagedependencies.txt \
-    start_mapping_multi_service.sh \
     docker/build.sh \
     docker/launch.bat \
     docker/launch.sh \
     docker/mapping-service-manifest.yaml \
     docker/SolARServiceMappingMulti.dockerfile \
-    docker/start_server.sh
+    docker/start_server.sh \
+    start_mapping_multi_service_debug.sh \
+    start_mapping_multi_service_release.sh
 
 xml_files.path = $${TARGETDEPLOYDIR}
 xml_files.files =  SolARService_Mapping_Multi_modules.xml \

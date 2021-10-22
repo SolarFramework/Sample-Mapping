@@ -13,24 +13,24 @@ The Mapping Service is delivered as a package containing all the files you need 
 
 This package includes:
 
-* the **Docker image** of the remote service, available on a public docker repository (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest)
+* the **Docker image** of the remote service, available on a public docker repository (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.10.0/mapping-multi-service/latest)
 
-* the **Kubernetes manifest file** to deploy the service on your own Cloud architecture (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-helm-virtual/mapping-service-manifest.yaml)
+* the **Kubernetes manifest file** to deploy the service on your own Cloud architecture ( https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-helm-virtual/mapping-service-manifest.yaml)
 
 * **two test client applications**, grouped in a compressed file (https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-generic-local/mapping-service-tests/mapping_service_test_samples.tar.gz) which contains:
 
-  * the **Producer client application** : _SolARPipelineTest_Mapping_Multi_Remote_Producer_
-  * the **Producer client configuration** : _SolARPipelineTest_Mapping_Multi_Remote_Producer_conf.xml_
+  * the **Producer client application** : _SolARServiceTest_Mapping_Multi_Producer_
+  * the **Producer client configuration** : _SolARServiceTest_Mapping_Multi_Producer_conf.xml_
   * a **script to launch the producer application**: _start_producer.sh_
-  * the **Viewer client application** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_
-  * the **Viewer client configuration** : _SolARPipelineTest_Mapping_Multi_Remote_Viewer_conf.xml_
+  * the **Viewer client application** : _SolARServiceTest_Mapping_Multi_Viewer_
+  * the **Viewer client configuration** : _SolARServiceTest_Mapping_Multi_Viewer_conf.xml_
   * a **script to launch the viewer application**: _start_viewer.sh_
   * all the **libraries needed by the two test applications**, stored in the _modules_ folder
   * a **script to install the data** needed by the two test applications: _install_data.sh_
 
 > :information_source: The complete projects of these two test applications are available on the **SolAR Framework GitHub**:
-> * https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Producer
-> * https://github.com/SolarFramework/Sample-Mapping/tree/0.9.3/Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Viewer
+> * https://github.com/SolarFramework/Sample-Mapping/tree/develop/Mapping/SolARService_Mapping_Multi/tests/SolARServiceTest_Mapping_Multi_Producer
+> * https://github.com/SolarFramework/Sample-Mapping/tree/develop/Mapping/SolARService_Mapping_Multi/tests/SolARServiceTest_Mapping_Multi_Viewer
 
 > :warning: The Mapping Service Docker image, based on Ubuntu 18.04, is completely independant from other external resources, and can be deployed on any Cloud infrastructure that supports Docker containers.
 
@@ -110,7 +110,7 @@ To complete the description of the mapping pipeline, the following diagram shows
 
 ![Mapping pipeline processing](docContent/Mapping_Pipeline_Processing.png)
 
-The mapping pipeline sample is available on the *SolAR Framework GitHub* (multithreading version): https://github.com/SolarFramework/Sample-Mapping/tree/master/Mapping/SolARPipeline_Mapping_Multi
+The mapping pipeline sample is available on the *SolAR Framework GitHub* (multithreading version): https://github.com/SolarFramework/Sample-Mapping/tree/develop/Mapping/SolARService_Mapping_Multi
 
 ## The Mapping Service
 
@@ -126,9 +126,9 @@ To help you easily deploy the mapping service on your own infrastructure, we hav
   * by adding a **gRPC server** based on the interface of this pipeline (which becomes the interface of the service), as described in the previous paragraph
   * by managing the **serialization and deserialization** of all the data structures that can be used to request the service through its interface
 
-* encapsulation of the remote mapping pipeline in a **Docker container**, which exposes its interface through a default port
+* encapsulation of the remote mapping service in a **Docker container**, which exposes its interface through a default port
 
-* generation of the corresponding **Docker image**, which is available on this public docker repository: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest
+* generation of the corresponding **Docker image**, which is available on this public docker repository: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/develop/mapping-multi-service/latest
 
 So, you are ready to deploy the service in your Cloud infrastructure, using Kubernetes. But before that, **you must have prepared your Cloud architecture**: set up a traffic manager, a load balancer, an application gateway, a firewall, servers, clusters, nodes...
 
@@ -142,22 +142,22 @@ So, you can use this manifest sample (in YAML format) to deploy the service:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mapping-pipeline
+  name: mapping-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mapping-pipeline
+      app: mapping-service
   template:
     metadata:
       labels:
-        app: mapping-pipeline
+        app: mapping-service
     spec:
       imagePullSecrets:
       - name: regcredsupra
       containers:
-      - name: mapping-pipeline
-        image: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest
+      - name: mapping-service
+        image: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-service/latest
         env:
         - name: XPCF_GRPC_SERVER_LOG_LEVEL
           value: INFO
@@ -166,18 +166,18 @@ spec:
         - name: XPCF_GRPC_MAX_SEND_MSG_SIZE
           value: "20000000"
         - name: XPCF_GRPC_MAP_UPDATE_URL
-          value: map-update-pipeline.artwin.svc.cluster.local:80
+          value: map-update-service.artwin.svc.cluster.local:80
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: mapping-pipeline
+  name: mapping-service
   labels:
-    app: mapping-pipeline
+    app: mapping-service
 spec:
   type: NodePort
   selector:
-    app: mapping-pipeline
+    app: mapping-service
   ports:
   - name: http
     port: 80
@@ -187,20 +187,20 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: mapping-pipeline
+  name: mapping-service
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: mapping-pipeline-rolebinding
+  name: mapping-service-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: cluster-admin
 subjects:
 - kind: ServiceAccount
-  name: mapping-pipeline
-  namespace: mapping-pipeline.artwin.b-com.com:q
+  name: mapping-service
+  namespace: mapping-service.artwin.b-com.com:q
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -210,18 +210,18 @@ metadata:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
   name:
-    mapping-pipeline
+    mapping-service
 spec:
   tls:
   - hosts:
-      - mapping-pipeline.artwin.b-com.com
+      - mapping-service.artwin.b-com.com
   rules:
-  - host: mapping-pipeline.artwin.b-com.com
+  - host: mapping-service.artwin.b-com.com
     http:
       paths:
       - backend:
           service:
-            name: mapping-pipeline
+            name: mapping-service
             port:
               number: 80
         path: /
@@ -235,7 +235,7 @@ In this part of the manifest document, you need to define the service deployment
 - name of the deployment
 ```yaml
 metadata:
-  name: mapping-pipeline
+  name: mapping-service
 ```
 
 - number of replica pods for this deployment
@@ -247,24 +247,24 @@ metadata:
 ```yaml
   selector:
     matchLabels:
-      app: mapping-pipeline
+      app: mapping-service
   template:
     metadata:
       labels:
-        app: mapping-pipeline
+        app: mapping-service
 ```
 - **container parameters**: this part is important because it defines the Docker image you want to deploy (in this sample _image: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest_), 
 and some parameters of the Docker container used at runtime:
 
-* XPCF_GRPC_SERVER_LOG_LEVEL: the log level of the mapping pipeline (DEBUG, CRITICAL, ERROR, INFO, TRACE, WARNING)
+* XPCF_GRPC_SERVER_LOG_LEVEL: the log level of the mapping service (DEBUG, CRITICAL, ERROR, INFO, TRACE, WARNING)
 * XPCF_GRPC_MAX_RECV_MSG_SIZE: the maximum size, in bytes, of gRPC received messages
 * XPCF_GRPC_MAX_SEND_MSG_SIZE: the maximum size, in bytes, of gRPC sent messages
 * XPCF_GRPC_MAP_UPDATE_URL: the local cluster URL to the Map Update Service (*not used in this version*)
 
 ```yaml
       containers:
-      - name: mapping-pipeline
-        image: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-remote/latest
+      - name: mapping-service
+        image: https://artifact.b-com.com/webapp/#/artifacts/browse/tree/General/solar-docker-local/mapping/0.9.3/mapping-multi-service/latest
         env:
         - name: XPCF_GRPC_SERVER_LOG_LEVEL
           value: INFO
@@ -273,7 +273,7 @@ and some parameters of the Docker container used at runtime:
         - name: XPCF_GRPC_MAX_SEND_MSG_SIZE
           value: "20000000"
         - name: XPCF_GRPC_MAP_UPDATE_URL
-          value: map-update-pipeline.artwin.svc.cluster.local:80
+          value: map-update-service.artwin.svc.cluster.local:80
 ```
 
 <ins>**Service part** (*kind: Service*)</ins>
@@ -284,13 +284,13 @@ This part defines the name of the service, and, important, **the service node po
 kind: Service
 apiVersion: v1
 metadata:
-  name: mapping-pipeline
+  name: mapping-service
   labels:
-    app: mapping-pipeline
+    app: mapping-service
 spec:
   type: NodePort
   selector:
-    app: mapping-pipeline
+    app: mapping-service
   ports:
   - name: http
     port: 80
@@ -310,18 +310,18 @@ metadata:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
   name:
-    mapping-pipeline
+    mapping-service
 spec:
   tls:
   - hosts:
-      - mapping-pipeline.artwin.b-com.com
+      - mapping-service.artwin.b-com.com
   rules:
-  - host: mapping-pipeline.artwin.b-com.com
+  - host: mapping-service.artwin.b-com.com
     http:
       paths:
       - backend:
           service:
-            name: mapping-pipeline
+            name: mapping-service
             port:
               number: 80
         path: /
@@ -381,21 +381,21 @@ kubectl apply -f [path/to/your_manifest.yaml]
 ```command
 kubectl get deployments
 NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-mapping-pipeline   1/1     1            1           21d
+mapping-service   1/1     1            1           21d
 ```
 
 - **check your services**:
 ```command
 kubectl get services
 NAME                      TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
-mapping-pipeline          NodePort   10.107.117.85    <none>        80:31887/TCP     30d
+mapping-service          NodePort   10.107.117.85    <none>        80:31887/TCP     30d
 ```
 
 - **check your pods**:
 ```command
 kubectl get pods
 NAME                                READY   STATUS    RESTARTS   AGE
-mapping-pipeline-84bc74d954-6vc7v   1/1     Running   1          7d15h
+mapping-service-84bc74d954-6vc7v   1/1     Running   1          7d15h
 ```
 
 - **visualize the logs of a pod**:
@@ -553,7 +553,7 @@ Traces are displayed at runtime to follow the progress of the application. In ad
 
 #### Configure the viewer application
 
-This sample application uses an XML configuration file to initialize at runtime: **_SolARPipelineTest_Mapping_Multi_Remote_Viewer_conf.xml_**
+This sample application uses an XML configuration file to initialize at runtime: **_SolARServiceTest_Mapping_Multi_Viewer_conf.xml_**
 
 You need to edit this file to match your own configuration. 
 

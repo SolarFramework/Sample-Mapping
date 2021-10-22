@@ -86,7 +86,7 @@ auto fnClientMapping = []() {
 
         gMappingPipelineMulti->mappingProcessRequest(image, pose);
 
-//        gImageViewer->display(image);
+        gImageViewer->display(image);
     }
 };
 
@@ -351,7 +351,7 @@ int main(int argc, char* argv[])
                         SRef<Image> image = images[INDEX_USE_CAMERA];
                         Transform3Df pose = poses[INDEX_USE_CAMERA];
 
-                        gImageViewer->display(image);
+//                        gImageViewer->display(image);
 
                         // Send images to relocalization service if less then 'n' images have been read
                         // and if relocalization is still not ok

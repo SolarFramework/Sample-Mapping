@@ -50,7 +50,7 @@ namespace xpcf  = org::bcom::xpcf;
 #define INDEX_USE_CAMERA 0
 #define NB_LOCALKEYFRAMES 10
 #define NB_NEWKEYFRAMES_LOOP 20
-#define BUFFER_SIZE 20
+#define BUFFER_SIZE 50
 
 int main(int argc, char *argv[])
 {
@@ -152,10 +152,11 @@ int main(int argc, char *argv[])
 		xpcf::SharedBuffer<SRef<Image>>												m_sharedBufferDisplay(BUFFER_SIZE);
 
 		// variables
-		bool stop = false;								// is stop process?
+		bool stopCapture = false;						// stop due to captue error
+		bool forceStop = false;							// is stop process?
 		std::vector<Transform3Df> framePoses;			// frame poses to display		
 		int countNewKeyframes = 0;						// number of keyframes to try loop detection
-		int count = 0;									// number of process frames
+		int nbFrameDisplay = 0;							// number of display frames
 		std::mutex m_mutexUseLocalMap;					
 		Transform3Df T_M_W = Transform3Df::Identity();	// Correct pose and Bootstrap
 		bool isFoundTransform = false;				
@@ -220,7 +221,8 @@ int main(int argc, char *argv[])
 			std::vector<Transform3Df> poses;
 			std::chrono::system_clock::time_point timestamp;
 			if (arDevice->getData(images, poses, timestamp) != FrameworkReturnCode::_SUCCESS) {
-				stop = true;
+				stopCapture = true;
+				xpcf::DelegateTask::yield();
 				return;
 			}
 			SRef<Image> image = images[INDEX_USE_CAMERA];
@@ -267,8 +269,6 @@ int main(int argc, char *argv[])
 			{
 				LOG_DEBUG("Update new keyframe in update task");
 				tracking->updateReferenceKeyframe(newKeyframe);
-				SRef<Frame> tmpFrame;
-				m_sharedBufferAddKeyframe.tryPop(tmpFrame);
 			}
 			framePoses.push_back(frame->getPose());
 			
@@ -278,7 +278,7 @@ int main(int argc, char *argv[])
 			overlay3D->draw(frame->getPose(), displayImage);
 			LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
 			if (frame->getVisibility().size() < minWeightNeighbor) {
-				stop = true;
+				forceStop = true;
 				return;
 			}
 
@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
 		// Start tracking
 		clock_t start, end;
 		start = clock();
-		while (!stop)
+		while ((!stopCapture || !m_sharedBufferCamImagePoseCapture.empty()) && !forceStop)
 		{
 			SRef<Image> displayImage;
 			if (!m_sharedBufferDisplay.tryPop(displayImage)) {
@@ -393,12 +393,12 @@ int main(int argc, char *argv[])
 				continue;
 			}
 			if (imageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP)
-				stop = true;
+				forceStop = true;				
 			if (bootstrapOk) {
 				if (!fnDisplay(framePoses))
-					stop = true;
-			}
-			++count;
+					forceStop = true;
+			}			
+			++nbFrameDisplay;
 		}		
 
 		// Stop tasks
@@ -413,9 +413,8 @@ int main(int argc, char *argv[])
 		end = clock();
 		double duration = double(end - start) / CLOCKS_PER_SEC;
 		printf("\n\nElasped time is %.2lf seconds.\n", duration);
-		printf("Number of processed frame is %d.\n", count);
-		printf("Number of processed frame per second : %8.2f\n", count / duration);
-
+		printf("Number of processed frame is %d.\n", nbFrameDisplay);
+		printf("Number of processed frame per second : %8.2f\n", nbFrameDisplay / duration);
 
 		// global bundle adjustment
 		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);

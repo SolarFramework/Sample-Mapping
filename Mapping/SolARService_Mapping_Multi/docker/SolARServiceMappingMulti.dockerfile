@@ -32,7 +32,7 @@ ENV XPCF_GRPC_SERVER_URL=0.0.0.0:8080
 ## Set application gRPC max receive message size
 ENV XPCF_GRPC_MAX_RECV_MSG_SIZE=7000000
 ## Set application gRPC max send message size
-ENV XPCF_GRPC_MAX_SEND_MSG_SIZE=20000000
+ENV XPCF_GRPC_MAX_SEND_MSG_SIZE=-1
 
 ## Set url to Map Update Service
 ENV XPCF_GRPC_MAP_UPDATE_URL=map-update-pipeline.artwin.svc.cluster.local:80

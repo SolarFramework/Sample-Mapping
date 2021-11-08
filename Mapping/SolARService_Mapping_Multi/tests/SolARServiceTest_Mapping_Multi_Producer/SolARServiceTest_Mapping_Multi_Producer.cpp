@@ -42,8 +42,6 @@ xpcf::DelegateTask * gClientProducerTask = 0;
 // Components used by producer client
 SRef<input::devices::IARDevice> gArDevice = 0;
 SRef<display::IImageViewer> gImageViewer = 0;
-// Indicates if producer client has images to send to mapping pipeline
-bool gImageToSend = true;
 // Nb of images sent by producer client
 int gNbImages = 0;
 // Delay between to images sent
@@ -70,49 +68,52 @@ auto fnClientProducer = []() {
     std::vector<Transform3Df> poses;
     std::chrono::system_clock::time_point timestamp;
 
-    // Still images to process?
-    if (gImageToSend) {
-        // Get data from hololens files
-        if (gArDevice->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
+    // Get data from hololens files
+    if (gArDevice->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
 
-            gNbImages ++;
-//            LOG_INFO("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
+        gNbImages ++;
+        LOG_DEBUG("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
 
-            SRef<Image> image = images[INDEX_USE_CAMERA];
-            Transform3Df pose = poses[INDEX_USE_CAMERA];
+        SRef<Image> image = images[INDEX_USE_CAMERA];
+        Transform3Df pose = poses[INDEX_USE_CAMERA];
 /*
-            LOG_DEBUG("Image buffer size = {}", image->getBufferSize());
-            LOG_DEBUG("Image layout = {}", image->getImageLayout());
-            LOG_DEBUG("Image pixel order = {}", image->getPixelOrder());
-            LOG_DEBUG("Image data type = {}", image->getDataType());
-            LOG_DEBUG("Image nb channels = {}", image->getNbChannels());
-            LOG_DEBUG("Image nb bits per component = {}", image->getNbBitsPerComponent());
-            LOG_DEBUG("Image size = {},{}", image->getWidth(), image->getHeight());
-            LOG_DEBUG("Image step = {}", image->getStep());
+        LOG_DEBUG("Image buffer size = {}", image->getBufferSize());
+        LOG_DEBUG("Image layout = {}", image->getImageLayout());
+        LOG_DEBUG("Image pixel order = {}", image->getPixelOrder());
+        LOG_DEBUG("Image data type = {}", image->getDataType());
+        LOG_DEBUG("Image nb channels = {}", image->getNbChannels());
+        LOG_DEBUG("Image nb bits per component = {}", image->getNbBitsPerComponent());
+        LOG_DEBUG("Image size = {},{}", image->getWidth(), image->getHeight());
+        LOG_DEBUG("Image step = {}", image->getStep());
 
-            LOG_DEBUG("Pose rows/cols = {}/{}", pose.rows(), pose.cols());
+        LOG_DEBUG("Pose rows/cols = {}/{}", pose.rows(), pose.cols());
 */
-            if (gNbImages > 1) {
-                LOG_INFO("Producer client: Delay between 2 images sent = {} ms", delay_between_images.elapsed() * 1000);
-            }
-
-            delay_between_images.restart();
-
-            grpc_request_duration.restart();
-
-            gMappingPipelineMulti->mappingProcessRequest(image, pose);
-
-            LOG_INFO("Producer client: gRPC request for (image, pose) number {} takes {} ms",
-                     gNbImages, grpc_request_duration.elapsed() * 1000);
-
-            if (gImageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP) {
-                gClientProducerTask->stop();
-            }
+        if (gNbImages > 1) {
+            LOG_DEBUG("Producer client: Delay between 2 images sent = {} ms", delay_between_images.elapsed() * 1000);
         }
-        else {
-            gImageToSend = false;
-            LOG_INFO("Producer client: no more images to send");
-        }
+
+        delay_between_images.restart();
+
+        grpc_request_duration.restart();
+
+        gMappingPipelineMulti->mappingProcessRequest(image, pose);
+
+        LOG_DEBUG("Producer client: gRPC request for (image, pose) number {} takes {} ms",
+                 gNbImages, grpc_request_duration.elapsed() * 1000);
+
+        gImageViewer->display(image);
+    }
+    else {
+        LOG_INFO("Producer client: no more images to send");
+
+        LOG_INFO("Stop mapping pipeline process");
+
+        if (gMappingPipelineMulti != 0)
+            gMappingPipelineMulti->stop();
+
+        LOG_INFO("End of test");
+
+        exit(0);
     }
 };
 
@@ -302,22 +303,8 @@ int main(int argc, char* argv[])
         LOG_INFO("\n\n***** Control+C to stop *****\n");
 
         // Wait for end of images or interruption
-        while (gImageToSend) {
-
+        while (true) {
         }
-
-        LOG_INFO("Stop producer client thread");
-
-        if (gClientProducerTask != 0)
-            gClientProducerTask->stop();
-
-        LOG_INFO("Stop mapping pipeline processing");
-
-        if (gMappingPipelineMulti != 0)
-            gMappingPipelineMulti->stop();
-
-        LOG_INFO("End of test");
-
     }
     catch (xpcf::Exception & e) {
         LOG_INFO("The following exception has been caught: {}", e.what());

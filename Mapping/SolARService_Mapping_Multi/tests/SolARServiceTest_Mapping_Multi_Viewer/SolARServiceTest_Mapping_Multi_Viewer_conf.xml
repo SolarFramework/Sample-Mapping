@@ -27,7 +27,7 @@
         </configure>
         <!-- Remote viewer configuration-->
         <configure component="SolAR3DPointsViewerOpengl">
-            <property name="title" type="string" value="Points Cloud (press esc to exit)"/>
+            <property name="title" type="string" value="Points Cloud (press ESC to end test)"/>
             <property name="width" type="uint" value="1280"/>
             <property name="height" type="uint" value="960"/>
             <property name="backgroundColor" type="uint">

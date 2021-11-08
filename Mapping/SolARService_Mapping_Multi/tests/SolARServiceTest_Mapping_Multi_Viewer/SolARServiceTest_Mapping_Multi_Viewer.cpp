@@ -39,7 +39,6 @@ xpcf::DelegateTask * gClientViewerTask = 0;
 // Viewer used by viewer client
 SRef<api::display::I3DPointsViewer> gViewer3D = 0;
 
-
 // print help options
 void print_help(const cxxopts::Options& options)
 {
@@ -70,14 +69,19 @@ auto fnClientViewer = []() {
         }
 
         // Display new data
-        gViewer3D->display(pointClouds, keyframePoses[keyframePoses.size()-1], keyframePoses, {}, {});
+        if (gViewer3D->display(pointClouds, keyframePoses[keyframePoses.size()-1], keyframePoses, {}, {}) == FrameworkReturnCode::_STOP) {
+            LOG_INFO("Viewer client: ESC pressed on viewer");
+
+            LOG_INFO("End of test");
+
+            exit(0);
+        }
 
     }
     else {
         LOG_DEBUG("Viewer client: nothing to display");
     }
 };
-
 
 // Function called when interruption signal is triggered
 static void SigInt(int signo) {

@@ -292,6 +292,7 @@ int main(int argc, char* argv[])
             CameraRigParameters camRigParams = AR_device->getCameraParameters();
             CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
 
+            LOG_INFO("Remote producer client: Initialize mapping pipeline...");
             result = gMappingPipelineMulti->init();
             LOG_INFO("Remote mapping client: Init mapping pipeline result = {}",
                      getReturnCodeTextValue(result));
@@ -305,6 +306,7 @@ int main(int argc, char* argv[])
             LOG_INFO("Remote mapping client: Set mapping pipeline camera parameters result = {}",
                      getReturnCodeTextValue(result));
 
+            LOG_INFO("Remote producer client: Initialize relocalization pipeline...");
             result = gRelocalizationPipeline->init();
             LOG_INFO("Remote relocalization client: Init relocalization pipeline result = {}",
                      getReturnCodeTextValue(result));
@@ -374,6 +376,29 @@ int main(int argc, char* argv[])
                         LOG_INFO("Add pair (image, pose) to input drop buffer for mapping");
                         m_dropBufferCamImagePoseMapping.push(std::make_pair(image, pose * T_M_W));
                     }
+                    else {
+                        LOG_INFO("No more images to send");
+
+                        LOG_INFO("Stop mapping client thread");
+
+                        if (gClientMappingTask != 0)
+                            gClientMappingTask->stop();
+
+                        LOG_INFO("Stop relocalization client thread");
+
+                        if (gClientRelocalizationTask != 0)
+                            gClientRelocalizationTask->stop();
+
+                        LOG_INFO("Stop mapping pipeline process");
+
+                        if (gMappingPipelineMulti != 0)
+                            gMappingPipelineMulti->stop();
+
+                        LOG_INFO("End of test");
+
+                        exit(0);
+                    }
+
                 }
             }
             else {

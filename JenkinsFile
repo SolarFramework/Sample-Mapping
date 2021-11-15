@@ -40,6 +40,7 @@ node("master") {
          Mapping/SolARSample_Mapping_Mono,\
          Mapping/SolARSample_Mapping_Multi,\
          Mapping/SolARPipeline_Mapping_Mono/tests/SolARPipelineTest_Mapping_Mono,\
+         Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi,\
          Mapping/SolARService_Mapping_Multi/tests/SolARServiceTest_Mapping_Multi_Relocalization,\
          Mapping/SolARService_Mapping_Multi/tests/SolARServiceTest_Mapping_Multi_Producer,\
          Mapping/SolARService_Mapping_Multi/tests/SolARServiceTest_Mapping_Multi_Viewer,\

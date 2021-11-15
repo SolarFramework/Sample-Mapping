@@ -20,11 +20,11 @@ node("master") {
     }
 
     SolArModulePipeline {
-        moduleName="SolARPipeline_Mapping_Multi_Remote"
+        moduleName="SolARService_Mapping_Multi"
         dirName="SolARBuild"
         buildDir="Mapping/SolARService_Mapping_Multi"
         android=false
-	windows=false
+        windows=false
         makeTarget="install"
     }
 

@@ -48,7 +48,7 @@ node("master") {
          Mapping/SolARService_Mapping_Multi/tests/SolARServiceTest_Mapping_Multi_Viewer"
         makeTarget="install install_deps"
         android=false
-        windows=false
+        win=false
         packageScripts="bundleSamples"
     }
 

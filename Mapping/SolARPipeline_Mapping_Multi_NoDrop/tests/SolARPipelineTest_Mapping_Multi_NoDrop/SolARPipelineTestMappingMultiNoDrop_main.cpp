@@ -155,7 +155,7 @@ int main(int argc, char ** argv)
     signal(SIGINT, SigInt);
 
     // Default configuration file
-    char * config_file = (char *)"SolARPipelineTest_Mapping_Multi_Processing_conf.xml";
+    char * config_file = (char *)"SolARPipelineTest_Mapping_Multi_NoDrop_Processing_conf.xml";
 
     if (argc > 1) {
         // Get mapping pipeline configuration file path and name from main args
@@ -182,7 +182,7 @@ int main(int argc, char ** argv)
         }
 
         // Manage producer client thread
-        if (gXpcfComponentManager->load("SolARPipelineTest_Mapping_Multi_Producer_conf.xml") == org::bcom::xpcf::_SUCCESS)
+        if (gXpcfComponentManager->load("SolARPipelineTest_Mapping_Multi_NoDrop_Producer_conf.xml") == org::bcom::xpcf::_SUCCESS)
         {
             LOG_INFO("Producer client configuration file loaded");
 
@@ -225,7 +225,7 @@ int main(int argc, char ** argv)
         }
 
         // Manage viewer client thread
-        if (gXpcfComponentManager->load("SolARPipelineTest_Mapping_Multi_Viewer_conf.xml") == org::bcom::xpcf::_SUCCESS)
+        if (gXpcfComponentManager->load("SolARPipelineTest_Mapping_Multi_NoDrop_Viewer_conf.xml") == org::bcom::xpcf::_SUCCESS)
         {
             LOG_INFO("Viewer client configuration file loaded");
 

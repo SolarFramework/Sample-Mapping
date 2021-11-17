@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <xpcf-registry autoAlias="true">
-    <module uuid="a0ca1992-fd6d-4bd1-b041-9dfd8da2f645" name="SolARPipelineMappingMultiNoDrop" description="Multi threads mapping vision pipeline based on SolAR Framework" path="$XPCF_MODULE_ROOT/SolARBuild/SolARPipelineMappingMultiNoDrop/lib/x86_64/shared">
+    <module uuid="a0ca1992-fd6d-4bd1-b041-9dfd8da2f645" name="SolARPipelineMappingMultiNoDrop" description="Multi threads mapping vision pipeline based on SolAR Framework" path="$XPCF_MODULE_ROOT/SolARBuild/SolARPipelineMappingMultiNoDrop/0.10.0/lib/x86_64/shared">
         <component uuid="c1a30bbf-57a8-4ea3-83f5-28cc1d983f57" name="SolARMappingPipelineMultiNoDropProcessing" description="SolARMappingPipelineMultiNoDropProcessing implements api::pipeline::IMappingPipeline interface">
             <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
             <interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>

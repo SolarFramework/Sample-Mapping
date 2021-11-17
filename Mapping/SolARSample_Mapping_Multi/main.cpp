@@ -50,7 +50,8 @@ namespace xpcf  = org::bcom::xpcf;
 #define INDEX_USE_CAMERA 0
 #define NB_LOCALKEYFRAMES 10
 #define NB_NEWKEYFRAMES_LOOP 20
-#define BUFFER_SIZE 50
+#define BUFFER_SIZE_IMAGE 50
+#define BUFFER_SIZE_FRAME 50
 
 int main(int argc, char *argv[])
 {
@@ -143,13 +144,13 @@ int main(int argc, char *argv[])
 		};
 			
 		// buffers
-		xpcf::SharedBuffer<std::pair<SRef<Image>, Transform3Df>>					m_sharedBufferCamImagePoseCapture(BUFFER_SIZE);
-		xpcf::SharedBuffer<SRef<Frame>>												m_sharedBufferFrame(BUFFER_SIZE);
-		xpcf::SharedBuffer<SRef<Frame>>												m_sharedBufferFrameBootstrap(BUFFER_SIZE);
+		xpcf::SharedBuffer<std::pair<SRef<Image>, Transform3Df>>					m_sharedBufferCamImagePoseCapture(BUFFER_SIZE_IMAGE);
+		xpcf::SharedBuffer<SRef<Frame>>												m_sharedBufferFrame(BUFFER_SIZE_FRAME);
+		xpcf::SharedBuffer<SRef<Frame>>												m_sharedBufferFrameBootstrap(BUFFER_SIZE_FRAME);
 		xpcf::SharedBuffer<SRef<Frame>>												m_sharedBufferAddKeyframe(1);
 		xpcf::DropBuffer<SRef<Keyframe>>											m_dropBufferNewKeyframe;
 		xpcf::DropBuffer<SRef<Keyframe>>											m_dropBufferNewKeyframeLoop;
-		xpcf::SharedBuffer<SRef<Image>>												m_sharedBufferDisplay(BUFFER_SIZE);
+		xpcf::SharedBuffer<SRef<Image>>												m_sharedBufferDisplay(BUFFER_SIZE_FRAME);
 
 		// variables
 		bool stopCapture = false;						// stop due to captue error

@@ -96,6 +96,9 @@ auto fnClientProducer = []() {
 
         grpc_request_duration.restart();
 
+        // Set image encoding for serialization
+        image->setImageEncoding(Image::ENCODING_JPEG);
+        image->setImageEncodingQuality(60);
         gMappingPipelineMulti->mappingProcessRequest(image, pose);
 
         LOG_DEBUG("Producer client: gRPC request for (image, pose) number {} takes {} ms",

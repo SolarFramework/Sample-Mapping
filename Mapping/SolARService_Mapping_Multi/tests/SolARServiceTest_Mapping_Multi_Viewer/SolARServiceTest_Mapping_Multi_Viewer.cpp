@@ -100,9 +100,6 @@ auto fnClientViewer = []() {
             exit(0);
         }
     }
-    else {
-        LOG_INFO ("No data to display");
-    }
 };
 
 // Function called when interruption signal is triggered

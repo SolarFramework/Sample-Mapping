@@ -31,8 +31,7 @@ using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
-#define NB_IMAGES_BETWEEN_RELOCALIZATION 10  // number of read images between 2 requests for relocalization
-#define NB_RELOCALIZATION_REQUESTS 10        // number of requests for relocalization
+#define NB_IMAGES_BETWEEN_RELOCALIZATION 5  // number of read images between 2 requests for relocalization
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -48,9 +47,6 @@ xpcf::DelegateTask * gClientRelocalizationTask = 0;
 
 // Components used by mapping client
 SRef<display::IImageViewer> gImageViewer = 0;
-
-// Indicate if the relocalization service has found the new pose
-bool gRelocalizationSucceed = false;
 
 // Transformation matrix from Hololen to World
 Transform3Df T_M_W = Transform3Df::Identity();
@@ -84,6 +80,9 @@ auto fnClientMapping = []() {
         SRef<Image> image = imagePose.first;
         Transform3Df pose = imagePose.second;
 
+        image->setImageEncoding(Image::ENCODING_JPEG);
+        image->setImageEncodingQuality(80);
+
         gMappingPipelineMulti->mappingProcessRequest(image, pose);
 
         gImageViewer->display(image);
@@ -106,21 +105,19 @@ auto fnClientRelocalization = []() {
 
         LOG_INFO("Relocalization client: Send image to relocalization pipeline");
 
-        if (gRelocalizationPipeline->start() == SolAR::FrameworkReturnCode::_SUCCESS) {
-            if (gRelocalizationPipeline->relocalizeProcessRequest(image, new_pose, confidence) == SolAR::FrameworkReturnCode::_SUCCESS) {
-                LOG_INFO("=> Relocalization succeeded");
+        if (gRelocalizationPipeline->relocalizeProcessRequest(image, new_pose, confidence) == SolAR::FrameworkReturnCode::_SUCCESS) {
+            LOG_INFO("=> ***** Relocalization succeeded *****");
 
-                LOG_INFO("Hololens pose: {}", pose.matrix());
-                LOG_INFO("World pose: {}", new_pose.matrix());
+            LOG_INFO("Hololens pose: {}", pose.matrix());
+            LOG_INFO("World pose: {}", new_pose.matrix());
 
-                T_M_W = new_pose * pose.inverse();
+            T_M_W = new_pose * pose.inverse();
 
-                LOG_INFO("Transformation matrix from Hololens to World: {}", T_M_W.matrix());
-
-                gRelocalizationSucceed = true;
-            }
-
-            gRelocalizationPipeline->stop();
+            LOG_INFO("Transformation matrix from Hololens to World: {}", T_M_W.matrix());
+        }
+        else
+        {
+            LOG_INFO("=> ***** Relocalization failed *****");
         }
     }
 };
@@ -183,6 +180,9 @@ static void SigInt(int signo) {
 
     if (gMappingPipelineMulti != 0)
         gMappingPipelineMulti->stop();
+
+    if (gRelocalizationPipeline != 0)
+        gRelocalizationPipeline->stop();
 
     LOG_INFO("End of test");
 
@@ -329,76 +329,80 @@ int main(int argc, char* argv[])
                 gClientMappingTask  = new xpcf::DelegateTask(fnClientMapping);
                 gClientMappingTask->start();
 
-                LOG_INFO("Start remote relocalization client thread");
+                if (gRelocalizationPipeline->start() == FrameworkReturnCode::_SUCCESS) {
 
-                gClientRelocalizationTask  = new xpcf::DelegateTask(fnClientRelocalization);
-                gClientRelocalizationTask->start();
+                    LOG_INFO("Start remote relocalization client thread");
 
-                LOG_INFO("Read images and poses from hololens files");
+                    gClientRelocalizationTask  = new xpcf::DelegateTask(fnClientRelocalization);
+                    gClientRelocalizationTask->start();
 
-                LOG_INFO("\n\n***** Control+C to stop *****\n");
+                    LOG_INFO("Read images and poses from hololens files");
 
-                uint32_t nbImagesRelocalization = NB_IMAGES_BETWEEN_RELOCALIZATION, nbRelocalizationRequests = 0;
+                    LOG_INFO("\n\n***** Control+C to stop *****\n");
 
-                while (true) {
+                    uint32_t nbImagesRelocalization = NB_IMAGES_BETWEEN_RELOCALIZATION;
 
-                    std::vector<SRef<Image>> images;
-                    std::vector<Transform3Df> poses;
-                    std::chrono::system_clock::time_point timestamp;
+                    while (true) {
 
-                    if (AR_device->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
+                        std::vector<SRef<Image>> images;
+                        std::vector<Transform3Df> poses;
+                        std::chrono::system_clock::time_point timestamp;
 
-                        nbImagesRelocalization ++;
+                        if (AR_device->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
 
-                        SRef<Image> image = images[INDEX_USE_CAMERA];
-                        Transform3Df pose = poses[INDEX_USE_CAMERA];
+                            nbImagesRelocalization ++;
 
-//                        gImageViewer->display(image);
+                            SRef<Image> image = images[INDEX_USE_CAMERA];
+                            Transform3Df pose = poses[INDEX_USE_CAMERA];
 
-                        // Send images to relocalization service if less then 'n' images have been read
-                        // and if relocalization is still not ok
-                        if (!gRelocalizationSucceed && (nbImagesRelocalization > NB_IMAGES_BETWEEN_RELOCALIZATION)
-                            && (nbRelocalizationRequests < NB_RELOCALIZATION_REQUESTS)){
-                            nbImagesRelocalization = 0;
-                            nbRelocalizationRequests ++;
+    //                        gImageViewer->display(image);
 
-                            LOG_INFO("Add image to input drop buffer for relocalization");
-                            m_dropBufferCamImageRelocalization.push(std::make_pair(image, pose));
+                            // Send images to relocalization service
+                            if (nbImagesRelocalization > NB_IMAGES_BETWEEN_RELOCALIZATION){
+                                nbImagesRelocalization = 0;
+
+                                LOG_INFO("Add image to input drop buffer for relocalization");
+                                m_dropBufferCamImageRelocalization.push(std::make_pair(image, pose));
+                            }
+
+                            // Send images to mapping service
+
+                            LOG_INFO("Add pair (image, pose) to input drop buffer for mapping");
+                            m_dropBufferCamImagePoseMapping.push(std::make_pair(image, T_M_W * pose));
+                        }
+                        else {
+                            LOG_INFO("No more images to send");
+
+                            LOG_INFO("Stop mapping client thread");
+
+                            if (gClientMappingTask != 0)
+                                gClientMappingTask->stop();
+
+                            LOG_INFO("Stop relocalization client thread");
+
+                            if (gClientRelocalizationTask != 0)
+                                gClientRelocalizationTask->stop();
+
+                            LOG_INFO("Stop mapping pipeline process");
+
+                            if (gMappingPipelineMulti != 0)
+                                gMappingPipelineMulti->stop();
+
+                            LOG_INFO("Stop relocalization pipeline process");
+
+                            if (gRelocalizationPipeline != 0)
+                                gRelocalizationPipeline->stop();
+
+                            LOG_INFO("End of test");
+
+                            exit(0);
                         }
 
-                        if ((nbRelocalizationRequests == NB_RELOCALIZATION_REQUESTS) && !gRelocalizationSucceed) {
-                            LOG_INFO("=> Relocalization failed");
-                            nbRelocalizationRequests ++;
-                        }
-
-                        // Send images to mapping service
-
-                        LOG_INFO("Add pair (image, pose) to input drop buffer for mapping");
-                        m_dropBufferCamImagePoseMapping.push(std::make_pair(image, pose * T_M_W));
                     }
-                    else {
-                        LOG_INFO("No more images to send");
-
-                        LOG_INFO("Stop mapping client thread");
-
-                        if (gClientMappingTask != 0)
-                            gClientMappingTask->stop();
-
-                        LOG_INFO("Stop relocalization client thread");
-
-                        if (gClientRelocalizationTask != 0)
-                            gClientRelocalizationTask->stop();
-
-                        LOG_INFO("Stop mapping pipeline process");
-
-                        if (gMappingPipelineMulti != 0)
-                            gMappingPipelineMulti->stop();
-
-                        LOG_INFO("End of test");
-
-                        exit(0);
-                    }
-
+                }
+                else {
+                    LOG_ERROR("Cannot start relocalization pipeline");
+                    return -1;
                 }
             }
             else {

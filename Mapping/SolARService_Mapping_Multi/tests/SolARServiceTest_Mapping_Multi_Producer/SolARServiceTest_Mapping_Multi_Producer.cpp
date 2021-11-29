@@ -20,6 +20,9 @@
 #include "api/pipeline/IMappingPipeline.h"
 #include "api/input/devices/IARDevice.h"
 #include "api/display/IImageViewer.h"
+#include "api/input/files/ITrackableLoader.h"
+#include "api/solver/pose/ITrackablePose.h"
+#include "api/display/I3DOverlay.h"
 
 using namespace std;
 using namespace SolAR;
@@ -42,8 +45,15 @@ xpcf::DelegateTask * gClientProducerTask = 0;
 // Components used by producer client
 SRef<input::devices::IARDevice> gArDevice = 0;
 SRef<display::IImageViewer> gImageViewer = 0;
+SRef<input::files::ITrackableLoader> gTrackableLoader = 0;
+SRef<solver::pose::ITrackablePose> gTrackablePose = 0;
+SRef<display::I3DOverlay> g3DOverlay = 0;
 // Nb of images sent by producer client
 int gNbImages = 0;
+// Check reloc based on a marker
+bool gIsReloc = false;
+// Transformation matrix to the world coordinate system
+Transform3Df gT_M_W = Transform3Df::Identity();
 // Delay between to images sent
 boost::timer delay_between_images;
 // gRPC request duration
@@ -76,32 +86,30 @@ auto fnClientProducer = []() {
 
         SRef<Image> image = images[INDEX_USE_CAMERA];
         Transform3Df pose = poses[INDEX_USE_CAMERA];
-/*
-        LOG_DEBUG("Image buffer size = {}", image->getBufferSize());
-        LOG_DEBUG("Image layout = {}", image->getImageLayout());
-        LOG_DEBUG("Image pixel order = {}", image->getPixelOrder());
-        LOG_DEBUG("Image data type = {}", image->getDataType());
-        LOG_DEBUG("Image nb channels = {}", image->getNbChannels());
-        LOG_DEBUG("Image nb bits per component = {}", image->getNbBitsPerComponent());
-        LOG_DEBUG("Image size = {},{}", image->getWidth(), image->getHeight());
-        LOG_DEBUG("Image step = {}", image->getStep());
+        SRef<Image> displayImage = image->copy();
 
-        LOG_DEBUG("Pose rows/cols = {}/{}", pose.rows(), pose.cols());
-*/
-        if (gNbImages > 1) {
-            LOG_DEBUG("Producer client: Delay between 2 images sent = {} ms", delay_between_images.elapsed() * 1000);
+        // find T_W_M
+        if (!gIsReloc) {
+            Transform3Df T_M_C;
+            if (gTrackablePose->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
+                gT_M_W = T_M_C * pose.inverse();
+                gIsReloc = true;
+            }
         }
-
-        delay_between_images.restart();
-
-        grpc_request_duration.restart();
-
-        gMappingPipelineMulti->mappingProcessRequest(image, pose);
-
-        LOG_DEBUG("Producer client: gRPC request for (image, pose) number {} takes {} ms",
-                 gNbImages, grpc_request_duration.elapsed() * 1000);
-
-        gImageViewer->display(image);
+        else {
+            // correct pose
+            pose = gT_M_W * pose;
+            // send to mapping
+            LOG_DEBUG("Producer client: Delay between 2 images sent = {} ms", delay_between_images.elapsed() * 1000);
+            delay_between_images.restart();
+            grpc_request_duration.restart();
+            gMappingPipelineMulti->mappingProcessRequest(image, pose);
+            LOG_DEBUG("Producer client: gRPC request for (image, pose) number {} takes {} ms",
+                     gNbImages, grpc_request_duration.elapsed() * 1000);
+            // draw pose
+            g3DOverlay->draw(pose, displayImage);
+        }
+        gImageViewer->display(displayImage);
     }
     else {
         LOG_INFO("Producer client: no more images to send");
@@ -268,12 +276,40 @@ int main(int argc, char* argv[])
         gImageViewer = gXpcfComponentManager->resolve<SolAR::api::display::IImageViewer>();
         LOG_INFO("Remote producer client: AR device component created");
 
+        gTrackableLoader = gXpcfComponentManager->resolve<input::files::ITrackableLoader>();
+        LOG_INFO("Producer client: Trackable loader component created");
+
+        gTrackablePose = gXpcfComponentManager->resolve<solver::pose::ITrackablePose>();
+        LOG_INFO("Producer client: Trackable pose estimator component created");
+
+        g3DOverlay = gXpcfComponentManager->resolve<display::I3DOverlay>();
+        LOG_INFO("Producer client: 3D overlay component created");
+
+        // Load and set Trackable
+        SRef<Trackable> trackable;
+        if (gTrackableLoader->loadTrackable(trackable) != FrameworkReturnCode::_SUCCESS)
+        {
+            LOG_ERROR("Cannot load trackable");
+            return -1;
+        }
+        else
+        {
+            if (gTrackablePose->setTrackable(trackable) != FrameworkReturnCode::_SUCCESS)
+            {
+                LOG_ERROR("Cannot set trackable to trackable pose estimator");
+                return -1;
+            }
+        }
+
         // Connect remotely to the HoloLens streaming app
         if (gArDevice->start() == FrameworkReturnCode::_SUCCESS) {
 
             // Load camera intrinsics parameters
             CameraRigParameters camRigParams = gArDevice->getCameraParameters();
             CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
+
+            g3DOverlay->setCameraParameters(camParams.intrinsic, camParams.distortion);
+            gTrackablePose->setCameraParameters(camParams.intrinsic, camParams.distortion);
 
             result = gMappingPipelineMulti->init();
             LOG_INFO("Remote producer client: Init mapping pipeline result = {}",

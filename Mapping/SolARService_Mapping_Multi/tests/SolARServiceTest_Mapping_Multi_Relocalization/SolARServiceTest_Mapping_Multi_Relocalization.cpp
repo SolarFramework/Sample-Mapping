@@ -20,6 +20,9 @@
 #include "api/pipeline/IRelocalizationPipeline.h"
 #include "api/input/devices/IARDevice.h"
 #include "api/display/IImageViewer.h"
+#include "api/input/files/ITrackableLoader.h"
+#include "api/solver/pose/ITrackablePose.h"
+#include "api/display/I3DOverlay.h"
 
 #include "xpcf/threading/DropBuffer.h"
 #include "xpcf/threading/BaseTask.h"
@@ -31,8 +34,7 @@ using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
-#define NB_IMAGES_BETWEEN_RELOCALIZATION 10  // number of read images between 2 requests for relocalization
-#define NB_RELOCALIZATION_REQUESTS 10        // number of requests for relocalization
+#define NB_IMAGES_BETWEEN_RELOCALIZATION 5  // number of read images between 2 requests for relocalization
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -43,11 +45,17 @@ SRef<pipeline::IMappingPipeline> gMappingPipelineMulti = 0;
 SRef<pipeline::IRelocalizationPipeline> gRelocalizationPipeline = 0;
 
 // Global client threads
+xpcf::DelegateTask * gClientProducerTask = 0;
 xpcf::DelegateTask * gClientMappingTask = 0;
 xpcf::DelegateTask * gClientRelocalizationTask = 0;
+xpcf::DelegateTask * gClientRelocMarkerTask = 0;
 
 // Components used by mapping client
+SRef<input::devices::IARDevice> gArDevice = 0;
 SRef<display::IImageViewer> gImageViewer = 0;
+SRef<input::files::ITrackableLoader> gTrackableLoader = 0;
+SRef<solver::pose::ITrackablePose> gTrackablePose = 0;
+SRef<display::I3DOverlay> g3DOverlay = 0;
 
 // Indicate if the relocalization service has found the new pose
 bool gRelocalizationSucceed = false;
@@ -58,6 +66,7 @@ Transform3Df T_M_W = Transform3Df::Identity();
 // Drop buffers used by mapping client thread
 xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_dropBufferCamImagePoseMapping;
 xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_dropBufferCamImageRelocalization;
+xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_dropBufferMarkerReloc;
 
 // print help options
 void print_help(const cxxopts::Options& options)
@@ -70,60 +79,6 @@ void print_error(const string& msg)
 {
     cerr << msg << std::endl;
 }
-
-// Fonction for mapping client thread
-auto fnClientMapping = []() {
-
-    std::pair<SRef<Image>, Transform3Df> imagePose;
-
-    // Try to get next (image, pose)
-    if (m_dropBufferCamImagePoseMapping.tryPop(imagePose)) {
-
-        LOG_INFO("Mapping client: Send (image, pose) to mapping pipeline");
-
-        SRef<Image> image = imagePose.first;
-        Transform3Df pose = imagePose.second;
-
-        gMappingPipelineMulti->mappingProcessRequest(image, pose);
-
-        gImageViewer->display(image);
-    }
-};
-
-// Fonction for relocalization client thread
-auto fnClientRelocalization = []() {
-
-    std::pair<SRef<Image>, Transform3Df> imagePose;
-
-    // Try to get next image
-    if (m_dropBufferCamImageRelocalization.tryPop(imagePose)) {
-
-        Transform3Df new_pose;
-        float confidence;
-
-        SRef<Image> image = imagePose.first;
-        Transform3Df pose = imagePose.second;
-
-        LOG_INFO("Relocalization client: Send image to relocalization pipeline");
-
-        if (gRelocalizationPipeline->start() == SolAR::FrameworkReturnCode::_SUCCESS) {
-            if (gRelocalizationPipeline->relocalizeProcessRequest(image, new_pose, confidence) == SolAR::FrameworkReturnCode::_SUCCESS) {
-                LOG_INFO("=> Relocalization succeeded");
-
-                LOG_INFO("Hololens pose: {}", pose.matrix());
-                LOG_INFO("World pose: {}", new_pose.matrix());
-
-                T_M_W = new_pose * pose.inverse();
-
-                LOG_INFO("Transformation matrix from Hololens to World: {}", T_M_W.matrix());
-
-                gRelocalizationSucceed = true;
-            }
-
-            gRelocalizationPipeline->stop();
-        }
-    }
-};
 
 // Return SolAR Framework return code text value
 string getReturnCodeTextValue (SolAR::FrameworkReturnCode return_code) {
@@ -164,13 +119,13 @@ string getReturnCodeTextValue (SolAR::FrameworkReturnCode return_code) {
     return text_value;
 }
 
-// Function called when interruption signal is triggered
-static void SigInt(int signo) {
-
-    LOG_INFO("\n\n===> Program interruption\n");
+// Funciton stop all threads
+void stop(){
+    LOG_INFO("Stop producer client thread");
+    if (gClientProducerTask != 0)
+        gClientProducerTask->stop();
 
     LOG_INFO("Stop mapping client thread");
-
     if (gClientMappingTask != 0)
         gClientMappingTask->stop();
 
@@ -179,15 +134,134 @@ static void SigInt(int signo) {
     if (gClientRelocalizationTask != 0)
         gClientRelocalizationTask->stop();
 
+    LOG_INFO("Stop reloc marker client thread");
+
+    if (gClientRelocMarkerTask != 0)
+        gClientRelocMarkerTask->stop();
+
     LOG_INFO("Stop mapping pipeline process");
 
     if (gMappingPipelineMulti != 0)
         gMappingPipelineMulti->stop();
+}
 
+// Function called when interruption signal is triggered
+static void SigInt(int signo) {
+    LOG_INFO("\n\n===> Program interruption\n");
+    stop();
     LOG_INFO("End of test");
-
     exit(0);
 }
+
+// Fonction for producer client thread
+auto fnClientProducer = []() {
+    static uint32_t nbImagesRelocalization = NB_IMAGES_BETWEEN_RELOCALIZATION;
+    std::vector<SRef<Image>> images;
+    std::vector<Transform3Df> poses;
+    std::chrono::system_clock::time_point timestamp;
+
+    // Get data from hololens files
+    if (gArDevice->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
+        nbImagesRelocalization ++;
+
+        SRef<Image> image = images[INDEX_USE_CAMERA];
+        Transform3Df pose = poses[INDEX_USE_CAMERA];
+        SRef<Image> displayImage = image->copy();
+
+        // Send images to relocalization service
+        if (nbImagesRelocalization > NB_IMAGES_BETWEEN_RELOCALIZATION){
+            nbImagesRelocalization = 0;
+            LOG_DEBUG("Add image to input drop buffer for relocalization");
+            m_dropBufferCamImageRelocalization.push(std::make_pair(image, pose));
+            m_dropBufferMarkerReloc.push(std::make_pair(image, pose));
+        }
+        // Send images to mapping service reloc succeeded
+        if (gRelocalizationSucceed){
+            // correct pose
+            pose = T_M_W * pose;
+            LOG_DEBUG("Add pair (image, pose) to input drop buffer for mapping");
+            m_dropBufferCamImagePoseMapping.push(std::make_pair(image, pose));
+            // draw pose
+            g3DOverlay->draw(pose, displayImage);
+        }
+        // display image
+        gImageViewer->display(displayImage);
+    }
+    else {
+        LOG_INFO("Producer client: no more images to send");
+        stop();
+        LOG_INFO("End of test");
+        exit(0);
+    }
+};
+
+// Fonction for mapping client thread
+auto fnClientMapping = []() {
+
+    std::pair<SRef<Image>, Transform3Df> imagePose;
+
+    // Try to get next (image, pose)
+    if (m_dropBufferCamImagePoseMapping.tryPop(imagePose)) {
+
+        LOG_INFO("Mapping client: Send (image, pose) to mapping pipeline");
+        SRef<Image> image = imagePose.first;
+        Transform3Df pose = imagePose.second;
+        gMappingPipelineMulti->mappingProcessRequest(image, pose);
+    }
+};
+
+// Fonction for relocalization client thread
+auto fnClientRelocalization = []() {
+
+    std::pair<SRef<Image>, Transform3Df> imagePose;
+
+    // Try to get next image
+    if (m_dropBufferCamImageRelocalization.tryPop(imagePose)) {
+
+        Transform3Df new_pose;
+        float confidence;
+
+        SRef<Image> image = imagePose.first;
+        Transform3Df pose = imagePose.second;
+
+        LOG_INFO("Relocalization client: Send image to relocalization pipeline");
+
+        if (gRelocalizationPipeline->relocalizeProcessRequest(image, new_pose, confidence) == SolAR::FrameworkReturnCode::_SUCCESS) {
+            LOG_INFO("=> Relocalization succeeded");
+
+            LOG_INFO("Hololens pose: \n{}", pose.matrix());
+            LOG_INFO("World pose: \n{}", new_pose.matrix());
+
+            T_M_W = new_pose * pose.inverse();
+
+            LOG_INFO("Transformation matrix from Hololens to World: \n{}", T_M_W.matrix());
+
+            gRelocalizationSucceed = true;
+        }
+    }
+};
+
+// Fonction for relocalization based marker client thread
+auto fnClientRelocMarker = []() {
+
+    std::pair<SRef<Image>, Transform3Df> imagePose;
+
+    // Try to get next image
+    if (m_dropBufferMarkerReloc.tryPop(imagePose)) {
+        Transform3Df new_pose;
+        SRef<Image> image = imagePose.first;
+        Transform3Df pose = imagePose.second;
+        LOG_INFO("Reloc marker client processing");
+        if (gTrackablePose->estimate(image, new_pose) == FrameworkReturnCode::_SUCCESS) {
+            LOG_INFO("=> Reloc marker succeeded");
+            LOG_INFO("Hololens pose: \n{}", pose.matrix());
+            LOG_INFO("World pose: \n{}", new_pose.matrix());
+            T_M_W = new_pose * pose.inverse();
+            LOG_INFO("Transformation matrix from Hololens to World: \n{}", T_M_W.matrix());
+            gRelocalizationSucceed = true;
+        }
+    }
+};
 
 int main(int argc, char* argv[])
 {
@@ -279,18 +353,46 @@ int main(int argc, char* argv[])
 
         SolAR::FrameworkReturnCode result;
 
-        SRef<input::devices::IARDevice> AR_device = gXpcfComponentManager->resolve<SolAR::api::input::devices::IARDevice>();
+        gArDevice = gXpcfComponentManager->resolve<SolAR::api::input::devices::IARDevice>();
         LOG_INFO("Remote producer client: AR device component created");
 
         gImageViewer = gXpcfComponentManager->resolve<SolAR::api::display::IImageViewer>();
         LOG_INFO("Remote producer client: AR device component created");
 
+        gTrackableLoader = gXpcfComponentManager->resolve<input::files::ITrackableLoader>();
+        LOG_INFO("Producer client: Trackable loader component created");
+
+        gTrackablePose = gXpcfComponentManager->resolve<solver::pose::ITrackablePose>();
+        LOG_INFO("Producer client: Trackable pose estimator component created");
+
+        g3DOverlay = gXpcfComponentManager->resolve<display::I3DOverlay>();
+        LOG_INFO("Producer client: 3D overlay component created");
+
+        // Load and set Trackable
+        SRef<Trackable> trackable;
+        if (gTrackableLoader->loadTrackable(trackable) != FrameworkReturnCode::_SUCCESS)
+        {
+            LOG_ERROR("Cannot load trackable");
+            return -1;
+        }
+        else
+        {
+            if (gTrackablePose->setTrackable(trackable) != FrameworkReturnCode::_SUCCESS)
+            {
+                LOG_ERROR("Cannot set trackable to trackable pose estimator");
+                return -1;
+            }
+        }
+
         // Connect remotely to the HoloLens streaming app
-        if (AR_device->start() == FrameworkReturnCode::_SUCCESS) {
+        if (gArDevice->start() == FrameworkReturnCode::_SUCCESS) {
 
             // Load camera intrinsics parameters
-            CameraRigParameters camRigParams = AR_device->getCameraParameters();
+            CameraRigParameters camRigParams = gArDevice->getCameraParameters();
             CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
+
+            g3DOverlay->setCameraParameters(camParams.intrinsic, camParams.distortion);
+            gTrackablePose->setCameraParameters(camParams.intrinsic, camParams.distortion);
 
             LOG_INFO("Remote producer client: Initialize mapping pipeline...");
             result = gMappingPipelineMulti->init();
@@ -334,72 +436,15 @@ int main(int argc, char* argv[])
                 gClientRelocalizationTask  = new xpcf::DelegateTask(fnClientRelocalization);
                 gClientRelocalizationTask->start();
 
-                LOG_INFO("Read images and poses from hololens files");
+                LOG_INFO("Start reloc marker client thread");
 
-                LOG_INFO("\n\n***** Control+C to stop *****\n");
+                gClientRelocMarkerTask  = new xpcf::DelegateTask(fnClientRelocMarker);
+                gClientRelocMarkerTask->start();
 
-                uint32_t nbImagesRelocalization = NB_IMAGES_BETWEEN_RELOCALIZATION, nbRelocalizationRequests = 0;
+                LOG_INFO("Start remote producer client thread");
 
-                while (true) {
-
-                    std::vector<SRef<Image>> images;
-                    std::vector<Transform3Df> poses;
-                    std::chrono::system_clock::time_point timestamp;
-
-                    if (AR_device->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
-
-                        nbImagesRelocalization ++;
-
-                        SRef<Image> image = images[INDEX_USE_CAMERA];
-                        Transform3Df pose = poses[INDEX_USE_CAMERA];
-
-//                        gImageViewer->display(image);
-
-                        // Send images to relocalization service if less then 'n' images have been read
-                        // and if relocalization is still not ok
-                        if (!gRelocalizationSucceed && (nbImagesRelocalization > NB_IMAGES_BETWEEN_RELOCALIZATION)
-                            && (nbRelocalizationRequests < NB_RELOCALIZATION_REQUESTS)){
-                            nbImagesRelocalization = 0;
-                            nbRelocalizationRequests ++;
-
-                            LOG_INFO("Add image to input drop buffer for relocalization");
-                            m_dropBufferCamImageRelocalization.push(std::make_pair(image, pose));
-                        }
-
-                        if ((nbRelocalizationRequests == NB_RELOCALIZATION_REQUESTS) && !gRelocalizationSucceed) {
-                            LOG_INFO("=> Relocalization failed");
-                            nbRelocalizationRequests ++;
-                        }
-
-                        // Send images to mapping service
-
-                        LOG_INFO("Add pair (image, pose) to input drop buffer for mapping");
-                        m_dropBufferCamImagePoseMapping.push(std::make_pair(image, pose * T_M_W));
-                    }
-                    else {
-                        LOG_INFO("No more images to send");
-
-                        LOG_INFO("Stop mapping client thread");
-
-                        if (gClientMappingTask != 0)
-                            gClientMappingTask->stop();
-
-                        LOG_INFO("Stop relocalization client thread");
-
-                        if (gClientRelocalizationTask != 0)
-                            gClientRelocalizationTask->stop();
-
-                        LOG_INFO("Stop mapping pipeline process");
-
-                        if (gMappingPipelineMulti != 0)
-                            gMappingPipelineMulti->stop();
-
-                        LOG_INFO("End of test");
-
-                        exit(0);
-                    }
-
-                }
+                gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
+                gClientProducerTask->start();
             }
             else {
                 LOG_ERROR("Cannot start mapping pipeline");
@@ -409,6 +454,12 @@ int main(int argc, char* argv[])
         else {
             LOG_INFO("Cannot start AR device loader");
             return -1;
+        }
+
+        LOG_INFO("\n\n***** Control+C to stop *****\n");
+
+        // Wait for end of images or interruption
+        while (true) {
         }
     }
     catch (xpcf::Exception & e) {

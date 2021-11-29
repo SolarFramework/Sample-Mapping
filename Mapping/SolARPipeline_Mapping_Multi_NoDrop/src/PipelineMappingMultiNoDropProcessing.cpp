@@ -14,6 +14,7 @@
 #include "PipelineMappingMultiNoDropProcessing.h"
 #include <boost/log/core.hpp>
 #include <boost/timer.hpp>
+#include <boost/thread/thread.hpp>
 #include "core/Log.h"
 
 namespace xpcf  = org::bcom::xpcf;
@@ -201,6 +202,11 @@ namespace MAPPING {
         LOG_DEBUG("PipelineMappingMultiNoDropProcessing::stop");
 
         if (isBootstrapFinished()){
+            LOG_DEBUG("Wait until all images have been processed...");
+            while (!m_sharedBufferCamImagePoseCapture.empty()){
+               boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
+            }
+
             LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
             globalBundleAdjustment();
         }
@@ -409,12 +415,12 @@ namespace MAPPING {
 			double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
 			// map pruning
 			std::vector<SRef<CloudPoint>> localMap;
-			m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
+            m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
 			int nbRemovedCP = m_mapManager->pointCloudPruning(localMap);
 			std::vector<SRef<Keyframe>> localKeyframes;
 			m_keyframesManager->getKeyframes(bestIdx, localKeyframes);
-			int nbRemovedKf = m_mapManager->keyframePruning(localKeyframes);
-			LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
+            int nbRemovedKf = m_mapManager->keyframePruning(localKeyframes);
+            LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
             m_countNewKeyframes++;
             m_dropBufferNewKeyframeLoop.push(keyframe);
         }

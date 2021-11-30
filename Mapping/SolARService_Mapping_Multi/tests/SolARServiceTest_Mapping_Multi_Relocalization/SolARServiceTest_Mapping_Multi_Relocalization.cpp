@@ -22,6 +22,7 @@
 #include "api/display/IImageViewer.h"
 
 #include "xpcf/threading/DropBuffer.h"
+#include "xpcf/threading/SharedBuffer.h"
 #include "xpcf/threading/BaseTask.h"
 
 using namespace std;
@@ -31,7 +32,8 @@ using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
-#define NB_IMAGES_BETWEEN_RELOCALIZATION 5  // number of read images between 2 requests for relocalization
+#define NB_IMAGES_BETWEEN_RELOCALIZATION 10  // number of read images between 2 requests for relocalization
+#define BUFFER_SIZE_FRAME 10    // Max images in Mapping buffer
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -52,7 +54,7 @@ SRef<display::IImageViewer> gImageViewer = 0;
 Transform3Df T_M_W = Transform3Df::Identity();
 
 // Drop buffers used by mapping client thread
-xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_dropBufferCamImagePoseMapping;
+xpcf::SharedBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_dropBufferCamImagePoseMapping {BUFFER_SIZE_FRAME};
 xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_dropBufferCamImageRelocalization;
 
 // print help options
@@ -104,6 +106,9 @@ auto fnClientRelocalization = []() {
         Transform3Df pose = imagePose.second;
 
         LOG_INFO("Relocalization client: Send image to relocalization pipeline");
+
+        image->setImageEncoding(Image::ENCODING_NONE);
+//        image->setImageEncodingQuality(80);
 
         if (gRelocalizationPipeline->relocalizeProcessRequest(image, new_pose, confidence) == SolAR::FrameworkReturnCode::_SUCCESS) {
             LOG_INFO("=> ***** Relocalization succeeded *****");
@@ -361,8 +366,10 @@ int main(int argc, char* argv[])
                             if (nbImagesRelocalization > NB_IMAGES_BETWEEN_RELOCALIZATION){
                                 nbImagesRelocalization = 0;
 
+                                SRef<Image> image2 = boost::make_shared<Image>(*image);
+
                                 LOG_INFO("Add image to input drop buffer for relocalization");
-                                m_dropBufferCamImageRelocalization.push(std::make_pair(image, pose));
+                                m_dropBufferCamImageRelocalization.push(std::make_pair(image2, pose));
                             }
 
                             // Send images to mapping service

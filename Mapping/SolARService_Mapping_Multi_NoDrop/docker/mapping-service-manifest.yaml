@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mapping-service
+  name: mapping-nodrop-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mapping-service
+      app: mapping-nodrop-service
   template:
     metadata:
       labels:
-        app: mapping-service
+        app: mapping-nodrop-service
     spec:
       imagePullSecrets:
       - name: regcredsupra
       containers:
-      - name: mapping-service
-        image: solar-docker-local.artifact.b-com.com/mapping/0.10.0/mapping-multi-nodrop-service:latest
+      - name: mapping-nodrop-service
+        image: solar-docker-local.repository.b-com.com/mapping/0.10.0/mapping-multi-nodrop-service:1.0.6
         env:
         - name: SOLAR_LOG_LEVEL
           value: INFO
@@ -25,46 +25,46 @@ spec:
         - name: XPCF_GRPC_MAX_SEND_MSG_SIZE
           value: "-1"
         - name: MAPUPDATE_SERVICE_URL
-          value: map-update-service.artwin.svc.cluster.local:80
+          value: map-update-service.artwin.svc.cluster.local:8080
 ---
 
 kind: Service
 apiVersion: v1
 metadata:
-  name: mapping-service
+  name: mapping-nodrop-service
   labels:
-    app: mapping-service
+    app: mapping-nodrop-service
 spec:
   type: NodePort
   selector:
-    app: mapping-service
+    app: mapping-nodrop-service
   ports:
   - name: http
     port: 80
     targetPort: 8080
-    nodePort: 31887
+    nodePort: 31890
 
 ---
 
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: mapping-service
+  name: mapping-nodrop-service
 
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: mapping-pipeline-rolebinding
+  name: mapping-nodrop-pipeline-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: cluster-admin
 subjects:
 - kind: ServiceAccount
-  name: mapping-pipeline
-  namespace: mapping-pipeline.artwin.b-com.com:q
+  name: mapping-nodrop-pipeline
+  namespace: mapping-nodrop-pipeline.artwin.b-com.com:q
 
 ---
 
@@ -76,18 +76,18 @@ metadata:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
   name:
-    mapping-pipeline
+    mapping-nodrop-pipeline
 spec:
   tls:
   - hosts:
-      - mapping-pipeline.artwin.b-com.com
+      - mapping-nodrop-pipeline.artwin.b-com.com
   rules:
-  - host: mapping-pipeline.artwin.b-com.com
+  - host: mapping-nodrop-pipeline.artwin.b-com.com
     http:
       paths:
       - backend:
           service:
-            name: mapping-pipeline
+            name: mapping-nodrop-pipeline
             port:
               number: 80
         path: /

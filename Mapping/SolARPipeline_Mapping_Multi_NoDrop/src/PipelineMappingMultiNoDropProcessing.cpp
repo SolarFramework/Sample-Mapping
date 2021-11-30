@@ -66,7 +66,7 @@ namespace MAPPING {
                     correctPoseAndBootstrap();
                 };
 
-                m_bootstrapTask = new xpcf::DelegateTask(fnBootstrapProcessing);
+                m_bootstrapTask = new xpcf::DelegateTask(fnBootstrapProcessing, true);
             }
 
             // Feature extraction processing function
@@ -75,7 +75,7 @@ namespace MAPPING {
                     featureExtraction();
                 };
 
-                m_featureExtractionTask = new xpcf::DelegateTask(fnFeatureExtractionProcessing);
+                m_featureExtractionTask = new xpcf::DelegateTask(fnFeatureExtractionProcessing, true);
             }
 
             // Update visibility processing function
@@ -84,7 +84,7 @@ namespace MAPPING {
                     updateVisibility();
                 };
 
-                m_updateVisibilityTask = new xpcf::DelegateTask(fnUpdateVisibilityProcessing);
+                m_updateVisibilityTask = new xpcf::DelegateTask(fnUpdateVisibilityProcessing, true);
             }
 
             // Mapping processing function
@@ -93,7 +93,7 @@ namespace MAPPING {
                     mapping();
                 };
 
-                m_mappingTask = new xpcf::DelegateTask(fnMappingProcessing);
+                m_mappingTask = new xpcf::DelegateTask(fnMappingProcessing, true);
             }
 
             // Loop closure processing function
@@ -102,7 +102,7 @@ namespace MAPPING {
                     loopClosure();
                 };
 
-                m_loopClosureTask = new xpcf::DelegateTask(fnLoopClosureProcessing);
+                m_loopClosureTask = new xpcf::DelegateTask(fnLoopClosureProcessing, true);
             }
         }
         catch (xpcf::Exception & e) {
@@ -232,6 +232,7 @@ namespace MAPPING {
         Transform3Df poseCorrected = m_T_M_W * pose;
 		// Send image and corrected pose to process
         m_sharedBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
+        LOG_INFO("Nb images in buffer = {}", m_sharedBufferCamImagePoseCapture.size());
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
         return FrameworkReturnCode::_SUCCESS;
     }

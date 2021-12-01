@@ -20,9 +20,9 @@ node("master") {
     }
 
     SolArModulePipeline {
-        moduleName="SolARPipeline_Mapping_Multi_Remote"
+        moduleName="SolARPipeline_Mapping_Multi_NoDrop"
         dirName="SolARBuild"
-        buildDir="Mapping/SolARPipeline_Mapping_Multi_Remote"
+        buildDir="Mapping/SolARPipeline_Mapping_Multi_NoDrop"
         android=false
 	windows=false
         makeTarget="install"
@@ -41,8 +41,7 @@ node("master") {
          Mapping/SolARSample_Mapping_Multi,\
          Mapping/SolARPipeline_Mapping_Mono/tests/SolARPipelineTest_Mapping_Mono,\
          Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi,\
-         Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Producer,\
-         Mapping/SolARPipeline_Mapping_Multi_Remote/tests/SolARPipelineTest_Mapping_Multi_Remote_Viewer,\
+         Mapping/SolARPipeline_Mapping_Multi_NoDrop/tests/SolARPipelineTest_Mapping_Multi_NoDrop,\
          MapViz/SolARSample_Mapping_MapVisualizer"
         makeTarget="install install_deps"
         android=false

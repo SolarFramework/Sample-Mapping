@@ -4,7 +4,7 @@ CONFIG -= qt
 
 ## global defintions : target lib name, version
 TARGET = SolARSample_Mapping_Mono
-VERSION=0.10.0
+VERSION=0.11.0
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z

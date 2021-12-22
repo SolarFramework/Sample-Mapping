@@ -130,8 +130,6 @@ namespace MAPPING {
                                                     std::vector<datastructure::Transform3Df> & keyframePoses) const override;
 
 	private:
-		/// @brief Initialize class members
-		void initClassMembers();
 
 		/// @brief Correct pose and do bootstrap using an image and the associated pose
 		/// This method must be called with successive pairs of (image, pose)
@@ -188,6 +186,8 @@ namespace MAPPING {
         datastructure::Transform3Df							m_T_M_W;               // 3D transformation matrix
         float												m_minWeightNeighbor, m_reprojErrorThreshold;
         int													m_countNewKeyframes;
+
+        bool m_tasksStarted = false;    // Indicate if tasks are started
 
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;

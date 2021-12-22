@@ -55,9 +55,6 @@ namespace MAPPING {
 
             LOG_DEBUG("All component injections declared");
 
-            LOG_DEBUG("Initialize instance attributes");
-            initClassMembers();
-
             LOG_DEBUG("Set the mapping function for asynchronous task");
 
             // Bootstrap processing function
@@ -134,6 +131,30 @@ namespace MAPPING {
 
         LOG_DEBUG("PipelineMappingMultiNoDropProcessing init");
 
+        LOG_DEBUG("Initialize instance attributes");
+
+        // Initialize private members
+        m_countNewKeyframes = 0;
+
+        if (m_mapManager != nullptr) {
+            m_mapManager->setMap(xpcf::utils::make_shared<Map>());
+        }
+
+        m_T_M_W = Transform3Df::Identity();
+        m_minWeightNeighbor = 0;
+
+        // Initial bootstrap status
+        m_isBootstrapFinished = false;
+
+        LOG_DEBUG("Empty buffers");
+
+        m_sharedBufferCamImagePoseCapture.clear();
+        m_sharedBufferFrame.clear();
+        m_sharedBufferFrameBootstrap.clear();
+        m_sharedBufferAddKeyframe.clear();
+        m_dropBufferNewKeyframe.clear();
+        m_dropBufferNewKeyframeLoop.clear();
+
         if (m_mapUpdatePipeline != nullptr){
 
             LOG_DEBUG("Map Update pipeline URL = {}",
@@ -181,13 +202,17 @@ namespace MAPPING {
         // Check members initialization
         if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)) {
 
-            LOG_DEBUG("Start processing tasks");
+            if (!m_tasksStarted) {
+                LOG_DEBUG("Start processing tasks");
 
-            m_bootstrapTask->start();
-            m_featureExtractionTask->start();
-            m_updateVisibilityTask->start();
-            m_mappingTask->start();
-            m_loopClosureTask->start();
+                m_bootstrapTask->start();
+                m_featureExtractionTask->start();
+                m_updateVisibilityTask->start();
+                m_mappingTask->start();
+                m_loopClosureTask->start();
+
+                m_tasksStarted = true;
+            }
         }
         else {
             LOG_DEBUG("Camera parameters and/or fiducial marker description not set");
@@ -211,16 +236,17 @@ namespace MAPPING {
             globalBundleAdjustment();
         }
 
-        LOG_DEBUG("Stop processing tasks");
+        if (m_tasksStarted) {
+            LOG_DEBUG("Stop processing tasks");
 
-        m_loopClosureTask->stop();
-        m_mappingTask->stop();
-        m_updateVisibilityTask->stop();
-        m_featureExtractionTask->stop();
-        m_bootstrapTask->stop();
+            m_loopClosureTask->stop();
+            m_mappingTask->stop();
+            m_updateVisibilityTask->stop();
+            m_featureExtractionTask->stop();
+            m_bootstrapTask->stop();
 
-        LOG_DEBUG("Re-initialize instance attributes");
-        initClassMembers();
+            m_tasksStarted = false;
+        }
 
         return FrameworkReturnCode::_SUCCESS;
     }
@@ -266,26 +292,6 @@ namespace MAPPING {
     }
 
 // Private methods
-
-    void PipelineMappingMultiNoDropProcessing::initClassMembers() {
-
-        LOG_DEBUG("Initialize instance attributes");
-
-        // Initialize private members
-        m_countNewKeyframes = 0;
-
-        if (m_mapManager != nullptr) {
-            m_mapManager->setMap(xpcf::utils::make_shared<Map>());
-        }
-
-        m_T_M_W = Transform3Df::Identity();
-        m_minWeightNeighbor = 0;
-
-        // Initial bootstrap status
-        m_isBootstrapFinished = false;
-
-        LOG_DEBUG("Empty buffers");
-    }   
 
     void PipelineMappingMultiNoDropProcessing::featureExtraction() {
 

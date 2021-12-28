@@ -1,10 +1,11 @@
 ## remove Qt dependencies
+QMAKE_PROJECT_DEPTH = 0
 QT       -= core gui
 CONFIG -= qt
 
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Mono
-VERSION=0.9.1
+VERSION=0.10.0
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z
@@ -39,6 +40,11 @@ SOURCES += \
 unix {
     LIBS += -ldl
     QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
+}
+
+linux {
+        QMAKE_LFLAGS += -ldl
+        LIBS += -L/home/linuxbrew/.linuxbrew/lib # temporary fix caused by grpc with -lre2 ... without -L in grpc.pc
 }
 
 macx {
@@ -82,5 +88,8 @@ OTHER_FILES += \
 #NOTE : Must be placed at the end of the .pro
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/remaken_install_target.pri)))) # Shell_quote & shell_path required for visual on windows
 
-DISTFILES +=
+DISTFILES += \
+    SolARPipelineTest_Mapping_Mono_Processing_conf.xml \
+    SolARPipelineTest_Mapping_Mono_Producer_conf.xml \
+    SolARPipelineTest_Mapping_Mono_Viewer_conf.xml
 

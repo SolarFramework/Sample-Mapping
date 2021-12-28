@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xpcf-registry autoAlias="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!-- Module generated from SolARFramework by xpcf_grpc_gen -->
+    <module uuid="a0f522d1-b70e-4d0f-ad78-84e78a9af6bf" name="SolARFrameworkGRPCRemote" description="xpcf remoting module for project SolARFramework" path="$XPCF_MODULE_ROOT/SolARBuild/SolARFrameworkGRPCRemote/0.10.0/lib/x86_64/shared">
+        <component uuid="110a089c-0bb1-488e-b24b-c1b96bc9df3b" name="IMappingPipeline_grpcProxy" description="IMappingPipeline_grpcProxy grpc client proxy component">
+            <interface uuid="6c5b9edc-c78b-47fd-8cb2-2bf8d7ede4ea" name="XPCF::IInjectable" description="Provides dependency injection interface"/>
+            <interface uuid="98dba14f-6ef9-462e-a387-34756b4cba80" name="XPCF::IConfigurable" description="Provides generic configuration ability to any component through metadata parameters"/>
+            <interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>
+        </component>
+    </module>
+
+    <!-- Module used by the remote viewer -->
+    <module uuid="6e960df6-9a36-11e8-9eb6-529269fb1459" name="SolARModuleOpenGL" description="SolARModuleOpenGL" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleOpenGL/0.10.0/lib/x86_64/shared">
+            <component uuid="afd38ea0-9a46-11e8-9eb6-529269fb1459" name="SolAR3DPointsViewerOpengl" description="SolAR3DPointsViewerOpengl">
+                    <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+                    <interface uuid="575d365a-9a27-11e8-9eb6-529269fb1459" name="I3DPointsViewer" description="I3DPointsViewer"/>
+            </component>
+    </module>
+
+    <properties>
+        <!-- gRPC proxy configuration-->
+        <configure component="110a089c-0bb1-488e-b24b-c1b96bc9df3b">
+            <property name="channelUrl" access="rw" type="string" value="0.0.0.0:50051"/>
+            <!--property name="channelUrl" access="rw" type="string" value="mapping-pipeline.artwin.b-com.com:31956"/-->
+            <property name="channelCredentials" access="rw" type="uint" value="0"/>
+        </configure>
+        <!-- Remote viewer configuration-->
+        <configure component="SolAR3DPointsViewerOpengl">
+            <property name="title" type="string" value="Points Cloud (press ESC to end test)"/>
+            <property name="width" type="uint" value="1280"/>
+            <property name="height" type="uint" value="960"/>
+            <property name="backgroundColor" type="uint">
+                <value>0</value>
+                <value>0</value>
+                <value>0</value>
+            </property>
+            <property name="fixedPointsColor" type="uint" value="1"/>
+            <property name="pointsColor" type="uint">
+                <value>0</value>
+                <value>255</value>
+                <value>0</value>
+            </property>
+            <property name="cameraColor" type="uint">
+                <value>255</value>
+                <value>255</value>
+                <value>255</value>
+            </property>
+            <property name="drawCameraAxis" type="uint" value="1"/>
+            <property name="drawSceneAxis" type="uint" value="0"/>
+            <property name="drawWorldAxis" type="uint" value="1"/>
+            <property name="axisScale" type="float" value="1.0"/>
+            <property name="pointSize" type="float" value="1.0"/>
+            <property name="cameraScale" type="float" value="1.0"/>
+            <property name="keyframeAsCamera" type="uint" value="1"/>
+            <property name="framesColor" type="uint">
+                <value>128</value>
+                <value>0</value>
+                <value>255</value>
+            </property>
+            <property name="keyframesColor" type="uint">
+                <value>0</value>
+                <value>0</value>
+                <value>255</value>
+            </property>
+            <property name="zoomSensitivity" type="float" value="10.0"/>
+            <property name="exitKey" type="int" value="27"/>
+        </configure>
+    </properties>
+
+</xpcf-registry>

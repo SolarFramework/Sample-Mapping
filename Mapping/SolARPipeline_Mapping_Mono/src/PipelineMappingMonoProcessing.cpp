@@ -21,6 +21,9 @@ using namespace datastructure;
 namespace PIPELINES {
 namespace MAPPING {
 
+#define NB_LOCALKEYFRAMES 10
+#define NB_NEWKEYFRAMES_LOOP 20
+
 
 // Public methods
 
@@ -32,24 +35,17 @@ namespace MAPPING {
             declareInterface<api::pipeline::IMappingPipeline>(this);
 
             LOG_DEBUG("Components injection declaration");
-
-            declareInjectable<api::solver::pose::IFiducialMarkerPose>(m_fiducialMarkerPoseEstimator);
             declareInjectable<api::slam::IBootstrapper>(m_bootstrapper);
             declareInjectable<api::solver::map::IBundler>(m_bundler, "BundleFixedKeyframes");
             declareInjectable<api::solver::map::IBundler>(m_globalBundler);
-            declareInjectable<api::geom::IUndistortPoints>(m_undistortKeypoints);
-            declareInjectable<api::solver::map::IMapper>(m_mapper);
+            declareInjectable<api::geom::IUndistortPoints>(m_undistortKeypoints);            
             declareInjectable<api::slam::ITracking>(m_tracking);
             declareInjectable<api::slam::IMapping>(m_mapping);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
-            declareInjectable<api::features::IKeypointDetector>(m_keypointsDetector);
-            declareInjectable<api::features::IDescriptorsExtractor>(m_descriptorExtractor);
-            declareInjectable<api::features::IDescriptorMatcher>(m_matcher);
-            declareInjectable<api::features::IMatchesFilter>(m_matchesFilter);
-            declareInjectable<api::solver::pose::I2D3DCorrespondencesFinder>(m_corr2D3DFinder);
-            declareInjectable<api::geom::IProject>(m_projector);
-            declareInjectable<api::storage::ICovisibilityGraph>(m_covisibilityGraph);
+			declareInjectable<api::storage::ICovisibilityGraphManager>(m_covisibilityGraphManager);
+			declareInjectable<api::storage::IMapManager>(m_mapManager);
+            declareInjectable<api::features::IDescriptorsExtractorFromImage>(m_descriptorExtractor);
             declareInjectable<api::loop::ILoopClosureDetector>(m_loopDetector);
             declareInjectable<api::loop::ILoopCorrector>(m_loopCorrector);
 
@@ -60,11 +56,8 @@ namespace MAPPING {
             // Initialize private members
             m_cameraParams.resolution.width = 0;
             m_cameraParams.resolution.height = 0;
-            m_fiducialMarker = nullptr;
             m_countNewKeyframes = 0;
 
-            m_dataToStore = false;
-            m_isFoundTransform = false;
             m_T_M_W = Transform3Df::Identity();
             m_minWeightNeighbor = 0;
 
@@ -72,7 +65,6 @@ namespace MAPPING {
             m_isBootstrapFinished = false;
 
             LOG_DEBUG("Set the mapping function for asynchronous task");
-
             // Mapping processing function
             if (m_mappingTask == nullptr) {
                 auto fnMappingProcessing = [&]() {
@@ -92,7 +84,7 @@ namespace MAPPING {
         LOG_DEBUG("PipelineMappingMonoProcessing::onInjected");
 
         // Get properties
-        m_reprojErrorThreshold = m_mapper->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
+        m_reprojErrorThreshold = m_mapManager->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
         m_minWeightNeighbor = m_mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
     }
 
@@ -103,7 +95,7 @@ namespace MAPPING {
         delete m_mappingTask;
     }
 
-    FrameworkReturnCode PipelineMappingMonoProcessing::init(SRef<xpcf::IComponentManager> componentManager) {
+    FrameworkReturnCode PipelineMappingMonoProcessing::init() {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::setCameraParameters");
 
@@ -116,10 +108,8 @@ namespace MAPPING {
 
         m_cameraParams = cameraParams;
 
-        m_fiducialMarkerPoseEstimator->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_bootstrapper->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-        m_mapping->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-        m_projector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
+        m_mapping->setCameraParameters(m_cameraParams);
         m_loopDetector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_loopCorrector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 		m_undistortKeypoints->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -131,33 +121,12 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMonoProcessing::setObjectToTrack(const SRef<Trackable> trackableObject) {
-
-        LOG_DEBUG("PipelineMappingMonoProcessing::setObjectToTrack");
-
-        if ((trackableObject != 0) && (trackableObject->getType() == FIDUCIAL_MARKER)) {
-
-            m_fiducialMarker = xpcf::utils::dynamic_pointer_cast<FiducialMarker>(trackableObject);
-
-            m_fiducialMarkerPoseEstimator->setMarker(m_fiducialMarker);
-
-            LOG_DEBUG("Fiducial marker url / width / height = {} / {} / {}",
-                     m_fiducialMarker->getURL(), m_fiducialMarker->getWidth(), m_fiducialMarker->getHeight());
-
-            return FrameworkReturnCode::_SUCCESS;
-        }
-        else {
-            return FrameworkReturnCode::_ERROR_;
-        }
-    }
-
     FrameworkReturnCode PipelineMappingMonoProcessing::start() {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::start");
 
         // Check members initialization
-        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)
-                && (m_fiducialMarker != nullptr) && (m_fiducialMarker->getWidth() > 0) && (m_fiducialMarker->getHeight() > 0)) {
+        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)) {
 
             LOG_DEBUG("Start mapping processing task");
             m_mappingTask->start();
@@ -173,7 +142,9 @@ namespace MAPPING {
     FrameworkReturnCode PipelineMappingMonoProcessing::stop() {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::stop");
-
+        if (isBootstrapFinished()){
+            globalBundleAdjustment();
+        }
         LOG_DEBUG("Stop mapping processing task");
         m_mappingTask->stop();
 
@@ -184,7 +155,7 @@ namespace MAPPING {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::mappingProcessRequest");
 
-        // Correct pose
+        // Correct pose after loop detection
         Transform3Df poseCorrected = m_T_M_W * pose;
 
         // Add pair (image, pose) to input drop buffer for mapping
@@ -224,29 +195,12 @@ namespace MAPPING {
 
 // Private methods
 
-    bool PipelineMappingMonoProcessing::correctPoseAndBootstrap
-                                            (const SRef<Image> & image, const Transform3Df & pose) {
-
+    bool PipelineMappingMonoProcessing::correctPoseAndBootstrap(const SRef<Frame> & frame) 
+	{
         LOG_DEBUG("PipelineMappingMonoProcessing::correctPoseAndBootstrap");
 
-        // Find T_W_M
-        if (!m_isFoundTransform) {
-            Transform3Df T_M_C;
-            if (m_fiducialMarkerPoseEstimator->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
-                m_T_M_W = T_M_C * pose.inverse();
-                m_isFoundTransform = true;
-                LOG_DEBUG("3D transformation found");
-            }
-            else {
-                LOG_DEBUG("3D transformation not found");
-                return false;
-            }
-        }
-
-        LOG_DEBUG("3D transformation found: do bootstrap");
-
         SRef<Image> view;
-        if (m_bootstrapper->process(image, view, pose) == FrameworkReturnCode::_SUCCESS) {
+        if (m_bootstrapper->process(frame, view) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
 
             m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -274,124 +228,100 @@ namespace MAPPING {
 
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
-        // Map pruning
-        m_mapper->pruning();
-
+		// map pruning
+		m_mapManager->pointCloudPruning();
+		m_mapManager->keyframePruning();
         LOG_DEBUG("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 
         LOG_DEBUG("Update global map");
-        m_mapper->saveToFile();
+        m_mapManager->saveToFile();
     }
 
     void PipelineMappingMonoProcessing::processMapping() {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::processMapping");
-
         std::pair<SRef<Image>, Transform3Df> image_pose_pair;
+		if (!m_inputImagePoseBuffer.tryPop(image_pose_pair))
+			return;
+		SRef<Image> image = image_pose_pair.first;
+		Transform3Df pose = image_pose_pair.second;
+		// feature extraction image
+		std::vector<Keypoint> keypoints, undistortedKeypoints;
+		SRef<DescriptorBuffer> descriptors;
+		if (m_descriptorExtractor->extract(image, keypoints, descriptors) != FrameworkReturnCode::_SUCCESS)
+			return;		
+		m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+		LOG_DEBUG("Keypoints size = {}", keypoints.size());		
+		SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
 
         if (!isBootstrapFinished()) {
-
             // Process bootstrap
-
-            // Get (image, pose) from input buffer
-            if (!m_inputImagePoseBuffer.empty()) {
-
-                m_inputImagePoseBuffer.pop(image_pose_pair);
-
-                SRef<Image> image = image_pose_pair.first;
-                Transform3Df pose = image_pose_pair.second;
-
-                // Ask for pose correction and bootstrap
-                correctPoseAndBootstrap(image, pose);
-            }
+            correctPoseAndBootstrap(frame);
         }
         else {
-            // Process mapping;
-            if (!m_inputImagePoseBuffer.empty()) {
+			// update visibility for the current frame
+			SRef<Image> displayImage;
+			m_tracking->process(frame, displayImage);
+            LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
+			if (frame->getVisibility().size() < m_minWeightNeighbor) {
+				xpcf::DelegateTask::yield();
+				return;
+			}
 
-                m_inputImagePoseBuffer.pop(image_pose_pair);
-
-                SRef<Image> image = image_pose_pair.first;
-                Transform3Df pose = image_pose_pair.second;
-
-                // feature extraction image
-                std::vector<Keypoint> keypoints, undistortedKeypoints;
-                m_keypointsDetector->detect(image, keypoints);
-				m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
-                LOG_DEBUG("Keypoints size = {}", keypoints.size());
-
-                SRef<DescriptorBuffer> descriptors;
-                m_descriptorExtractor->extract(image, keypoints, descriptors);
-                SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
-
-				// update visibility for the current frame
-				SRef<Image> displayImage;
-				m_tracking->process(frame, displayImage);
-                LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
-				if (frame->getVisibility().size() < m_minWeightNeighbor) {
-					xpcf::DelegateTask::yield();
-					return;
-				}
-
-                // mapping
-                SRef<Keyframe> keyframe;
-                if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
-                    LOG_DEBUG("New keyframe id: {}", keyframe->getId());
-                    // Local bundle adjustment
-                    std::vector<uint32_t> bestIdx;
-                    m_covisibilityGraph->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx);
-                    bestIdx.push_back(keyframe->getId());
-                    LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
-                    m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
-                    // map pruning
-					std::vector<SRef<CloudPoint>> localMap;
-					m_mapper->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
-                    m_mapper->pruning(localMap);
-                    // try to loop detection
-                    m_countNewKeyframes++;
-                    // loop closure
-                    if (m_countNewKeyframes >= 20) {
-                        SRef<Keyframe> detectedLoopKeyframe;
-                        Transform3Df sim3Transform;
-                        std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
-                        if (m_loopDetector->detect(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
-                            // detected loop keyframe
-                            LOG_DEBUG("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
-                            LOG_DEBUG("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
-                            LOG_DEBUG("sim3Transform: \n{}", sim3Transform.matrix());
-                            // performs loop correction
-                            Transform3Df keyframeOldPose = keyframe->getPose();
-                            m_loopCorrector->correct(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
-                            // loop optimization
-                            m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
-                            // map pruning
-                            m_mapper->pruning();
-                            m_countNewKeyframes = 0;
-                            // update pose correction
-                            Transform3Df transform = keyframe->getPose() * keyframeOldPose.inverse();
-                            m_T_M_W = transform * m_T_M_W;
-                        }
+            // mapping
+            SRef<Keyframe> keyframe;
+            if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
+                LOG_DEBUG("New keyframe id: {}", keyframe->getId());
+                // Local bundle adjustment
+                std::vector<uint32_t> bestIdx, bestIdxToOptimize;
+                m_covisibilityGraphManager->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx);
+				if (bestIdx.size() < NB_LOCALKEYFRAMES)
+					bestIdxToOptimize = bestIdx;
+				else
+					bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
+				bestIdxToOptimize.push_back(keyframe->getId());
+				LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
+				double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
+                // map pruning
+				std::vector<SRef<CloudPoint>> localMap;
+				m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
+                int nbRemovedCP = m_mapManager->pointCloudPruning(localMap);
+				std::vector<SRef<Keyframe>> localKeyframes;
+				m_keyframesManager->getKeyframes(bestIdx, localKeyframes);
+				int nbRemovedKf = m_mapManager->keyframePruning(localKeyframes);
+				LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
+                // try to loop detection
+                m_countNewKeyframes++;
+                // loop closure
+                if (m_countNewKeyframes >= NB_NEWKEYFRAMES_LOOP) {
+                    SRef<Keyframe> detectedLoopKeyframe;
+                    Transform3Df sim3Transform;
+                    std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
+                    if (m_loopDetector->detect(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
+                        // detected loop keyframe
+                        LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
+                        LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
+                        LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
+                        // performs loop correction
+                        Transform3Df keyframeOldPose = keyframe->getPose();
+                        m_loopCorrector->correct(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
+                        // loop optimization
+                        m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+						// map pruning
+						m_mapManager->pointCloudPruning();
+						m_mapManager->keyframePruning();
+                        m_countNewKeyframes = 0;
+                        // update pose correction
+                        Transform3Df transform = keyframe->getPose() * keyframeOldPose.inverse();
+                        m_T_M_W = transform * m_T_M_W;
                     }
-					// New data to store
-					m_dataToStore = true;
-                }
-
-                // update reference keyframe
-                if (keyframe) {
-					m_tracking->updateReferenceKeyframe(keyframe);
                 }
             }
-            else {
-                LOG_DEBUG("***** No (image, pose) pair to process *****");
 
-                // Data to store ?
-                if (m_dataToStore) {
-                    m_dataToStore = false;
-
-                    // Bundle adjustment, map pruning and global map udate
-                    globalBundleAdjustment();
-                }
+            // update reference keyframe
+            if (keyframe) {
+				m_tracking->updateReferenceKeyframe(keyframe);
             }
         }
     }

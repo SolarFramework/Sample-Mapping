@@ -2,11 +2,13 @@
 QT       -= core gui
 CONFIG -= app_bundle qt
 
+QMAKE_PROJECT_DEPTH = 0
+
 ## global defintions : target lib name, version
 INSTALLSUBDIR = SolARBuild
 TARGET = SolARPipelineMappingMono
 FRAMEWORK = $${TARGET}
-VERSION=0.9.1
+VERSION=0.10.0
 
 DEFINES += MYVERSION=$${VERSION}
 DEFINES += TEMPLATE_LIBRARY
@@ -45,6 +47,11 @@ unix:!android {
     QMAKE_CXXFLAGS += -Wignored-qualifiers
 #    QMAKE_LINK=clang++
 #    QMAKE_CXX = clang++
+}
+
+linux {
+        QMAKE_LFLAGS += -ldl
+        LIBS += -L/home/linuxbrew/.linuxbrew/lib # temporary fix caused by grpc with -lre2 ... without -L in grpc.pc
 }
 
 macx {

@@ -19,12 +19,12 @@
 
 #if _WIN32
 #ifdef SolARPipelineMappingMulti_API_DLLEXPORT
-#define SolARPipelineMappingMulti_EXPORT_API __declspec(dllexport)
+#define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API __declspec(dllexport)
 #else // SolARPipelineMappingMulti_API_DLLEXPORT
-#define SolARPipelineMappingMulti_EXPORT_API __declspec(dllimport)
+#define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API __declspec(dllimport)
 #endif //SolARPipelineMappingMulti_API_DLLEXPORT
 #else //_WIN32
-#define SolARPipelineMappingMulti_EXPORT_API
+#define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API
 #endif //_WIN32
 
 #include "xpcf/component/ConfigurableBase.h"
@@ -35,31 +35,19 @@
 #include <shared_mutex>
 
 #include "api/pipeline/IMappingPipeline.h"
-#include "api/solver/pose/IFiducialMarkerPose.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
-#include "api/solver/map/IMapper.h"
 #include "api/slam/ITracking.h"
 #include "api/slam/IMapping.h"
 #include "api/storage/IKeyframesManager.h"
 #include "api/storage/IPointCloudManager.h"
-#include "api/storage/ICovisibilityGraph.h"
-#include "api/features/IKeypointDetector.h"
-#include "api/features/IDescriptorsExtractor.h"
-#include "api/features/IDescriptorMatcher.h"
-#include "api/features/IMatchesFilter.h"
-#include "api/solver/pose/I2D3DCorrespondencesFinder.h"
-#include "api/geom/IProject.h"
+#include "api/storage/ICovisibilityGraphManager.h"
+#include "api/storage/IMapManager.h"
+#include "api/features/IDescriptorsExtractorFromImage.h"
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
-#include "datastructure/CameraDefinitions.h"
-#include "datastructure/Image.h"
-#include "datastructure/CloudPoint.h"
-#include "datastructure/Keypoint.h"
-#include "datastructure/Trackable.h"
-#include "datastructure/FiducialMarker.h"
-
+#include "api/pipeline/IMapUpdatePipeline.h"
 
 namespace SolAR {
 namespace PIPELINES {
@@ -71,21 +59,19 @@ namespace MAPPING {
      * <TT>UUID: dc734eb4-fcc6-4178-8452-7429939f04bd</TT>
      *
      * @SolARComponentInjectablesBegin
-     * @SolARComponentInjectable{SolAR::api::solver::pose::IFiducialMarkerPose}
      * @SolARComponentInjectable{SolAR::api::slam::IBootstrapper}
-     * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}
-     * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}
-     * @SolARComponentInjectable{SolAR::api::solver::map::IMapper}
+     * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}     
      * @SolARComponentInjectable{SolAR::api::slam::IMapping}
      * @SolARComponentInjectable{SolAR::api::storage::IKeyframesManager}
      * @SolARComponentInjectable{SolAR::api::storage::IPointCloudManager}
+	 * @SolARComponentInjectable{SolAR::api::storage::ICovisibilityGraphManager}
+	 * @SolARComponentInjectable{SolAR::api::storage::IMapManager}
      * @SolARComponentInjectable{SolAR::api::features::IKeypointDetector}
      * @SolARComponentInjectable{SolAR::api::features::IDescriptorsExtractor}
      * @SolARComponentInjectable{SolAR::api::features::IDescriptorMatcher}
      * @SolARComponentInjectable{SolAR::api::features::IMatchesFilter}
      * @SolARComponentInjectable{SolAR::api::solver::pose::I2D3DCorrespondencesFinder}
-     * @SolARComponentInjectable{SolAR::api::geom::IProject}
-     * @SolARComponentInjectable{SolAR::api::storage::ICovisibilityGraph}
+     * @SolARComponentInjectable{SolAR::api::geom::IProject}     
      * @SolARComponentInjectable{SolAR::api::loop::ILoopClosureDetector}
      * @SolARComponentInjectable{SolAR::api::loop::ILoopCorrector}
      * @SolARComponentInjectable{SolAR::api::geom::IUndistortPoints}
@@ -93,7 +79,7 @@ namespace MAPPING {
      *
      */
 
-    class SolARPipelineMappingMulti_EXPORT_API PipelineMappingMultiProcessing : public org::bcom::xpcf::ConfigurableBase,
+    class SOLARPIPELINE_MAPPING_MULTI_EXPORT_API PipelineMappingMultiProcessing : public org::bcom::xpcf::ConfigurableBase,
             public api::pipeline::IMappingPipeline
     {
     public:
@@ -106,19 +92,13 @@ namespace MAPPING {
         void unloadComponent() override final {}
 
         /// @brief Initialization of the pipeline
-        /// Initialize the pipeline by providing a reference to the component manager loaded by the PipelineManager.
-        /// @param[in] componentManager a shared reference to the component manager which has loaded the components and configuration in the pipleine manager
-        FrameworkReturnCode init(SRef<xpcf::IComponentManager> componentManager) override;
+        /// @return FrameworkReturnCode::_SUCCESS if the init succeed, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode init() override;
 
         /// @brief Set the camera parameters
         /// @param[in] cameraParams: the camera parameters (its resolution and its focal)
         /// @return FrameworkReturnCode::_SUCCESS if the camera parameters are correctly set, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode setCameraParameters(const datastructure::CameraParameters & cameraParams) override;
-
-        /// @brief Set the object to track during mapping
-        /// @param[in] trackableObject: the trackable object
-        /// @return FrameworkReturnCode::_SUCCESS if the trackable object is correctly set, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode setObjectToTrack(const SRef<datastructure::Trackable> trackableObject) override;
 
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
@@ -134,7 +114,8 @@ namespace MAPPING {
         /// @param[in] image: the input image to process
         /// @param[in] pose: the input pose to process
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> image, const datastructure::Transform3Df & pose) override;
+        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> image,
+                                                  const datastructure::Transform3Df & pose) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization
         /// (resulting from all mapping processing since the start of the pipeline)
@@ -142,91 +123,83 @@ namespace MAPPING {
         /// @param[out] keyframePoses: pipeline current keyframe poses
         /// @return FrameworkReturnCode::_SUCCESS if data are available, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode getDataForVisualization(std::vector<SRef<datastructure::CloudPoint>> & outputPointClouds,
-                                                            std::vector<datastructure::Transform3Df> & keyframePoses) const override;
+                                                    std::vector<datastructure::Transform3Df> & keyframePoses) const override;
+
+	private:
+		/// @brief Initialize class members
+		void initClassMembers();
+
+		/// @brief Correct pose and do bootstrap using an image and the associated pose
+		/// This method must be called with successive pairs of (image, pose)
+		/// until the bootstrap process is finished (i.e. m_isBootstrapFinished is True)
+		void correctPoseAndBootstrap();
+
+		/// @brief Feature extraction
+		void featureExtraction();
+
+		/// @bried Update visibility
+		void updateVisibility();
+
+		/// @bried Mapping
+		void mapping();
+
+		/// @bried Loop closure detection
+		void loopClosure();
+
+		/// @brief Process to bundle adjustment, map pruning
+		/// and update global map
+		void globalBundleAdjustment();
+
+		/// @brief returns the status of bootstrap
+		/// @return true if bootstrap is finished (m_isBootstrapFinished value)
+		bool isBootstrapFinished() const;
+
+		/// @brief sets the bootstrap status
+		/// (the m_isBootstrapFinished variable value)
+		/// @param status: true (finished) or false (not finished)
+		void setBootstrapSatus(const bool status);
 
     private:
 
-        bool m_isBootstrapFinished; // indicates if the bootstrap step is finished
-        std::mutex m_mutexUseLocalMap; // Mutex used for mapping task
+        bool												m_isBootstrapFinished; // indicates if the bootstrap step is finished
+        std::mutex											m_mutexUseLocalMap; // Mutex used for mapping task
 
-        datastructure::CameraParameters m_cameraParams;        // camera parameters
-        SRef<datastructure::FiducialMarker> m_fiducialMarker;  // fiducial marker description
+        datastructure::CameraParameters						m_cameraParams;        // camera parameters
 
         // Components used
-        SRef<api::solver::pose::IFiducialMarkerPose> m_fiducialMarkerPoseEstimator;
-        SRef<api::slam::IBootstrapper> m_bootstrapper;
-        SRef<api::solver::map::IBundler> m_bundler, m_globalBundler;
-        SRef<api::solver::map::IMapper> m_mapper;
-        SRef<api::slam::ITracking> m_tracking;
-        SRef<api::slam::IMapping> m_mapping;
-        SRef<api::storage::IKeyframesManager> m_keyframesManager;
-        SRef<api::storage::IPointCloudManager> m_pointCloudManager;
-        SRef<api::features::IKeypointDetector> m_keypointsDetector;
-        SRef<api::features::IDescriptorsExtractor> m_descriptorExtractor;
-        SRef<api::features::IDescriptorMatcher> m_matcher;
-        SRef<api::features::IMatchesFilter> m_matchesFilter;
-        SRef<api::solver::pose::I2D3DCorrespondencesFinder> m_corr2D3DFinder;
-        SRef<api::geom::IProject> m_projector;
-        SRef<api::storage::ICovisibilityGraph> m_covisibilityGraph;
-        SRef<api::loop::ILoopClosureDetector> m_loopDetector;
-        SRef<api::loop::ILoopCorrector> m_loopCorrector;
-		SRef<api::geom::IUndistortPoints> m_undistortKeypoints;
+        SRef<api::slam::IBootstrapper>						m_bootstrapper;
+        SRef<api::solver::map::IBundler>					m_bundler, m_globalBundler;        
+        SRef<api::slam::ITracking>							m_tracking;
+        SRef<api::slam::IMapping>							m_mapping;
+        SRef<api::storage::IKeyframesManager>				m_keyframesManager;
+        SRef<api::storage::IPointCloudManager>				m_pointCloudManager;
+		SRef<api::storage::ICovisibilityGraphManager>		m_covisibilityGraphManager;
+		SRef<api::storage::IMapManager>						m_mapManager;
+        SRef<api::pipeline::IMapUpdatePipeline>				m_mapUpdatePipeline;
+        SRef<api::features::IDescriptorsExtractorFromImage>	m_descriptorExtractor;
+        SRef<api::loop::ILoopClosureDetector>				m_loopDetector;
+        SRef<api::loop::ILoopCorrector>						m_loopCorrector;
+		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
 
-        bool m_isFoundTransform;            // indicates if the 3D transformation as been found
-        bool m_isStopMapping;               // indicates if the mapping task is stopped
-        datastructure::Transform3Df m_T_M_W;               // 3D transformation matrix
-        float m_minWeightNeighbor, m_reprojErrorThreshold;
-        int m_countNewKeyframes;
+        bool												m_isStopMapping;               // indicates if the mapping task is stopped
+        datastructure::Transform3Df							m_T_M_W;               // 3D transformation matrix
+        float												m_minWeightNeighbor, m_reprojErrorThreshold;
+        int													m_countNewKeyframes;
 
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;
-        xpcf::DelegateTask * m_keypointsDetectionTask = nullptr;
         xpcf::DelegateTask * m_featureExtractionTask = nullptr;
         xpcf::DelegateTask * m_updateVisibilityTask = nullptr;
         xpcf::DelegateTask * m_mappingTask = nullptr;
         xpcf::DelegateTask * m_loopClosureTask = nullptr;
 
         // Drop buffers used by mapping processing
-        xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCaptureBootstrap;
         xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCapture;
-        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferKeypoints;
-        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameDescriptors;
+        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrame;
+        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameBootstrap;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframe;
-        xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframeLoop;
-
-        /// @brief Correct pose and do bootstrap using an image and the associated pose
-        /// This method must be called with successive pairs of (image, pose)
-        /// until the bootstrap process is finished (i.e. m_isBootstrapFinished is True)
-        void correctPoseAndBootstrap();
-
-        /// @brief Detection of keypoints
-        void keypointsDetection();
-
-        /// @brief Feature extraction
-        void featureExtraction();
-
-        /// @bried Update visibility
-        void updateVisibility();
-
-        /// @bried Mapping
-        void mapping();
-
-        /// @bried Loop closure detection
-        void loopClosure();
-
-        /// @brief Process to bundle adjustment, map pruning
-        /// and update global map
-        void globalBundleAdjustment();
-
-        /// @brief returns the status of bootstrap
-        /// @return true if bootstrap is finished (m_isBootstrapFinished value)
-        bool isBootstrapFinished() const;
-
-        /// @brief sets the bootstrap status
-        /// (the m_isBootstrapFinished variable value)
-        /// @param status: true (finished) or false (not finished)
-        void setBootstrapSatus(const bool status);
+        xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframeLoop;        
     };
 
 }

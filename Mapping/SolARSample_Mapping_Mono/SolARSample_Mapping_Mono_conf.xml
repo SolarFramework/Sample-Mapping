@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xpcf-registry autoAlias="true">
-	<module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" description="SolARModuleOpenCV" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenCV/0.9.1/lib/x86_64/shared">
+	<module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" description="SolARModuleOpenCV" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleOpenCV/0.10.0/lib/x86_64/shared">
 		<component uuid="e81c7e4e-7da6-476a-8eba-078b43071272" name="SolARKeypointDetectorOpencv" description="SolARKeypointDetectorOpencv">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="0eadc8b7-1265-434c-a4c6-6da8a028e06e" name="IKeypointDetector" description="IKeypointDetector"/>
@@ -21,9 +21,21 @@
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="c0e49ff1-0696-4fe6-85a8-9b2c1e155d2e" name="IDescriptorsExtractor" description="IDescriptorsExtractor"/>
 		</component>
+		<component uuid="cf2721f2-0dc9-4442-ad1e-90c0ab12b0ff" name="SolARDescriptorsExtractorFromImageOpencv" description="SolARDescriptorsExtractorFromImageOpencv">
+			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+			<interface uuid="1cd4f5f1-6b74-413b-9725-69653aee48ef" name="IDescriptorsExtractorFromImage" description="IDescriptorsExtractorFromImage"/>
+		</component>
 		<component uuid="7823dac8-1597-41cf-bdef-59aa22f3d40a" name="SolARDescriptorMatcherKNNOpencv" description="SolARDescriptorMatcherKNNOpencv">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="dda38a40-c50a-4e7d-8433-0f04c7c98518" name="IDescriptorMatcher" description="IDescriptorMatcher"/>
+		</component>
+		<component uuid="389ece8b-9e29-45ae-bd60-de1784ff0931" name="SolARDescriptorMatcherGeometricOpencv" description="SolARDescriptorMatcherGeometricOpencv">
+			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+			<interface uuid="2ed445a6-32f3-44a1-9dc5-3b0cfec778db" name="IDescriptorMatcherGeometric" description="IDescriptorMatcherGeometric"/>
+		</component>
+		<component uuid="a12a8706-299b-4981-b12b-60717ef3b160" name="SolARDescriptorMatcherRegionOpencv" description="SolARDescriptorMatcherRegionOpencv">
+			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+			<interface uuid="bdef063d-96de-4425-83c5-fec7b7e448c8" name="IDescriptorMatcherRegion" description="IDescriptorMatcherRegion"/>
 		</component>
 		<component uuid="d67ce1ba-04a5-43bc-a0f8-e0c3653b32c9" name="SolARDescriptorMatcherHammingBruteForceOpencv" description="SolARDescriptorMatcherHammingBruteForceOpencv">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
@@ -61,11 +73,9 @@
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="a801354a-3e00-467c-b390-48c76fa8c53a" name="IMatchesOverlay" description="IMatchesOverlay"/>
 		</component>
-		<component uuid="5d2b8da9-528e-4e5e-96c1-f883edcf3b1c" name="SolARMarker2DSquaredBinaryOpencv" description="SolARMarker2DSquaredBinaryOpencv">
+		<component uuid="d0116ed2-45d7-455d-8011-57959da1b0fa" name="SolARFiducialMarkerLoaderOpencv" description="SolARFiducialMarkerLoaderOpencv">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-			<interface uuid="3c9cee8a-e9ca-4c16-851a-669a94c2a68d" name="IMarker" description="IMarker"/>
-			<interface uuid="e9cdcf6e-c54c-11e7-abc4-cec278b6b50a" name="IMarker2Dquared" description="IMarker2Dquared"/>
-			<interface uuid="12d592ff-aa46-40a6-8d65-7fbfb382d60b" name="IMarker2DSquaredBinary" description="IMarker2DSquaredBinary"/>
+			<interface uuid="8e54d5d0-f7a3-4d62-b012-728e5704b46a" name="ITrackableLoader" description="ITrackableLoader"/>
 		</component>
 		<component uuid="4309dcc6-cc73-11e7-abc4-cec278b6b50a" name="SolARContoursFilterBinaryMarkerOpencv" description="SolARContoursFilterBinaryMarkerOpencv">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
@@ -121,14 +131,14 @@
 		</component>
 	</module>
 
-	<module uuid="6e960df6-9a36-11e8-9eb6-529269fb1459" name="SolARModuleOpenGL" description="SolARModuleOpenGL" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleOpenGL/0.9.1/lib/x86_64/shared">
+	<module uuid="6e960df6-9a36-11e8-9eb6-529269fb1459" name="SolARModuleOpenGL" description="SolARModuleOpenGL" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleOpenGL/0.10.0/lib/x86_64/shared">
 		<component uuid="afd38ea0-9a46-11e8-9eb6-529269fb1459" name="SolAR3DPointsViewerOpengl" description="SolAR3DPointsViewerOpengl">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="575d365a-9a27-11e8-9eb6-529269fb1459" name="I3DPointsViewer" description="I3DPointsViewer"/>
 		</component>
 	</module>
 
-	<module uuid="28b89d39-41bd-451d-b19e-d25a3d7c5797" name="SolARModuleTools" description="SolARModuleTools" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleTools/0.9.1/lib/x86_64/shared">
+	<module uuid="28b89d39-41bd-451d-b19e-d25a3d7c5797" name="SolARModuleTools" description="SolARModuleTools" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleTools/0.10.0/lib/x86_64/shared">
 		<component uuid="ad59a5ba-beb8-11e8-a355-529269fb1459" name="SolARKeyframeSelector" description="SolARKeyframeSelector">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="4d5f2abe-beb7-11e8-a355-529269fb1459" name="IKeyframeSelector" description="IKeyframeSelector"/>
@@ -137,9 +147,9 @@
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="68dc9152-5199-11ea-8d77-2e728ce88125" name="IMapFilter" description="IMapFilter"/>
 		</component>
-		<component uuid="8e3c926a-0861-46f7-80b2-8abb5576692c" name="SolARMapper" description="SolARMapper">
+		<component uuid="8e3c926a-0861-46f7-80b2-8abb5576692c" name="SolARMapManager" description="SolARMapManager">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-			<interface uuid="90075c1b-915b-469d-b92d-41c5d575bf15" name="IMapper" description="IMapper"/>
+			<interface uuid="90075c1b-915b-469d-b92d-41c5d575bf15" name="IMapManager" description="IMapManager"/>
 		</component>
 		<component uuid="a2ef5542-029e-4fce-9974-0aea14b29d6f" name="SolARSBPatternReIndexer" description="SolARSBPatternReIndexer">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
@@ -157,9 +167,9 @@
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="2c147595-6c74-4f69-b63d-91e162c311ed" name="IKeyframesManager" description="IPointCloudManager"/>
 		</component>
-		<component uuid="17c7087f-3394-4b4b-8e6d-3f8639bb00ea" name="SolARCovisibilityGraph" description="SolARCovisibilityGraph">
+		<component uuid="17c7087f-3394-4b4b-8e6d-3f8639bb00ea" name="SolARCovisibilityGraphManager" description="SolARCovisibilityGraphManager">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-			<interface uuid="15455f5a-0e99-49e5-a3fb-39de3eeb5b9b" name="ICovisibilityGraph" description="ICovisibilityGraph"/>
+			<interface uuid="15455f5a-0e99-49e5-a3fb-39de3eeb5b9b" name="ICovisibilityGraphManager" description="ICovisibilityGraphManager"/>
 		</component>
 		<component uuid="3b7a1117-8b59-46b1-8e0c-6e76a8377ab4" name="SolAR3DTransformEstimationSACFrom3D3D" description="SolAR3DTransformEstimationSACFrom3D3D">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
@@ -183,7 +193,7 @@
 		</component>
 		<component uuid="cddd23c4-da4e-4c5c-b3f9-7d095d097c97" name="SolARFiducialMarkerPoseEstimator" description="SolARFiducialMarkerPoseEstimator">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-			<interface uuid="d5247968-b74e-4afb-9abd-546021441ad4" name="IFiducialMarkerPose" description="IFiducialMarkerPose"/>
+			<interface uuid="d5247968-b74e-4afb-9abd-546021441ad4" name="ITrackablePose" description="ITrackablePose"/>
 		</component>
 		<component uuid="8f43eed0-1a2e-4c47-83f0-8dd5b259cdb0" name="SolARSLAMBootstrapper" description="SolARSLAMBootstrapper">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
@@ -199,14 +209,14 @@
 		</component>
 	</module>
 
-	<module uuid="b81f0b90-bdbc-11e8-a355-529269fb1459" name="SolARModuleFBOW" description="SolARModuleFBOW" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleFBOW/0.9.1/lib/x86_64/shared">
+	<module uuid="b81f0b90-bdbc-11e8-a355-529269fb1459" name="SolARModuleFBOW" description="SolARModuleFBOW" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleFBOW/0.10.0/lib/x86_64/shared">
 		<component uuid="9d1b1afa-bdbc-11e8-a355-529269fb1459" name="SolARKeyframeRetrieverFBOW" description="SolARKeyframeRetrieverFBOW">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="f60980ce-bdbd-11e8-a355-529269fb1459" name="IKeyframeRetriever" description="IKeyframeRetriever"/>
 		</component>
 	</module>
 
-	<module uuid="8f94a3c5-79ed-4851-9502-98033eae3a3b" name="SolARModuleG2O" description="SolARModuleG2O" path="$REMAKEN_PKG_ROOT/packages/SolARBuild/win-cl-14.1/SolARModuleG2O/0.9.1/lib/x86_64/shared">
+	<module uuid="8f94a3c5-79ed-4851-9502-98033eae3a3b" name="SolARModuleG2O" description="SolARModuleG2O" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleG2O/0.10.0/lib/x86_64/shared">
 		<component uuid="870d89ba-bb5f-460a-a817-1fcb6473df70" name="SolAROptimizationG2O" description="SolAROptimizationG2O">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="35b9bdb7-d23c-4909-984f-ae7f9a292e6c" name="IBundler" description="IBundler"/>
@@ -215,32 +225,38 @@
 
 	<factory>
 		<bindings>
-			<bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv"/>
+			<bind interface="IDescriptorsExtractorFromImage" to="SolARDescriptorsExtractorFromImageOpencv" />
 			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv"/>
-			<bind interface="IKeyframeSelector" to="SolARKeyframeSelector"/>
+			<bind interface="I3DTransform" to="SolAR3DTransform"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" range="default|all" properties="BundleFixedKeyframesProperties"/>
-			<bind interface="IMapper" to="SolARMapper" scope="Singleton"/>
+			<bind interface="IMapManager" to="SolARMapManager" scope="Singleton"/>
 			<bind interface="IPointCloudManager" to="SolARPointCloudManager" scope="Singleton"/>
 			<bind interface="IKeyframesManager" to="SolARKeyframesManager" scope="Singleton"/>
-			<bind interface="ICovisibilityGraph" to="SolARCovisibilityGraph" scope="Singleton"/>
+			<bind interface="ICovisibilityGraphManager" to="SolARCovisibilityGraphManager" scope="Singleton"/>
 			<bind interface="IKeyframeRetriever" to="SolARKeyframeRetrieverFBOW" scope="Singleton"/>
 		</bindings>
 		<injects>
 			<inject to="SolARFiducialMarkerPoseEstimator">
-				<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherRadiusOpencv"/>
+				<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherRadiusOpencv"/>				
+				<bind interface="IImageFilter" to="SolARImageFilterBinaryOpencv"/>
+			</inject>			
+			<inject to="SolARDescriptorsExtractorFromImageOpencv">
+				<bind interface="IKeypointDetector" to="SolARKeypointDetectorOpencv"/>
+				<bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv"/>
 			</inject>
-			<inject to="SolARSLAMBootstrapper">
-				<bind interface="IKeyframeSelector" to="SolARKeyframeSelector" properties="BootstrapProperties"/>
+			<inject to="SolARSLAMTracking">
+				<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
+				<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Red" properties="RedProperties"/>
 			</inject>
 		</injects>
 	</factory>
 
 	<properties>
 		<configure component="SolARDeviceDataLoader">
-			<property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.yml"/>
+			<property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.json"/>
 			<property name="pathToData" type="string" value="../../data/data_hololens/loop_desktop_A"/>
-			<property name="delayTime" type="int" value="1"/>
+			<property name="delayTime" type="int" value="200"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
 			<property name="hasPose" type="int" value="1"/>
@@ -248,9 +264,9 @@
 			<property name="angleThres" type="float" value="0.08"/>
 		</configure>
 		<configure component="SolARSLAMTracking">
-            <property name="minWeightNeighbor" type="float" value="50.0"/>
-            <property name="displayTrackedPoints" type="int" value="1"/>
-            <property name="thresAngleViewDirection" type="float" value="0.8"/>
+			<property name="minWeightNeighbor" type="float" value="50.0"/>
+			<property name="displayTrackedPoints" type="int" value="1"/>
+			<property name="thresAngleViewDirection" type="float" value="0.8"/>
 		</configure>
 		<configure component="SolARSLAMMapping">
 			<property name="minWeightNeighbor" type="float" value="5.0"/>
@@ -259,8 +275,8 @@
 			<property name="ratioCPRefKeyframe" type="float" value="0.5"/>
 			<property name="minTrackedPoints" type="int" value="200"/>
 		</configure>
-		<configure component="SolARMapper">
-			<property name="directory" type="string" value="../../data/map_local/mapA"/>
+		<configure component="SolARMapManager">
+			<property name="directory" type="string" value="../../data/map_hololens/mapA"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
@@ -268,7 +284,7 @@
 			<property name="covisibilityGraphFileName" type="string" value="covisibility_graph.bin"/>
 			<property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
 			<property name="reprojErrorThreshold" type="float" value="10.0"/>
-			<property name="thresConfidence" type="float" value="0.25"/>
+			<property name="thresConfidence" type="float" value="0.03"/>
 		</configure>
 		<configure component="SolARKeypointDetectorOpencv">
 			<property name="type" type="string" value="AKAZE2"/>
@@ -276,23 +292,10 @@
 			<property name="nbDescriptors" type="int" value="2000"/>
 			<property name="nbOctaves" type="int" value="4"/>
 			<property name="threshold" type="float" value="0.0001"/>
-		</configure>
-		<configure component="SolARDescriptorsExtractorAKAZEOpencv">
-			<property name="threshold" type="double" value="3e-4"/>
+			<property name="borderRatio" type="float" value="0.0"/>
 		</configure>
 		<configure component="SolARDescriptorsExtractorAKAZE2Opencv">
 			<property name="threshold" type="double" value="3e-4"/>
-		</configure>
-		<configure component="SolARDescriptorsExtractorORBOpencv">
-			<property name="nbFeatures" type="int" value="500"/>
-			<property name="scaleFactor" type="float" value="1.2"/>
-			<property name="nbLevels" type="int" value="8"/>
-			<property name="edgeThreshold" type="int" value="31"/>
-			<property name="firstLevel" type="int" value="0"/>
-			<property name="WTAK" type="int" value="2"/>
-			<property name="scoreType" type="string" value="Harris"/>
-			<property name="patchSize" type="int" value="31"/>
-			<property name="fastThreshold" type="int" value="20"/>
 		</configure>
 		<configure component="SolARDescriptorsExtractorSIFTOpencv">
 			<property name="nbFeatures" type="int" value="2000"/>
@@ -300,8 +303,16 @@
 		</configure>
 		<configure component="SolARDescriptorMatcherKNNOpencv">
 			<property name="distanceRatio" type="float" value="0.8"/>
+		</configure>
+		<configure component="SolARDescriptorMatcherRegionOpencv">
+			<property name="distanceRatio" type="float" value="0.8"/>
 			<property name="radius" type="float" value="15"/>
-			<property name="matchingDistanceMax" type="float" value="800"/>
+			<property name="matchingDistanceMax" type="float" value="500"/>
+		</configure>
+		<configure component="SolARDescriptorMatcherGeometricOpencv">
+			<property name="distanceRatio" type="float" value="0.7"/>
+			<property name="paddingRatio" type="float" value="0.003"/>
+			<property name="matchingDistanceMax" type="float" value="500"/>
 		</configure>
 		<configure component="SolARDescriptorMatcherHammingBruteForceOpencv">
 			<property name="distanceRatio" type="float" value="0.9"/>
@@ -321,12 +332,12 @@
 			<property name="minNbInliers" type="int" value="15"/>
 		</configure>
 		<configure component="SolARMapFilter">
-			<property name="reprojErrorThreshold" type="float" value="5.0"/>
+			<property name="reprojErrorThreshold" type="float" value="3.0"/>
 			<property name="minTriangulationAngle" type="float" value="0.01"/>
 			<property name="maxTriangulationAngle" type="float" value="2.0"/>
 			<property name="cheiralityCheck" type="int" value="1"/>
 		</configure>
-		<configure component="SolARKeyframeSelector" name="BootstrapProperties">
+		<configure component="SolARKeyframeSelector">
 			<property name="minNbMatchesIsKeyframe" type="int" value="50"/>
 			<property name="minMeanDistanceIsKeyframe" type="float" value="0.04"/>
 		</configure>
@@ -339,7 +350,7 @@
 		</configure>
 		<configure component="SolAR3DTransformEstimationSACFrom3D3D">
 			<property name="iterationsCount" type="int" value="500"/>
-			<property name="reprojError" type="float" value="10.0"/>
+			<property name="reprojError" type="float" value="3.0"/>
 			<property name="confidence" type="float" value="0.9"/>
 			<property name="minNbInliers" type="int" value="20"/>
 		</configure>
@@ -350,13 +361,22 @@
 		<configure component="SolARLoopClosureDetector">
 			<property name="minNbInliers" type="int" value="30"/>
 		</configure>
-		<configure component="SolAR2DOverlayOpencv">
+		<configure component="SolAR2DOverlayOpencv" name="GreenProperties">
 			<property name="thickness" type="uint" value="2"/>
 			<property name="radius" type="uint" value="2"/>
-			<property name="color" type="uint">
+			<property name="color"  type="uint">
 				<value>0</value>
 				<value>255</value>
 				<value>0</value>
+			</property>
+		</configure>
+		<configure component="SolAR2DOverlayOpencv" name="RedProperties">
+			<property name="thickness" type="uint" value="2"/>
+			<property name="radius" type="uint" value="2"/>
+			<property name="color"  type="uint">
+				<value>0</value>
+				<value>0</value>
+				<value>255</value>
 			</property>
 		</configure>
 		<configure component="SolARMatchesOverlayOpencv">
@@ -423,7 +443,7 @@
 				<value>0</value>
 				<value>0</value>
 			</property>
-			<property name="fixedPointsColor" type="uint" value="1"/>
+			<property name="fixedPointsColor" type="uint" value="0"/>
 			<property name="pointsColor" type="uint">
 				<value>0</value>
 				<value>255</value>
@@ -459,7 +479,7 @@
 			<property name="minThreshold" type="int" value="-1"/>
 			<property name="maxThreshold" type="int" value="220"/>
 		</configure>
-		<configure component="SolARMarker2DSquaredBinaryOpencv">
+		<configure component="SolARFiducialMarkerLoaderOpencv">
 			<property name="filePath" type="string" value="../../data/data_hololens/fiducialMarkerA.yml" description="Path of the .yml file describing the fiducial marker."/>
 		</configure>
 		<configure component="SolARImageFilterBinaryOpencv">

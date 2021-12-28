@@ -9,7 +9,7 @@ bin/
 *-release.bat
 *_debug.bat
 *_release.bat
-**/build*
+**/build*/
 
 # Prerequisites
 *.d
@@ -98,12 +98,16 @@ data*
 *.sln
 *aps
 bin/*
-*/build*
+*/build*/
 MapFusion/data/data_hololens/*
 MapFusion/data/map_hololens/*
 MapFusion/data/fbow_voc/*
 run.sh
+start_service.sh
+*.json
 
 MapFusion/floatingMapFusionStandAlone/conf_floatingMapFusion_original.xml
 MapFusion/floatingMapFusionStandAlone/TransformLocalToGlobal.txt
 bin/conf_floatingMapFusion.xml
+
+Mapping/SolARService_Mapping_Multi/start_mapping_multi_service.sh

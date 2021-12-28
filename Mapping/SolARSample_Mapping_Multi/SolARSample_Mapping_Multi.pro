@@ -2,9 +2,11 @@
 QT       -= core gui
 CONFIG -= qt
 
+QMAKE_PROJECT_DEPTH = 0
+
 ## global defintions : target lib name, version
 TARGET = SolARSample_Mapping_Multi
-VERSION=0.9.1
+VERSION=0.10.0
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z
@@ -13,7 +15,7 @@ CONFIG += console
 include(findremakenrules.pri)
 
 CONFIG(debug,debug|release) {
-	TARGETDEPLOYDIR = $${PWD}/../../bin/Debug
+        TARGETDEPLOYDIR = $${PWD}/../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
@@ -46,6 +48,11 @@ SOURCES += \
 unix {
     LIBS += -ldl
     QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
+}
+
+linux {
+        QMAKE_LFLAGS += -ldl
+        LIBS += -L/home/linuxbrew/.linuxbrew/lib # temporary fix caused by grpc with -lre2 ... without -L in grpc.pc
 }
 
 macx {
@@ -86,6 +93,7 @@ linux {
 
 
 DISTFILES += \
+    SolARSample_Mapping_Multi_conf.xml \
     packagedependencies.txt
 
 #NOTE : Must be placed at the end of the .pro

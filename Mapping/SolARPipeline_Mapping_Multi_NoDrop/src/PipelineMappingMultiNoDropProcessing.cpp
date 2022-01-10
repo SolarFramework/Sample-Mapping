@@ -141,7 +141,6 @@ namespace MAPPING {
         }
 
         m_T_M_W = Transform3Df::Identity();
-        m_minWeightNeighbor = 0;
 
         // Initial bootstrap status
         m_isBootstrapFinished = false;
@@ -309,9 +308,13 @@ namespace MAPPING {
 		std::vector<Keypoint> keypoints, undistortedKeypoints;
 		SRef<DescriptorBuffer> descriptors;
 		if (m_descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
+            LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb keypoints = {} / nb descriptors = {}",
+                     keypoints.size(), descriptors->getNbDescriptors());
 			processing_timer.restart();
 			m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
-			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
+            LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb undistortedKeypoints = {}",
+                     undistortedKeypoints.size());
+            SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
 			if (isBootstrapFinished())
 				m_sharedBufferFrame.push(frame);
 			else
@@ -382,8 +385,10 @@ namespace MAPPING {
 		m_tracking->process(frame, displayImage);
 		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
         if (frame->getVisibility().size() < m_minWeightNeighbor) {
-            return;
+            LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility tracking lost");
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility elapsed time = {} ms", processing_timer.elapsed() * 1000);
+            stop();
+            return;
         }
 
         // send frame to mapping task

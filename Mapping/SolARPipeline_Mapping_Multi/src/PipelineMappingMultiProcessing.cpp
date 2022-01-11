@@ -142,7 +142,6 @@ namespace MAPPING {
 
         m_T_M_W = Transform3Df::Identity();
         m_isStopMapping = false;
-        m_minWeightNeighbor = 0;
 
         // Initial bootstrap status
         m_isBootstrapFinished = false;

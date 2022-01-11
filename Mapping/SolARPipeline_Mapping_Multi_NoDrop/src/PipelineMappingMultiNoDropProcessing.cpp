@@ -387,7 +387,6 @@ namespace MAPPING {
         if (frame->getVisibility().size() < m_minWeightNeighbor) {
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility tracking lost");
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility elapsed time = {} ms", processing_timer.elapsed() * 1000);
-            stop();
             return;
         }
 

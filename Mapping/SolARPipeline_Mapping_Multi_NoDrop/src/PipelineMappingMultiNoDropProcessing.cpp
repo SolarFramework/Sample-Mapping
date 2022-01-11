@@ -253,12 +253,15 @@ namespace MAPPING {
     FrameworkReturnCode PipelineMappingMultiNoDropProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
 
         LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
-        // Correct pose 
+
+        // Correct pose
         Transform3Df poseCorrected = m_T_M_W * pose;
+
 		// Send image and corrected pose to process
         m_sharedBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
-        LOG_INFO("Nb images in buffer = {}", m_sharedBufferCamImagePoseCapture.size());
-        LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
+
+        LOG_DEBUG("Nb images in buffer = {}", m_sharedBufferCamImagePoseCapture.size());
+
         return FrameworkReturnCode::_SUCCESS;
     }
 

@@ -11,9 +11,10 @@
  *
  */
 
-#include "PipelineMappingMultiProcessing.h"
+#include "PipelineMappingMultiNoDropProcessing.h"
 #include <boost/log/core.hpp>
 #include <boost/timer.hpp>
+#include <boost/thread/thread.hpp>
 #include "core/Log.h"
 
 namespace xpcf  = org::bcom::xpcf;
@@ -28,10 +29,9 @@ namespace MAPPING {
 
 // Public methods
 
-    PipelineMappingMultiProcessing::PipelineMappingMultiProcessing():ConfigurableBase(xpcf::toUUID<PipelineMappingMultiProcessing>())
+    PipelineMappingMultiNoDropProcessing::PipelineMappingMultiNoDropProcessing():ConfigurableBase(xpcf::toUUID<PipelineMappingMultiNoDropProcessing>())
     {
-
-        LOG_DEBUG("PipelineMappingMultiProcessing constructor");
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing constructor");
 
         try {
             declareInterface<api::pipeline::IMappingPipeline>(this);
@@ -63,7 +63,7 @@ namespace MAPPING {
                     correctPoseAndBootstrap();
                 };
 
-                m_bootstrapTask = new xpcf::DelegateTask(fnBootstrapProcessing);
+                m_bootstrapTask = new xpcf::DelegateTask(fnBootstrapProcessing, true);
             }
 
             // Feature extraction processing function
@@ -72,7 +72,7 @@ namespace MAPPING {
                     featureExtraction();
                 };
 
-                m_featureExtractionTask = new xpcf::DelegateTask(fnFeatureExtractionProcessing);
+                m_featureExtractionTask = new xpcf::DelegateTask(fnFeatureExtractionProcessing, true);
             }
 
             // Update visibility processing function
@@ -81,7 +81,7 @@ namespace MAPPING {
                     updateVisibility();
                 };
 
-                m_updateVisibilityTask = new xpcf::DelegateTask(fnUpdateVisibilityProcessing);
+                m_updateVisibilityTask = new xpcf::DelegateTask(fnUpdateVisibilityProcessing, true);
             }
 
             // Mapping processing function
@@ -90,7 +90,7 @@ namespace MAPPING {
                     mapping();
                 };
 
-                m_mappingTask = new xpcf::DelegateTask(fnMappingProcessing);
+                m_mappingTask = new xpcf::DelegateTask(fnMappingProcessing, true);
             }
 
             // Loop closure processing function
@@ -99,7 +99,7 @@ namespace MAPPING {
                     loopClosure();
                 };
 
-                m_loopClosureTask = new xpcf::DelegateTask(fnLoopClosureProcessing);
+                m_loopClosureTask = new xpcf::DelegateTask(fnLoopClosureProcessing, true);
             }
         }
         catch (xpcf::Exception & e) {
@@ -107,18 +107,18 @@ namespace MAPPING {
         }
     }
 
-    void PipelineMappingMultiProcessing::onInjected() {
+    void PipelineMappingMultiNoDropProcessing::onInjected() {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::onInjected");
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::onInjected");
 
         // Get properties
         m_reprojErrorThreshold = m_mapManager->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
         m_minWeightNeighbor = m_mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
     }
 
-    PipelineMappingMultiProcessing::~PipelineMappingMultiProcessing() {
+    PipelineMappingMultiNoDropProcessing::~PipelineMappingMultiNoDropProcessing() {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing destructor");
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing destructor");
 
         delete m_bootstrapTask;
         delete m_featureExtractionTask;
@@ -127,9 +127,9 @@ namespace MAPPING {
         delete m_loopClosureTask;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::init() {
+    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::init() {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing init");
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing init");
 
         LOG_DEBUG("Initialize instance attributes");
 
@@ -141,18 +141,16 @@ namespace MAPPING {
         }
 
         m_T_M_W = Transform3Df::Identity();
-        m_isStopMapping = false;
-        m_minWeightNeighbor = 0;
 
         // Initial bootstrap status
         m_isBootstrapFinished = false;
 
         LOG_DEBUG("Empty buffers");
 
-        m_dropBufferCamImagePoseCapture.clear();
-        m_dropBufferFrame.clear();
-        m_dropBufferFrameBootstrap.clear();
-        m_dropBufferAddKeyframe.clear();
+        m_sharedBufferCamImagePoseCapture.clear();
+        m_sharedBufferFrame.clear();
+        m_sharedBufferFrameBootstrap.clear();
+        m_sharedBufferAddKeyframe.clear();
         m_dropBufferNewKeyframe.clear();
         m_dropBufferNewKeyframeLoop.clear();
 
@@ -177,9 +175,9 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::setCameraParameters(const CameraParameters & cameraParams) {
+    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::setCameraParameters(const CameraParameters & cameraParams) {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::setCameraParameters");
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::setCameraParameters");
 
         m_cameraParams = cameraParams;
 
@@ -196,9 +194,9 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::start() {
+    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::start() {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::start");
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::start");
 
         // Check members initialization
         if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)) {
@@ -223,11 +221,16 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::stop() {
+    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::stop() {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::stop");
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::stop");
 
         if (isBootstrapFinished()){
+            LOG_DEBUG("Wait until all images have been processed...");
+            while (!m_sharedBufferCamImagePoseCapture.empty()){
+               boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
+            }
+
             LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
             globalBundleAdjustment();
         }
@@ -247,21 +250,22 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
+    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
 
         LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
-        // Correct pose after loop detection
+        // Correct pose 
         Transform3Df poseCorrected = m_T_M_W * pose;
 		// Send image and corrected pose to process
-        m_dropBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
+        m_sharedBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
+        LOG_INFO("Nb images in buffer = {}", m_sharedBufferCamImagePoseCapture.size());
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::getDataForVisualization(std::vector<SRef<CloudPoint>> & outputPointClouds,
+    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::getDataForVisualization(std::vector<SRef<CloudPoint>> & outputPointClouds,
                                                 std::vector<Transform3Df> & keyframePoses) const {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::getDataForVisualization");
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::getDataForVisualization");
 
         if (isBootstrapFinished()) {
 
@@ -288,14 +292,14 @@ namespace MAPPING {
 
 // Private methods
 
-    void PipelineMappingMultiProcessing::featureExtraction() {
+    void PipelineMappingMultiNoDropProcessing::featureExtraction() {
 
         boost::timer processing_timer;
         processing_timer.restart();
 
 		std::pair<SRef<Image>, Transform3Df> imagePose;
 
-		if (!m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
+		if (!m_sharedBufferCamImagePoseCapture.tryPop(imagePose)) {
 			xpcf::DelegateTask::yield();
 			return;
 		}
@@ -304,32 +308,36 @@ namespace MAPPING {
 		std::vector<Keypoint> keypoints, undistortedKeypoints;
 		SRef<DescriptorBuffer> descriptors;
 		if (m_descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
+            LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb keypoints = {} / nb descriptors = {}",
+                     keypoints.size(), descriptors->getNbDescriptors());
 			processing_timer.restart();
 			m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
-			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
+            LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb undistortedKeypoints = {}",
+                     undistortedKeypoints.size());
+            SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
 			if (isBootstrapFinished())
-				m_dropBufferFrame.push(frame);
+				m_sharedBufferFrame.push(frame);
 			else
-				m_dropBufferFrameBootstrap.push(frame);
+				m_sharedBufferFrameBootstrap.push(frame);
 		}
-        LOG_DEBUG("PipelineMappingMultiProcessing::featureExtraction elapsed time = {} ms", processing_timer.elapsed() * 1000);
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction elapsed time = {} ms", processing_timer.elapsed() * 1000);
     }
 
-	void PipelineMappingMultiProcessing::correctPoseAndBootstrap() {
+    void PipelineMappingMultiNoDropProcessing::correctPoseAndBootstrap() {
 
 		boost::timer processing_timer;
 		processing_timer.restart();
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap = {}", isBootstrapFinished());
+//        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::correctPoseAndBootstrap = {}", isBootstrapFinished());
 
 		SRef<Frame> frame;
 
 		// Try to get next (image, pose) if bootstrap is not finished
-		if (m_isBootstrapFinished || !m_dropBufferFrameBootstrap.tryPop(frame)) {
+		if (m_isBootstrapFinished || !m_sharedBufferFrameBootstrap.tryPop(frame)) {
 			xpcf::DelegateTask::yield();
 			return;
 		}
-		LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap: new image to process");
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::correctPoseAndBootstrap: new image to process");
 
 		// do bootstrap
 		SRef<Image> view;
@@ -346,20 +354,20 @@ namespace MAPPING {
 			setBootstrapSatus(true);
 		}
 
-		LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap elapsed time = {} ms", processing_timer.elapsed() * 1000);
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::correctPoseAndBootstrap elapsed time = {} ms", processing_timer.elapsed() * 1000);
 	}
 
-    void PipelineMappingMultiProcessing::updateVisibility() {
+    void PipelineMappingMultiNoDropProcessing::updateVisibility() {
 
         boost::timer processing_timer;
         processing_timer.restart();
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility");
+//        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility");
 
         SRef<Frame> frame;
 
         // Frame to process
-        if (!m_dropBufferFrame.tryPop(frame)) {
+        if (!m_sharedBufferFrame.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -370,9 +378,6 @@ namespace MAPPING {
         {
             LOG_DEBUG("Update new keyframe in update task");
 			m_tracking->updateReferenceKeyframe(newKeyframe);
-            SRef<Frame> tmpFrame;
-            m_dropBufferAddKeyframe.tryPop(tmpFrame);
-            m_isStopMapping = false;
         }
 
 		// update visibility for the current frame
@@ -380,27 +385,29 @@ namespace MAPPING {
 		m_tracking->process(frame, displayImage);
 		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
         if (frame->getVisibility().size() < m_minWeightNeighbor) {
+            LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility tracking lost");
+            LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility elapsed time = {} ms", processing_timer.elapsed() * 1000);
+            stop();
             return;
-            LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility elapsed time = {} ms", processing_timer.elapsed() * 1000);
         }
 
         // send frame to mapping task
-        m_dropBufferAddKeyframe.push(frame);
+        m_sharedBufferAddKeyframe.push(frame);
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility elapsed time = {} ms", processing_timer.elapsed() * 1000);
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility elapsed time = {} ms", processing_timer.elapsed() * 1000);
     }
 
-    void PipelineMappingMultiProcessing::mapping() {
+    void PipelineMappingMultiNoDropProcessing::mapping() {
 
         boost::timer processing_timer;
         processing_timer.restart();
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::mapping");
+//        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::mapping");
 
         SRef<Frame> frame;
 
         // Images to process ?
-        if (m_isStopMapping || !m_dropBufferAddKeyframe.tryPop(frame)) {
+        if (!m_sharedBufferAddKeyframe.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -420,30 +427,28 @@ namespace MAPPING {
 			double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
 			// map pruning
 			std::vector<SRef<CloudPoint>> localMap;
-			m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
+            m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
 			int nbRemovedCP = m_mapManager->pointCloudPruning(localMap);
 			std::vector<SRef<Keyframe>> localKeyframes;
 			m_keyframesManager->getKeyframes(bestIdx, localKeyframes);
-			int nbRemovedKf = m_mapManager->keyframePruning(localKeyframes);
-			LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
+            int nbRemovedKf = m_mapManager->keyframePruning(localKeyframes);
+            LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
             m_countNewKeyframes++;
             m_dropBufferNewKeyframeLoop.push(keyframe);
         }
 
-        if (keyframe) {
-            m_isStopMapping = true;
+        if (keyframe)
             m_dropBufferNewKeyframe.push(keyframe);
-        }
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::mapping elapsed time = {} ms", processing_timer.elapsed() * 1000);
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::mapping elapsed time = {} ms", processing_timer.elapsed() * 1000);
     }
 
-    void PipelineMappingMultiProcessing::loopClosure() {
+    void PipelineMappingMultiNoDropProcessing::loopClosure() {
 
         boost::timer processing_timer;
         processing_timer.restart();
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::loopClosure");
+//        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::loopClosure");
 
         SRef<Keyframe> lastKeyframe;
 
@@ -484,15 +489,15 @@ namespace MAPPING {
             m_T_M_W = transform * m_T_M_W;
         }
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::loopClosure elapsed time = {} ms", processing_timer.elapsed() * 1000);
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::loopClosure elapsed time = {} ms", processing_timer.elapsed() * 1000);
     }
 
-    void PipelineMappingMultiProcessing::globalBundleAdjustment() {
+    void PipelineMappingMultiNoDropProcessing::globalBundleAdjustment() {
 
         boost::timer processing_timer;
         processing_timer.restart();
 
-//        LOG_DEBUG("PipelineMappingMultiProcessing::globalBundleAdjustment");
+//        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::globalBundleAdjustment");
 
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
@@ -539,15 +544,15 @@ namespace MAPPING {
             m_mapManager->saveToFile();
         }
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::globalBundleAdjustment elapsed time = {} ms", processing_timer.elapsed() * 1000);
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::globalBundleAdjustment elapsed time = {} ms", processing_timer.elapsed() * 1000);
     }
 
-    bool PipelineMappingMultiProcessing::isBootstrapFinished() const {
+    bool PipelineMappingMultiNoDropProcessing::isBootstrapFinished() const {
 
         return m_isBootstrapFinished;
     }
 
-    void PipelineMappingMultiProcessing::setBootstrapSatus(const bool status) {
+    void PipelineMappingMultiNoDropProcessing::setBootstrapSatus(const bool status) {
 
         LOG_DEBUG("Set bootstrap status to: {}", status);
 

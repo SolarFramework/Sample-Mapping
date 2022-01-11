@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef PIPELINEMAPPINGMULTIPROCESSING_H
-#define PIPELINEMAPPINGMULTIPROCESSING_H
+#ifndef PIPELINEMAPPINGMULTINODROPPROCESSING_H
+#define PIPELINEMAPPINGMULTINODROPPROCESSING_H
 
 #if _WIN32
-#ifdef SolARPipelineMappingMulti_API_DLLEXPORT
-#define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API __declspec(dllexport)
-#else // SolARPipelineMappingMulti_API_DLLEXPORT
-#define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API __declspec(dllimport)
-#endif //SolARPipelineMappingMulti_API_DLLEXPORT
+#ifdef SolARPipelineMappingMultiNoDrop_API_DLLEXPORT
+#define SOLARPIPELINE_MAPPING_MULTI_NODROP_EXPORT_API __declspec(dllexport)
+#else // SolARPipelineMappingMultiNoDrop_API_DLLEXPORT
+#define SOLARPIPELINE_MAPPING_MULTI_NODROP_EXPORT_API __declspec(dllimport)
+#endif //SolARPipelineMappingMultiNoDrop_API_DLLEXPORT
 #else //_WIN32
-#define SOLARPIPELINE_MAPPING_MULTI_EXPORT_API
+#define SOLARPIPELINE_MAPPING_MULTI_NODROP_EXPORT_API
 #endif //_WIN32
 
 #include "xpcf/component/ConfigurableBase.h"
 #include "xpcf/threading/DropBuffer.h"
+#include "xpcf/threading/SharedBuffer.h"
 #include "xpcf/threading/BaseTask.h"
 
 #include <mutex>  // For std::unique_lock
@@ -53,10 +54,13 @@ namespace SolAR {
 namespace PIPELINES {
 namespace MAPPING {
 
+#define BUFFER_SIZE_IMAGE 50
+#define BUFFER_SIZE_FRAME 50
+
     /**
-     * @class PipelineMappingMultiProcessing
-     * @brief Implementation of a mapping vision pipeline
-     * <TT>UUID: dc734eb4-fcc6-4178-8452-7429939f04bd</TT>
+     * @class PipelineMappingMultiNoDropProcessing
+     * @brief Implementation of a mapping vision pipeline multithreading no dropping images
+     * <TT>UUID: c1a30bbf-57a8-4ea3-83f5-28cc1d983f57</TT>
      *
      * @SolARComponentInjectablesBegin
      * @SolARComponentInjectable{SolAR::api::slam::IBootstrapper}
@@ -79,12 +83,12 @@ namespace MAPPING {
      *
      */
 
-    class SOLARPIPELINE_MAPPING_MULTI_EXPORT_API PipelineMappingMultiProcessing : public org::bcom::xpcf::ConfigurableBase,
+    class SOLARPIPELINE_MAPPING_MULTI_NODROP_EXPORT_API PipelineMappingMultiNoDropProcessing : public org::bcom::xpcf::ConfigurableBase,
             public api::pipeline::IMappingPipeline
     {
     public:
-        PipelineMappingMultiProcessing();
-        ~PipelineMappingMultiProcessing() override;
+        PipelineMappingMultiNoDropProcessing();
+        ~PipelineMappingMultiNoDropProcessing() override;
 
         /// @brief Method called when all component injections have been done
         void onInjected() override;
@@ -127,7 +131,7 @@ namespace MAPPING {
 
 	private:
 
-        /// @brief Correct pose and do bootstrap using an image and the associated pose
+		/// @brief Correct pose and do bootstrap using an image and the associated pose
 		/// This method must be called with successive pairs of (image, pose)
 		/// until the bootstrap process is finished (i.e. m_isBootstrapFinished is True)
 		void correctPoseAndBootstrap();
@@ -179,36 +183,35 @@ namespace MAPPING {
         SRef<api::loop::ILoopCorrector>						m_loopCorrector;
 		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
 
-        bool												m_isStopMapping;               // indicates if the mapping task is stopped
         datastructure::Transform3Df							m_T_M_W;               // 3D transformation matrix
         float												m_minWeightNeighbor, m_reprojErrorThreshold;
         int													m_countNewKeyframes;
 
         bool m_tasksStarted = false;    // Indicate if tasks are started
 
-        // Delegate tasks dedicated to asynchronous mapping processing
+        // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;
         xpcf::DelegateTask * m_featureExtractionTask = nullptr;
         xpcf::DelegateTask * m_updateVisibilityTask = nullptr;
         xpcf::DelegateTask * m_mappingTask = nullptr;
         xpcf::DelegateTask * m_loopClosureTask = nullptr;
 
-        // Drop buffers used by mapping processing
-        xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCapture;
-        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrame;
-        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameBootstrap;
-        xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;
-        xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframe;
-        xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframeLoop;        
+        // Buffers used by mapping processing        
+		xpcf::SharedBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>	m_sharedBufferCamImagePoseCapture{ BUFFER_SIZE_IMAGE };
+		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferFrame{ BUFFER_SIZE_FRAME };
+		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferFrameBootstrap{ BUFFER_SIZE_FRAME };
+		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferAddKeyframe{ 1 };
+        xpcf::DropBuffer<SRef<datastructure::Keyframe>>							m_dropBufferNewKeyframe;
+        xpcf::DropBuffer<SRef<datastructure::Keyframe>>							m_dropBufferNewKeyframeLoop; 
     };
 
 }
 }
 } // SolAR::PIPELINES::MAPPINGPIPELINE
 
-XPCF_DEFINE_COMPONENT_TRAITS(SolAR::PIPELINES::MAPPING::PipelineMappingMultiProcessing,
-                             "dc734eb4-fcc6-4178-8452-7429939f04bd",
-                             "PipelineMappingMultiProcessing",
-                             "PipelineMappingMultiProcessing implements api::pipeline::IMappingPipeline interface");
+XPCF_DEFINE_COMPONENT_TRAITS(SolAR::PIPELINES::MAPPING::PipelineMappingMultiNoDropProcessing,
+                             "c1a30bbf-57a8-4ea3-83f5-28cc1d983f57",
+                             "PipelineMappingMultiNoDropProcessing",
+                             "PipelineMappingMultiNoDropProcessing implements api::pipeline::IMappingPipeline interface");
 
-#endif // PIPELINEMAPPINGMULTIPROCESSING_H
+#endif // PIPELINEMAPPINGMULTINODROPPROCESSING_H

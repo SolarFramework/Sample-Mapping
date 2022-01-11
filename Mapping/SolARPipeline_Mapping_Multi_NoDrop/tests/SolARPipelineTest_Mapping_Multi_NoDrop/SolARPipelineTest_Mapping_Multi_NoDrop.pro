@@ -1,11 +1,12 @@
 ## remove Qt dependencies
+QMAKE_PROJECT_DEPTH = 0
 QT       -= core gui
 CONFIG -= qt
 
 QMAKE_PROJECT_DEPTH = 0
 
 ## global defintions : target lib name, version
-TARGET = SolARSample_Mapping_MapExtension_Mono
+TARGET = SolARPipelineTest_Mapping_Multi_NoDrop
 VERSION=0.11.0
 
 DEFINES += MYVERSION=$${VERSION}
@@ -14,36 +15,31 @@ CONFIG += console
 
 include(findremakenrules.pri)
 
+include(../../../../manualincludepath.pri)
+
 CONFIG(debug,debug|release) {
-	TARGETDEPLOYDIR = $${PWD}/../../bin/Debug
+    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
 
 CONFIG(release,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../../bin/Release
+    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Release
     DEFINES += _NDEBUG=1
     DEFINES += NDEBUG=1
 }
 
 DEPENDENCIESCONFIG = sharedlib install_recurse
 
-win32:CONFIG -= static
-win32:CONFIG += shared
-
-## Configuration for Visual Studio to install binaries and dependencies. Work also for QT Creator by replacing QMAKE_INSTALL
 PROJECTCONFIG = QTVS
 
 #NOTE : CONFIG as staticlib or sharedlib, DEPENDENCIESCONFIG as staticlib or sharedlib, QMAKE_TARGET.arch and PROJECTDEPLOYDIR MUST BE DEFINED BEFORE templatelibconfig.pri inclusion
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/templateappconfig.pri)))  # Shell_quote & shell_path required for visual on windows
 
-#DEFINES += BOOST_ALL_NO_LIB
-DEFINES += BOOST_ALL_DYN_LINK
-DEFINES += BOOST_AUTO_LINK_NOMANGLE
-DEFINES += BOOST_LOG_DYN_LINK
+HEADERS += \
 
 SOURCES += \
-    main.cpp
+    SolARPipelineTestMappingMultiNoDrop_main.cpp
 
 unix {
     LIBS += -ldl
@@ -56,44 +52,49 @@ linux {
 }
 
 macx {
+    DEFINES += _MACOS_TARGET_
     QMAKE_MAC_SDK= macosx
-    QMAKE_CXXFLAGS += -fasm-blocks -x objective-c++
+    QMAKE_CFLAGS += -mmacosx-version-min=10.7 -std=c11 #-x objective-c++
+    QMAKE_CXXFLAGS += -mmacosx-version-min=10.7 -std=c11 -std=c++11 -O3 -fPIC#-x objective-c++
+    QMAKE_LFLAGS += -mmacosx-version-min=10.7 -v -lstdc++
+    LIBS += -lstdc++ -lc -lpthread
 }
 
 win32 {
-    QMAKE_LFLAGS += /MACHINE:X64
+
     DEFINES += WIN64 UNICODE _UNICODE
     QMAKE_COMPILER_DEFINES += _WIN64
-
-    # Windows Kit (msvc2013 64)
-    LIBS += -L$$(WINDOWSSDKDIR)lib/winv6.3/um/x64 -lshell32 -lgdi32 -lComdlg32
-    INCLUDEPATH += $$(WINDOWSSDKDIR)lib/winv6.3/um/x64
+    QMAKE_CXXFLAGS += -wd4250 -wd4251 -wd4244 -wd4275
 }
 
-android {
-    ANDROID_ABIS="arm64-v8a"
-}
-
-configfile.path = $${TARGETDEPLOYDIR}/
-configfile.files = $$files($${PWD}/SolARSample_Mapping_MapExtension_Mono_conf.xml)
-INSTALLS += configfile
+config_files.path = $${TARGETDEPLOYDIR}
+config_files.files= $$files($${PWD}/SolARPipelineTest_Mapping_Multi_NoDrop_Producer_conf.xml)\
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_NoDrop_Viewer_conf.xml)\
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_NoDrop_Processing_conf.xml)
+INSTALLS += config_files
 
 linux {
   run_install.path = $${TARGETDEPLOYDIR}
-  run_install.files = $${PWD}/../../run.sh
+  run_install.files = $${PWD}/../../../../run.sh
   CONFIG(release,debug|release) {
-    run_install.extra = cp $$files($${PWD}/../../runRelease.sh) $${PWD}/../../run.sh
+    run_install.extra = cp $$files($${PWD}/../../../../runRelease.sh) $${PWD}/../../../../run.sh
   }
   CONFIG(debug,debug|release) {
-    run_install.extra = cp $$files($${PWD}/../../runDebug.sh) $${PWD}/../../run.sh
+    run_install.extra = cp $$files($${PWD}/../../../../runDebug.sh) $${PWD}/../../../../run.sh
   }
   INSTALLS += run_install
 }
 
 
-DISTFILES += \
-    SolARSample_Mapping_MapExtension_Mono_conf.xml \
+OTHER_FILES += \
     packagedependencies.txt
+
+DISTFILES += \
+    .gitignore \
+    SolARPipelineTest_Mapping_Multi_NoDrop_Producer_conf.xml \
+    SolARPipelineTest_Mapping_Multi_NoDrop_Viewer_conf.xml \
+    SolARPipelineTest_Mapping_Multi_NoDrop_Processing_conf.xml
 
 #NOTE : Must be placed at the end of the .pro
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/remaken_install_target.pri)))) # Shell_quote & shell_path required for visual on windows
+

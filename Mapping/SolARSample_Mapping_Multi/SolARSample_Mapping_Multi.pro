@@ -6,13 +6,15 @@ QMAKE_PROJECT_DEPTH = 0
 
 ## global defintions : target lib name, version
 TARGET = SolARSample_Mapping_Multi
-VERSION=0.10.0
+VERSION=0.11.0
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z
 CONFIG += console
 
 include(findremakenrules.pri)
+
+include(../../manualincludepath.pri)
 
 CONFIG(debug,debug|release) {
         TARGETDEPLOYDIR = $${PWD}/../../bin/Debug

@@ -17,6 +17,7 @@
 #include <boost/log/core.hpp>
 #include "xpcf/xpcf.h"
 #include "xpcf/threading/BaseTask.h"
+#include "xpcf/threading/SharedBuffer.h"
 #include "xpcf/threading/DropBuffer.h"
 #include "core/Log.h"
 #include "api/input/devices/IARDevice.h"
@@ -49,6 +50,8 @@ namespace xpcf  = org::bcom::xpcf;
 #define INDEX_USE_CAMERA 0
 #define NB_LOCALKEYFRAMES 10
 #define NB_NEWKEYFRAMES_LOOP 20
+#define BUFFER_SIZE_IMAGE 50
+#define BUFFER_SIZE_FRAME 50
 
 int main(int argc, char *argv[])
 {
@@ -141,20 +144,20 @@ int main(int argc, char *argv[])
 		};
 			
 		// buffers
-		xpcf::DropBuffer<std::pair<SRef<Image>, Transform3Df>>						m_dropBufferCamImagePoseCapture;
-		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferFrame;
-		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferFrameBootstrap;
-		xpcf::DropBuffer<SRef<Frame>>												m_dropBufferAddKeyframe;
+		xpcf::SharedBuffer<std::pair<SRef<Image>, Transform3Df>>					m_sharedBufferCamImagePoseCapture(BUFFER_SIZE_IMAGE);
+		xpcf::SharedBuffer<SRef<Frame>>												m_sharedBufferFrame(BUFFER_SIZE_FRAME);
+		xpcf::SharedBuffer<SRef<Frame>>												m_sharedBufferFrameBootstrap(BUFFER_SIZE_FRAME);
+		xpcf::SharedBuffer<SRef<Frame>>												m_sharedBufferAddKeyframe(1);
 		xpcf::DropBuffer<SRef<Keyframe>>											m_dropBufferNewKeyframe;
 		xpcf::DropBuffer<SRef<Keyframe>>											m_dropBufferNewKeyframeLoop;
-		xpcf::DropBuffer<SRef<Image>>												m_dropBufferDisplay;				
+		xpcf::SharedBuffer<SRef<Image>>												m_sharedBufferDisplay(BUFFER_SIZE_FRAME);
 
 		// variables
-		bool stop = false;								// is stop process?
+		bool stopCapture = false;						// stop due to captue error
+		bool forceStop = false;							// is stop process?
 		std::vector<Transform3Df> framePoses;			// frame poses to display		
-		bool isStopMapping = false;						// is stop mapping?
 		int countNewKeyframes = 0;						// number of keyframes to try loop detection
-		int count = 0;									// number of process frames
+		int nbFrameDisplay = 0;							// number of display frames
 		std::mutex m_mutexUseLocalMap;					
 		Transform3Df T_M_W = Transform3Df::Identity();	// Correct pose and Bootstrap
 		bool isFoundTransform = false;				
@@ -179,13 +182,13 @@ int main(int argc, char *argv[])
 		// bootstrap task
 		auto fnBootstrap = [&]() {
 			SRef<Frame> frame;
-			if (bootstrapOk || !m_dropBufferFrameBootstrap.tryPop(frame)) {
+			if (bootstrapOk || !m_sharedBufferFrameBootstrap.tryPop(frame)) {
 				xpcf::DelegateTask::yield();
 				return;
 			}
 			// find T_W_M
 			if (!isFoundTransform) {
-				m_dropBufferDisplay.push(frame->getView());
+				m_sharedBufferDisplay.push(frame->getView());
 				Transform3Df T_M_C;
 				if (fiducialMarkerPoseEstimator->estimate(frame->getView(), T_M_C) == FrameworkReturnCode::_SUCCESS) {
 					T_M_W = T_M_C * frame->getPose().inverse();
@@ -193,6 +196,8 @@ int main(int argc, char *argv[])
 				}
 				return;
 			}
+			// correct pose
+			frame->setPose(T_M_W * frame->getPose());
 			// do bootstrap
 			SRef<Image> view;
 			if (bootstrapper->process(frame, view) == FrameworkReturnCode::_SUCCESS) {
@@ -207,7 +212,7 @@ int main(int argc, char *argv[])
 				return;
 			}
 			overlay3D->draw(frame->getPose(), view);
-			m_dropBufferDisplay.push(view);
+			m_sharedBufferDisplay.push(view);
 		};	
 
 		// Camera image capture task
@@ -217,21 +222,20 @@ int main(int argc, char *argv[])
 			std::vector<Transform3Df> poses;
 			std::chrono::system_clock::time_point timestamp;
 			if (arDevice->getData(images, poses, timestamp) != FrameworkReturnCode::_SUCCESS) {
-				stop = true;
+				stopCapture = true;
+				xpcf::DelegateTask::yield();
 				return;
 			}
 			SRef<Image> image = images[INDEX_USE_CAMERA];
-			Transform3Df pose = poses[INDEX_USE_CAMERA];
-			// correct pose
-			pose = T_M_W * pose;
-			m_dropBufferCamImagePoseCapture.push(std::make_pair(image, pose));			
+			Transform3Df pose = poses[INDEX_USE_CAMERA];			
+			m_sharedBufferCamImagePoseCapture.push(std::make_pair(image, pose));
 		};
 
 		// Feature extraction task
 		auto fnExtraction = [&]()
 		{			
 			std::pair<SRef<Image>, Transform3Df> imagePose;
-			if (!m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
+			if (!m_sharedBufferCamImagePoseCapture.tryPop(imagePose)) {
 				xpcf::DelegateTask::yield();
 				return;
 			}
@@ -242,10 +246,13 @@ int main(int argc, char *argv[])
 			if (descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
 				undistortKeypoints->undistort(keypoints, undistortedKeypoints);
 				SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
-				if (bootstrapOk)
-					m_dropBufferFrame.push(frame);
+				if (bootstrapOk) {
+					// correct pose
+					frame->setPose(T_M_W * pose);
+					m_sharedBufferFrame.push(frame);
+				}
 				else
-					m_dropBufferFrameBootstrap.push(frame);
+					m_sharedBufferFrameBootstrap.push(frame);
 			}
 		};
 
@@ -253,7 +260,7 @@ int main(int argc, char *argv[])
 		auto fnUpdateVisibilities = [&]()
 		{			
 			SRef<Frame> frame;
-			if (!m_dropBufferFrame.tryPop(frame)) {
+			if (!m_sharedBufferFrame.tryPop(frame)) {
 				xpcf::DelegateTask::yield();
 				return;
 			}
@@ -263,9 +270,6 @@ int main(int argc, char *argv[])
 			{
 				LOG_DEBUG("Update new keyframe in update task");
 				tracking->updateReferenceKeyframe(newKeyframe);
-				SRef<Frame> tmpFrame;
-				m_dropBufferAddKeyframe.tryPop(tmpFrame);
-				isStopMapping = false;
 			}
 			framePoses.push_back(frame->getPose());
 			
@@ -275,22 +279,22 @@ int main(int argc, char *argv[])
 			overlay3D->draw(frame->getPose(), displayImage);
 			LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
 			if (frame->getVisibility().size() < minWeightNeighbor) {
-				stop = true;
+				forceStop = true;
 				return;
 			}
 
 			// send frame to mapping task
-			m_dropBufferAddKeyframe.push(frame);
+			m_sharedBufferAddKeyframe.push(frame);
 
 			// display
-			m_dropBufferDisplay.push(displayImage);			
+			m_sharedBufferDisplay.push(displayImage);
 		};
 
 		// Mapping task
 		auto fnMapping = [&]()
 		{			
 			SRef<Frame> frame;
-			if (isStopMapping || (!m_dropBufferAddKeyframe.tryPop(frame))) {
+			if (!m_sharedBufferAddKeyframe.tryPop(frame)) {
 				xpcf::DelegateTask::yield();
 				return;
 			}
@@ -319,7 +323,6 @@ int main(int argc, char *argv[])
 				m_dropBufferNewKeyframeLoop.push(keyframe);
 			}
 			if (keyframe) {
-				isStopMapping = true;
 				m_dropBufferNewKeyframe.push(keyframe);
 			}
 		};
@@ -383,20 +386,20 @@ int main(int argc, char *argv[])
 		// Start tracking
 		clock_t start, end;
 		start = clock();
-		while (!stop)
+		while ((!stopCapture || !m_sharedBufferCamImagePoseCapture.empty()) && !forceStop)
 		{
 			SRef<Image> displayImage;
-			if (!m_dropBufferDisplay.tryPop(displayImage)) {
+			if (!m_sharedBufferDisplay.tryPop(displayImage)) {
 				xpcf::DelegateTask::yield();
 				continue;
 			}
 			if (imageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP)
-				stop = true;
+				forceStop = true;				
 			if (bootstrapOk) {
 				if (!fnDisplay(framePoses))
-					stop = true;
-			}
-			++count;
+					forceStop = true;
+			}			
+			++nbFrameDisplay;
 		}		
 
 		// Stop tasks
@@ -411,8 +414,8 @@ int main(int argc, char *argv[])
 		end = clock();
 		double duration = double(end - start) / CLOCKS_PER_SEC;
 		printf("\n\nElasped time is %.2lf seconds.\n", duration);
-		printf("Number of processed frame per second : %8.2f\n", count / duration);
-
+		printf("Number of processed frame is %d.\n", nbFrameDisplay);
+		printf("Number of processed frame per second : %8.2f\n", nbFrameDisplay / duration);
 
 		// global bundle adjustment
 		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);

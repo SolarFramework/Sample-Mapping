@@ -6,7 +6,7 @@ QMAKE_PROJECT_DEPTH = 0
 
 ## global defintions : target lib name, version
 INSTALLSUBDIR = SolARBuild
-TARGET = SolARPipelineMappingMulti
+TARGET = SolARPipelineMappingMultiNoDrop
 FRAMEWORK = $${TARGET}
 VERSION=0.11.0
 
@@ -45,11 +45,11 @@ DEFINES += "_BCOM_SHARED=__declspec(dllexport)"
 INCLUDEPATH += interfaces/
 
 SOURCES += \
-    src/PipelineMappingMultiModule.cpp \
-    src/PipelineMappingMultiProcessing.cpp
+    src/PipelineMappingMultiNoDropModule.cpp \
+    src/PipelineMappingMultiNoDropProcessing.cpp
 
 HEADERS += \
-    interfaces/PipelineMappingMultiProcessing.h
+    interfaces/PipelineMappingMultiNoDropProcessing.h
 
 unix:!android {
     QMAKE_CXXFLAGS += -Wignored-qualifiers
@@ -98,7 +98,7 @@ OTHER_FILES += \
 DISTFILES += \
     LICENSE \
     README.md \
-    bcom-SolARPipelineMapping.pc.in \
+    bcom-SolARPipelineMappingNoDrop.pc.in \
     *.xml
 
 

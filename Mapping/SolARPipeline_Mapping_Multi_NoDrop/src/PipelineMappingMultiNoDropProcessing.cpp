@@ -313,7 +313,6 @@ namespace MAPPING {
 		if (m_descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb keypoints = {} / nb descriptors = {}",
                      keypoints.size(), descriptors->getNbDescriptors());
-			processing_timer.restart();
 			m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb undistortedKeypoints = {}",
                      undistortedKeypoints.size());

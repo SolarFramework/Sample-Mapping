@@ -303,7 +303,6 @@ namespace MAPPING {
 		std::vector<Keypoint> keypoints, undistortedKeypoints;
 		SRef<DescriptorBuffer> descriptors;
 		if (m_descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
-			processing_timer.restart();
 			m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
 			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
 			if (isBootstrapFinished())
@@ -369,8 +368,7 @@ namespace MAPPING {
         {
             LOG_DEBUG("Update new keyframe in update task");
 			m_tracking->updateReferenceKeyframe(newKeyframe);
-            SRef<Frame> tmpFrame;
-            m_dropBufferAddKeyframe.tryPop(tmpFrame);
+            m_dropBufferAddKeyframe.clear();
             m_isStopMapping = false;
         }
 
@@ -379,8 +377,9 @@ namespace MAPPING {
 		m_tracking->process(frame, displayImage);
 		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
         if (frame->getVisibility().size() < m_minWeightNeighbor) {
-            return;
-            LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility elapsed time = {} ms", processing_timer.elapsed() * 1000);
+			LOG_DEBUG("Tracking lost");
+			LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility elapsed time = {} ms", processing_timer.elapsed() * 1000);
+            return;            
         }
 
         // send frame to mapping task

@@ -198,8 +198,10 @@ int main(int argc, char ** argv)
         {
             // Create Mapping Pipeline component
             gMappingPipelineMulti = gXpcfComponentManager->resolve<pipeline::IMappingPipeline>();
-
             LOG_INFO("Mapping pipeline multithreads component created");
+			// init
+			if (gMappingPipelineMulti->init() != FrameworkReturnCode::_SUCCESS)
+				return -1;
         }
         else {
             LOG_ERROR("Failed to load the configuration file {}", config_file);

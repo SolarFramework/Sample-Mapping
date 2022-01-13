@@ -275,13 +275,13 @@ int main(int argc, char *argv[])
 			
 			// update visibility for the current frame
 			SRef<Image> displayImage;
-			tracking->process(frame, displayImage);
-			overlay3D->draw(frame->getPose(), displayImage);
-			LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
-			if (frame->getVisibility().size() < minWeightNeighbor) {
+			if (tracking->process(frame, displayImage) != FrameworkReturnCode::_SUCCESS) {
+				LOG_INFO("Tracking lost");
 				forceStop = true;
 				return;
 			}
+			LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
+			overlay3D->draw(frame->getPose(), displayImage);
 
 			// send frame to mapping task
 			m_sharedBufferAddKeyframe.push(frame);

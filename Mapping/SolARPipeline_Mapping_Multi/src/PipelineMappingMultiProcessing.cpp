@@ -110,9 +110,7 @@ namespace MAPPING {
     void PipelineMappingMultiProcessing::onInjected() {
 
         LOG_DEBUG("PipelineMappingMultiProcessing::onInjected");
-
         // Get properties
-        m_reprojErrorThreshold = m_mapManager->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
         m_minWeightNeighbor = m_mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
     }
 
@@ -374,13 +372,12 @@ namespace MAPPING {
 
 		// update visibility for the current frame
 		SRef<Image> displayImage;
-		m_tracking->process(frame, displayImage);
-		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
-        if (frame->getVisibility().size() < m_minWeightNeighbor) {
-			LOG_DEBUG("Tracking lost");
+		if (m_tracking->process(frame, displayImage) != FrameworkReturnCode::_SUCCESS){
+			LOG_INFO("PipelineMappingMultiProcessing::updateVisibility Tracking lost");
 			LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility elapsed time = {} ms", processing_timer.elapsed() * 1000);
             return;            
         }
+		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
 
         // send frame to mapping task
         m_dropBufferAddKeyframe.push(frame);

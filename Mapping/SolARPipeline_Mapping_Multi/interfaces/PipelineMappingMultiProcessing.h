@@ -181,7 +181,7 @@ namespace MAPPING {
 
         bool												m_isStopMapping;               // indicates if the mapping task is stopped
         datastructure::Transform3Df							m_T_M_W;               // 3D transformation matrix
-        float												m_minWeightNeighbor, m_reprojErrorThreshold;
+		float												m_minWeightNeighbor;
         int													m_countNewKeyframes;
 
         bool m_tasksStarted = false;    // Indicate if tasks are started

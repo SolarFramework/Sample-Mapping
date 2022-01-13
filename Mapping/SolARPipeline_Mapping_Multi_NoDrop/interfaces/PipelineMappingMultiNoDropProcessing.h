@@ -184,7 +184,7 @@ namespace MAPPING {
 		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
 
         datastructure::Transform3Df							m_T_M_W;               // 3D transformation matrix
-        float												m_minWeightNeighbor, m_reprojErrorThreshold;
+        float												m_minWeightNeighbor;
         int													m_countNewKeyframes;
 
         bool m_tasksStarted = false;    // Indicate if tasks are started

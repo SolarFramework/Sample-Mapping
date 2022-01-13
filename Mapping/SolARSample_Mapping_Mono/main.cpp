@@ -213,10 +213,11 @@ int main(int argc, char *argv[])
 			}
 			else {
 				// update visibility for the current frame				
-				tracking->process(frame, displayImage);
-				LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
-				if (frame->getVisibility().size() < minWeightNeighbor)
+				if (tracking->process(frame, displayImage) != FrameworkReturnCode::_SUCCESS) {
+					LOG_INFO("Tracking lost");
 					break;
+				}
+				LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
 
 				// mapping
 				SRef<Keyframe> keyframe;

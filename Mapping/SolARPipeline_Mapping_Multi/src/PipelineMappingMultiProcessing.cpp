@@ -190,6 +190,21 @@ namespace MAPPING {
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
                   m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
 
+        if (m_mapUpdatePipeline != nullptr){
+
+            LOG_DEBUG("Set camera parameters for the map update service");
+
+            try {
+                if (m_mapUpdatePipeline->setCameraParameters(cameraParams) != FrameworkReturnCode::_SUCCESS) {
+                    LOG_ERROR("Error while setting camera parameters for the map update service");
+                    return FrameworkReturnCode::_ERROR_;
+                }
+            }  catch (const std::exception &e) {
+                LOG_ERROR("Exception raised during remote request to the map update service: {}", e.what());
+                return FrameworkReturnCode::_ERROR_;
+            }
+        }
+
         return FrameworkReturnCode::_SUCCESS;
     }
 
@@ -366,7 +381,9 @@ namespace MAPPING {
         {
             LOG_DEBUG("Update new keyframe in update task");
 			m_tracking->updateReferenceKeyframe(newKeyframe);
-            m_dropBufferAddKeyframe.clear();
+//            m_dropBufferAddKeyframe.clear();
+            SRef<Frame> tmpFrame;
+            m_dropBufferAddKeyframe.tryPop(tmpFrame);
             m_isStopMapping = false;
         }
 

@@ -184,6 +184,9 @@ namespace MAPPING {
 		float												m_minWeightNeighbor;
         int													m_countNewKeyframes;
 
+        bool m_init = false;            // Indicate if initialization has been made
+        bool m_cameraOK = false;        // Indicate if camera parameters has been set
+        bool m_started = false;         // Indicate if pipeline il started
         bool m_tasksStarted = false;    // Indicate if tasks are started
 
         // Delegate tasks dedicated to asynchronous mapping processing

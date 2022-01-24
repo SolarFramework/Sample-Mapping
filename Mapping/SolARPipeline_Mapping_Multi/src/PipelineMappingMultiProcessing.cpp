@@ -149,15 +149,12 @@ namespace MAPPING {
             }  catch (const std::exception &e) {
                 LOG_ERROR("Exception raised during remote request to the map update pipeline: {}", e.what());
                 return FrameworkReturnCode::_ERROR_;
-            }
-
-            m_init = true;
+            }            
         }
         else {
             LOG_ERROR("Map Update pipeline not defined");
-            return FrameworkReturnCode::_ERROR_;
         }
-
+		m_init = true;
         return FrameworkReturnCode::_SUCCESS;
     }
 
@@ -243,36 +240,28 @@ namespace MAPPING {
             m_dropBufferNewKeyframe.clear();
             m_dropBufferNewKeyframeLoop.clear();
 
-            // Check members initialization
-            if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)) {
 
-                LOG_DEBUG("Start remote map update pipeline");
+			if (m_mapUpdatePipeline) {
+				LOG_DEBUG("Start remote map update pipeline");
+				if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Cannot start Map Update pipeline");
+					return FrameworkReturnCode::_ERROR_;
+				}
+			}
 
-                if (m_mapUpdatePipeline->start() == FrameworkReturnCode::_SUCCESS) {
+			if (!m_tasksStarted) {
+				LOG_DEBUG("Start processing tasks");
 
-                    if (!m_tasksStarted) {
-                        LOG_DEBUG("Start processing tasks");
+				m_bootstrapTask->start();
+				m_featureExtractionTask->start();
+				m_updateVisibilityTask->start();
+				m_mappingTask->start();
+				m_loopClosureTask->start();
 
-                        m_bootstrapTask->start();
-                        m_featureExtractionTask->start();
-                        m_updateVisibilityTask->start();
-                        m_mappingTask->start();
-                        m_loopClosureTask->start();
+				m_tasksStarted = true;
+			}
 
-                        m_tasksStarted = true;
-                    }
-
-                    m_started = true;
-                }
-                else {
-                    LOG_ERROR("Cannot start Map Update pipeline");
-                    return FrameworkReturnCode::_ERROR_;
-                }
-            }
-            else {
-                LOG_DEBUG("Camera parameters and/or fiducial marker description not set");
-                return FrameworkReturnCode::_ERROR_;
-            }
+			m_started = true;
         }
         else {
             LOG_INFO("Pipeline already started");
@@ -352,7 +341,7 @@ namespace MAPPING {
     FrameworkReturnCode PipelineMappingMultiProcessing::getDataForVisualization(std::vector<SRef<CloudPoint>> & outputPointClouds,
                                                 std::vector<Transform3Df> & keyframePoses) const {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::getDataForVisualization");
+        //LOG_DEBUG("PipelineMappingMultiProcessing::getDataForVisualization");
 
         if (isBootstrapFinished()) {
 

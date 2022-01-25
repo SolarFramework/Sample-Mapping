@@ -233,13 +233,24 @@ namespace MAPPING {
 
             LOG_DEBUG("Empty buffers");
 
+// Temporaire en attendant le fix du "clear"
+            std::pair<SRef<Image>, Transform3Df> imagePose;
+            m_dropBufferCamImagePoseCapture.tryPop(imagePose);
+            SRef<Frame> frame;
+            m_dropBufferFrame.tryPop(frame);
+            m_dropBufferFrameBootstrap.tryPop(frame);
+            m_dropBufferAddKeyframe.tryPop(frame);
+            SRef<Keyframe> keyframe;
+            m_dropBufferNewKeyframe.tryPop(keyframe);
+            m_dropBufferNewKeyframeLoop.tryPop(keyframe);
+/*
             m_dropBufferCamImagePoseCapture.clear();
             m_dropBufferFrame.clear();
             m_dropBufferFrameBootstrap.clear();
             m_dropBufferAddKeyframe.clear();
             m_dropBufferNewKeyframe.clear();
             m_dropBufferNewKeyframeLoop.clear();
-
+*/
 
 			if (m_mapUpdatePipeline) {
 				LOG_DEBUG("Start remote map update pipeline");
@@ -252,19 +263,20 @@ namespace MAPPING {
 			if (!m_tasksStarted) {
 				LOG_DEBUG("Start processing tasks");
 
-				m_bootstrapTask->start();
-				m_featureExtractionTask->start();
-				m_updateVisibilityTask->start();
-				m_mappingTask->start();
-				m_loopClosureTask->start();
+                m_bootstrapTask->start();
+                m_featureExtractionTask->start();
+                m_updateVisibilityTask->start();
+                m_mappingTask->start();
+                m_loopClosureTask->start();
 
-				m_tasksStarted = true;
-			}
+                m_tasksStarted = true;
+            }
 
 			m_started = true;
         }
         else {
-            LOG_INFO("Pipeline already started");
+            LOG_ERROR("Pipeline already started");
+            return FrameworkReturnCode::_ERROR_;
         }
 
         return FrameworkReturnCode::_SUCCESS;
@@ -286,8 +298,6 @@ namespace MAPPING {
 
         if (m_started) {
 
-            m_started = false;
-
             if (m_tasksStarted) {
                 LOG_DEBUG("Stop processing tasks");
 
@@ -304,6 +314,8 @@ namespace MAPPING {
                 LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
                 globalBundleAdjustment();
             }
+
+            m_started = false;
         }
         else {
             LOG_INFO("Pipeline already stopped");

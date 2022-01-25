@@ -154,7 +154,9 @@ namespace MAPPING {
         else {
             LOG_ERROR("Map Update pipeline not defined");
         }
+
 		m_init = true;
+		
         return FrameworkReturnCode::_SUCCESS;
     }
 
@@ -326,6 +328,8 @@ namespace MAPPING {
 
     FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
 
+        LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
+
         if (!m_init) {
             LOG_ERROR("Pipeline has not been initialized");
             return FrameworkReturnCode::_ERROR_;
@@ -341,12 +345,14 @@ namespace MAPPING {
             return FrameworkReturnCode::_ERROR_;
         }
 
-        LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
         // Correct pose after loop detection
         Transform3Df poseCorrected = m_T_M_W * pose;
+
 		// Send image and corrected pose to process
         m_dropBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
+
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
+
         return FrameworkReturnCode::_SUCCESS;
     }
 

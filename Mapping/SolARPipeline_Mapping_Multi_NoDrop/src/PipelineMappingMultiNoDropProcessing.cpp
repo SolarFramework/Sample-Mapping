@@ -310,6 +310,13 @@ namespace MAPPING {
                 m_tasksStarted = false;
             }
 
+            if (m_mapUpdatePipeline) {
+                LOG_DEBUG("Stop remote map update pipeline");
+                if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
+                    LOG_ERROR("Cannot stop Map Update pipeline");
+                }
+            }
+
             m_started = false;
         }
         else {

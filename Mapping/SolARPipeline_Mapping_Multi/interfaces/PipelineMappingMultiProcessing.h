@@ -48,6 +48,7 @@
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
 #include "api/pipeline/IMapUpdatePipeline.h"
+#include "api/pipeline/IRelocalizationPipeline.h"
 
 namespace SolAR {
 namespace PIPELINES {
@@ -174,6 +175,7 @@ namespace MAPPING {
 		SRef<api::storage::ICovisibilityGraphManager>		m_covisibilityGraphManager;
 		SRef<api::storage::IMapManager>						m_mapManager;
         SRef<api::pipeline::IMapUpdatePipeline>				m_mapUpdatePipeline;
+        SRef<api::pipeline::IRelocalizationPipeline>		m_relocPipeline;
         SRef<api::features::IDescriptorsExtractorFromImage>	m_descriptorExtractor;
         SRef<api::loop::ILoopClosureDetector>				m_loopDetector;
         SRef<api::loop::ILoopCorrector>						m_loopCorrector;

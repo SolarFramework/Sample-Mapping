@@ -45,6 +45,7 @@ namespace MAPPING {
             declareInjectable<api::slam::ITracking>(m_tracking);
             declareInjectable<api::slam::IMapping>(m_mapping);
             declareInjectable<api::pipeline::IMapUpdatePipeline>(m_mapUpdatePipeline, true);
+            declareInjectable<api::pipeline::IRelocalizationPipeline>(m_relocPipeline, true);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
 			declareInjectable<api::storage::ICovisibilityGraphManager>(m_covisibilityGraphManager);
@@ -154,6 +155,28 @@ namespace MAPPING {
         else {
             LOG_ERROR("Map Update pipeline not defined");
         }
+
+		if (m_relocPipeline != nullptr) {
+
+			LOG_DEBUG("Relocalization pipeline URL = {}",
+				m_relocPipeline->bindTo<xpcf::IConfigurable>()->getProperty("channelUrl")->getStringValue());
+
+			LOG_DEBUG("Initialize the remote reloc pipeline");
+
+			try {
+				if (m_relocPipeline->init() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Error while initializing the remote reloc pipeline");
+					return FrameworkReturnCode::_ERROR_;
+				}
+			}
+			catch (const std::exception &e) {
+				LOG_ERROR("Exception raised during remote request to the reloc pipeline: {}", e.what());
+				return FrameworkReturnCode::_ERROR_;
+			}
+		}
+		else {
+			LOG_ERROR("Reloc pipeline not defined");
+		}
 
 		m_init = true;
 		
@@ -434,6 +457,44 @@ namespace MAPPING {
 			return;
 		}
 		LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap: new image to process");
+
+		if (m_mapUpdatePipeline) {
+			// try to get init map from map update service
+			LOG_INFO("Try get submap of map update");
+			SRef<Map> map;
+			if (m_mapUpdatePipeline->getSubmapRequest(frame, map) == FrameworkReturnCode::_SUCCESS) {
+				m_mapManager->setMap(map);
+				SRef<Keyframe> keyframe;
+				m_keyframesManager->getKeyframe(0, keyframe);
+				m_tracking->updateReferenceKeyframe(keyframe);
+				LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
+				LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
+				setBootstrapSatus(true);
+				return;
+			}			
+			else {
+				LOG_INFO("Cannot get map");
+			}
+		}
+
+		//if (m_relocPipeline) {
+		//	// try to get init map from reloc service
+		//	LOG_INFO("Try get map of reloc");			
+		//	SRef<Map> map;
+		//	if (m_relocPipeline->getMapRequest(map) == FrameworkReturnCode::_SUCCESS) {
+		//		m_mapManager->setMap(map);
+		//		SRef<Keyframe> keyframe;
+		//		m_keyframesManager->getKeyframe(0, keyframe);
+		//		m_tracking->updateReferenceKeyframe(keyframe);
+		//		LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
+		//		LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
+		//		setBootstrapSatus(true);
+		//		return;
+		//	}
+		//	else {
+		//		LOG_INFO("Cannot get map");
+		//	}
+		//}
 
 		// do bootstrap
 		SRef<Image> view;

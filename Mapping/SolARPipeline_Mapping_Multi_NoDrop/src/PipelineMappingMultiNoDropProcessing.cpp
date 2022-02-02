@@ -233,15 +233,13 @@ namespace MAPPING {
 
             LOG_DEBUG("Empty buffers");
 
-// Temporaire en attendant le fix du "clear"
-/*
             m_sharedBufferCamImagePoseCapture.clear();
             m_sharedBufferFrame.clear();
             m_sharedBufferFrameBootstrap.clear();
             m_sharedBufferAddKeyframe.clear();
             m_dropBufferNewKeyframe.clear();
             m_dropBufferNewKeyframeLoop.clear();
-*/
+
             if (m_mapUpdatePipeline) {
                 LOG_DEBUG("Start remote map update pipeline");
                 if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {

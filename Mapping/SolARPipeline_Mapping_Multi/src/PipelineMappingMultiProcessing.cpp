@@ -224,11 +224,14 @@ namespace MAPPING {
 
 // Initialiser la map a partir de Map Update ???
             if (m_mapManager != nullptr) {
+/*
 				SRef<Map> map = xpcf::utils::make_shared<Map>();
 				SRef<CoordinateSystem> coordinateSystem;
 				map->getCoordinateSystem(coordinateSystem);
 				coordinateSystem->setParentTransform(Transform3Df::Identity());
                 m_mapManager->setMap(map);
+*/
+                m_mapManager->setMap(xpcf::utils::make_shared<Map>());
             }
 
             m_T_M_W = Transform3Df::Identity();
@@ -239,26 +242,14 @@ namespace MAPPING {
 
             LOG_DEBUG("Empty buffers");
 
-// Temporaire en attendant le fix du "clear"
-            std::pair<SRef<Image>, Transform3Df> imagePose;
-            m_dropBufferCamImagePoseCapture.tryPop(imagePose);
-            SRef<Frame> frame;
-            m_dropBufferFrame.tryPop(frame);
-            m_dropBufferFrameBootstrap.tryPop(frame);
-            m_dropBufferAddKeyframe.tryPop(frame);
-            SRef<Keyframe> keyframe;
-            m_dropBufferNewKeyframe.tryPop(keyframe);
-            m_dropBufferNewKeyframeLoop.tryPop(keyframe);
-/*
             m_dropBufferCamImagePoseCapture.clear();
             m_dropBufferFrame.clear();
             m_dropBufferFrameBootstrap.clear();
             m_dropBufferAddKeyframe.clear();
             m_dropBufferNewKeyframe.clear();
             m_dropBufferNewKeyframeLoop.clear();
-*/
 
-			if (m_mapUpdatePipeline) {
+            if (m_mapUpdatePipeline) {
 				LOG_DEBUG("Start remote map update pipeline");
 				if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {
 					LOG_ERROR("Cannot start Map Update pipeline");

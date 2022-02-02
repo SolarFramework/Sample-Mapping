@@ -224,11 +224,7 @@ namespace MAPPING {
 
 // Initialiser la map a partir de Map Update ???
             if (m_mapManager != nullptr) {
-				SRef<Map> map = xpcf::utils::make_shared<Map>();
-				SRef<CoordinateSystem> coordinateSystem;
-				map->getCoordinateSystem(coordinateSystem);
-				coordinateSystem->setParentTransform(Transform3Df::Identity());
-                m_mapManager->setMap(map);
+                m_mapManager->setMap(xpcf::utils::make_shared<Map>());
             }
 
             m_T_M_W = Transform3Df::Identity();

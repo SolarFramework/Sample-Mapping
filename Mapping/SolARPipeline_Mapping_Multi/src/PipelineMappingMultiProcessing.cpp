@@ -276,8 +276,7 @@ namespace MAPPING {
 			m_started = true;
         }
         else {
-            LOG_ERROR("Pipeline already started");
-            return FrameworkReturnCode::_ERROR_;
+            LOG_WARNING("Pipeline already started");
         }
 
         return FrameworkReturnCode::_SUCCESS;
@@ -521,7 +520,7 @@ namespace MAPPING {
 				bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
 			bestIdxToOptimize.push_back(keyframe->getId());
 			LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
-			double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
+            double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdxToOptimize);
 			// map pruning
 			std::vector<SRef<CloudPoint>> localMap;
 			m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
@@ -600,9 +599,12 @@ namespace MAPPING {
 
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+        LOG_INFO("Global BA done");
         // Map pruning
-		m_mapManager->pointCloudPruning();
-		m_mapManager->keyframePruning();
+        int nbCpPruning = m_mapManager->pointCloudPruning();
+        LOG_INFO("Nb of pruning cloud points: {}", nbCpPruning);
+        int nbKfPruning = m_mapManager->keyframePruning();
+        LOG_INFO("Nb of pruning keyframes: {}", nbKfPruning);
         LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 

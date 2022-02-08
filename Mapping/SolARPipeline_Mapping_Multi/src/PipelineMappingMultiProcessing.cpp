@@ -309,7 +309,7 @@ namespace MAPPING {
 
     FrameworkReturnCode PipelineMappingMultiProcessing::stop() {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::stop");
+        LOG_INFO("PipelineMappingMultiProcessing::stop");
 
         if (!m_init) {
             LOG_ERROR("Pipeline has not been initialized");
@@ -322,7 +322,7 @@ namespace MAPPING {
         }
 
         if (m_started) {
-
+			m_started = false;
             if (m_tasksStarted) {
                 LOG_DEBUG("Stop processing tasks");
 
@@ -336,23 +336,21 @@ namespace MAPPING {
             }
 
             if (isBootstrapFinished()){
-                LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
+				LOG_INFO("Bundle adjustment, map pruning and global map udate");
                 globalBundleAdjustment();
             }
 
             if (m_mapUpdatePipeline) {
-                LOG_DEBUG("Stop remote map update pipeline");
+				LOG_INFO("Stop remote map update pipeline");
                 if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
                     LOG_ERROR("Cannot stop Map Update pipeline");
                 }
-            }
-
-            m_started = false;
+            }            
         }
         else {
             LOG_INFO("Pipeline already stopped");
         }
-
+		LOG_INFO("Stop done!");
         return FrameworkReturnCode::_SUCCESS;
     }
 
@@ -423,7 +421,7 @@ namespace MAPPING {
 
 		std::pair<SRef<Image>, Transform3Df> imagePose;
 
-		if (!m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
+		if (!m_started || !m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
 			xpcf::DelegateTask::yield();
 			return;
 		}
@@ -452,30 +450,30 @@ namespace MAPPING {
 		SRef<Frame> frame;
 
 		// Try to get next (image, pose) if bootstrap is not finished
-		if (m_isBootstrapFinished || !m_dropBufferFrameBootstrap.tryPop(frame)) {
+		if (!m_started || m_isBootstrapFinished || !m_dropBufferFrameBootstrap.tryPop(frame)) {
 			xpcf::DelegateTask::yield();
 			return;
 		}
 		LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap: new image to process");
 
-		if (m_mapUpdatePipeline) {
-			// try to get init map from map update service
-			LOG_INFO("Try get submap of map update");
-			SRef<Map> map;
-			if (m_mapUpdatePipeline->getSubmapRequest(frame, map) == FrameworkReturnCode::_SUCCESS) {
-				m_mapManager->setMap(map);
-				SRef<Keyframe> keyframe;
-				m_keyframesManager->getKeyframe(0, keyframe);
-				m_tracking->updateReferenceKeyframe(keyframe);
-				LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
-				LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
-				setBootstrapSatus(true);
-				return;
-			}			
-			else {
-				LOG_INFO("Cannot get map");
-			}
-		}
+		//if (m_mapUpdatePipeline) {
+		//	// try to get init map from map update service
+		//	LOG_INFO("Try get submap of map update");
+		//	SRef<Map> map;
+		//	if (m_mapUpdatePipeline->getSubmapRequest(frame, map) == FrameworkReturnCode::_SUCCESS) {
+		//		m_mapManager->setMap(map);
+		//		SRef<Keyframe> keyframe;
+		//		m_keyframesManager->getKeyframe(0, keyframe);
+		//		m_tracking->updateReferenceKeyframe(keyframe);
+		//		LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
+		//		LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
+		//		setBootstrapSatus(true);
+		//		return;
+		//	}			
+		//	else {
+		//		LOG_INFO("Cannot get map");
+		//	}
+		//}
 
 		//if (m_relocPipeline) {
 		//	// try to get init map from reloc service
@@ -524,7 +522,7 @@ namespace MAPPING {
         SRef<Frame> frame;
 
         // Frame to process
-        if (!m_dropBufferFrame.tryPop(frame)) {
+        if (!m_started || !m_dropBufferFrame.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -566,7 +564,7 @@ namespace MAPPING {
         SRef<Frame> frame;
 
         // Images to process ?
-        if (m_isStopMapping || !m_dropBufferAddKeyframe.tryPop(frame)) {
+        if (!m_started || m_isStopMapping || !m_dropBufferAddKeyframe.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -613,7 +611,7 @@ namespace MAPPING {
 
         SRef<Keyframe> lastKeyframe;
 
-        if ((m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) ||
+        if (!m_started || (m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) ||
             !m_dropBufferNewKeyframeLoop.tryPop(lastKeyframe))
         {
             xpcf::DelegateTask::yield();
@@ -661,10 +659,14 @@ namespace MAPPING {
 //        LOG_DEBUG("PipelineMappingMultiProcessing::globalBundleAdjustment");
 
         // Global bundle adjustment
-        m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+		LOG_INFO("Before BA");
+        double error = m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+		LOG_INFO("After BA: {}", error);
         // Map pruning
-		m_mapManager->pointCloudPruning();
-		m_mapManager->keyframePruning();
+		int nbCpPruning = m_mapManager->pointCloudPruning();
+		LOG_INFO("Nb of pruning cloud points: {}", nbCpPruning);
+		int nbKfPruning = m_mapManager->keyframePruning();
+		LOG_INFO("Nb of pruning keyframes: {}", nbKfPruning);
         LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 

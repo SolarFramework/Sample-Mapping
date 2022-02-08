@@ -51,6 +51,11 @@ SOURCES += \
 HEADERS += \
     interfaces/PipelineMappingMultiNoDropProcessing.h
 
+unix {
+    # Avoids adding install steps manually. To be commented to have a better control over them.
+    QMAKE_POST_LINK += "make install"
+}
+
 unix:!android {
     QMAKE_CXXFLAGS += -Wignored-qualifiers
 #    QMAKE_LINK=clang++

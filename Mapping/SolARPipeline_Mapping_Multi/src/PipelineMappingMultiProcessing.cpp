@@ -297,7 +297,7 @@ namespace MAPPING {
         }
 
         if (m_started) {
-
+			m_started = false;
             if (m_tasksStarted) {
                 LOG_DEBUG("Stop processing tasks");
 
@@ -320,9 +320,7 @@ namespace MAPPING {
                 if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
                     LOG_ERROR("Cannot stop Map Update pipeline");
                 }
-            }
-
-            m_started = false;
+            }            
         }
         else {
             LOG_INFO("Pipeline already stopped");

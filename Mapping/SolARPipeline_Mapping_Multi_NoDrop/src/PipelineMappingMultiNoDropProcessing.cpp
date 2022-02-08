@@ -277,7 +277,7 @@ namespace MAPPING {
         }
 
         if (m_started) {
-
+			m_started = false;
             if (isBootstrapFinished()){
                 LOG_DEBUG("Wait until all images have been processed...");
                 while (!m_sharedBufferCamImagePoseCapture.empty()){
@@ -305,9 +305,7 @@ namespace MAPPING {
                 if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
                     LOG_ERROR("Cannot stop Map Update pipeline");
                 }
-            }
-
-            m_started = false;
+            }            
         }
         else {
             LOG_INFO("Pipeline already stopped");

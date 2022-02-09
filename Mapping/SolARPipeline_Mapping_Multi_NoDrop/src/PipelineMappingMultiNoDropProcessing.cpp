@@ -233,15 +233,6 @@ namespace MAPPING {
 
             LOG_DEBUG("Empty buffers");
 
-// Temporaire en attendant le fix du "clear"
-/*
-            m_sharedBufferCamImagePoseCapture.clear();
-            m_sharedBufferFrame.clear();
-            m_sharedBufferFrameBootstrap.clear();
-            m_sharedBufferAddKeyframe.clear();
-            m_dropBufferNewKeyframe.clear();
-            m_dropBufferNewKeyframeLoop.clear();
-*/
             if (m_mapUpdatePipeline) {
                 LOG_DEBUG("Start remote map update pipeline");
                 if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {
@@ -265,8 +256,7 @@ namespace MAPPING {
             m_started = true;
         }
         else {
-            LOG_ERROR("Pipeline already started");
-            return FrameworkReturnCode::_ERROR_;
+            LOG_WARNING("Pipeline already started");
         }
 
         return FrameworkReturnCode::_SUCCESS;
@@ -287,7 +277,7 @@ namespace MAPPING {
         }
 
         if (m_started) {
-
+			m_started = false;
             if (isBootstrapFinished()){
                 LOG_DEBUG("Wait until all images have been processed...");
                 while (!m_sharedBufferCamImagePoseCapture.empty()){
@@ -315,9 +305,7 @@ namespace MAPPING {
                 if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
                     LOG_ERROR("Cannot stop Map Update pipeline");
                 }
-            }
-
-            m_started = false;
+            }            
         }
         else {
             LOG_INFO("Pipeline already stopped");
@@ -515,7 +503,7 @@ namespace MAPPING {
 				bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
 			bestIdxToOptimize.push_back(keyframe->getId());
 			LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
-			double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
+            double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdxToOptimize);
 			// map pruning
 			std::vector<SRef<CloudPoint>> localMap;
             m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);

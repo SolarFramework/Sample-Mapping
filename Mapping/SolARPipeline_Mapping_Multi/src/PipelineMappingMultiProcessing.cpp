@@ -615,7 +615,7 @@ namespace MAPPING {
             xpcf::DelegateTask::yield();
             return;
         }
-
+		std::unique_lock<std::mutex> lock(m_mutexBA);
         SRef<Keyframe> detectedLoopKeyframe;
         Transform3Df sim3Transform;
         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
@@ -655,7 +655,7 @@ namespace MAPPING {
         processing_timer.restart();
 
 //        LOG_DEBUG("PipelineMappingMultiProcessing::globalBundleAdjustment");
-
+		std::unique_lock<std::mutex> lock(m_mutexBA);
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
         LOG_INFO("Global BA done");

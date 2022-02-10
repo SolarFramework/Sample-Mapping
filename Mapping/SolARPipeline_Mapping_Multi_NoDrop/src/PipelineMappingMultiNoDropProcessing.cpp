@@ -528,7 +528,7 @@ namespace MAPPING {
         processing_timer.restart();
 
 //        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::loopClosure");
-
+		std::unique_lock<std::mutex> lock(m_mutexBA);
         SRef<Keyframe> lastKeyframe;
 
         if ((m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) ||
@@ -577,7 +577,7 @@ namespace MAPPING {
         processing_timer.restart();
 
 //        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::globalBundleAdjustment");
-
+		std::unique_lock<std::mutex> lock(m_mutexBA);
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
         // Map pruning

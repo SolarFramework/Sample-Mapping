@@ -278,14 +278,16 @@ namespace MAPPING {
 
         if (m_started) {
 			m_started = false;
-            if (isBootstrapFinished()){
-                LOG_DEBUG("Wait until all images have been processed...");
-                while (!m_sharedBufferCamImagePoseCapture.empty()){
-                   boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
-                }
 
-                LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
-                globalBundleAdjustment();
+            LOG_DEBUG("Wait until all images have been processed...");
+            while ((!m_sharedBufferCamImagePoseCapture.empty())
+               || (!m_sharedBufferFrame.empty())
+               || (!m_sharedBufferFrameBootstrap.empty())
+               || (!m_sharedBufferAddKeyframe.empty())
+               || (!m_dropBufferNewKeyframe.empty())
+               || (!m_dropBufferNewKeyframeLoop.empty()))
+            {
+               boost::this_thread::sleep_for(boost::chrono::milliseconds(50));
             }
 
             if (m_tasksStarted) {
@@ -298,6 +300,11 @@ namespace MAPPING {
                 m_bootstrapTask->stop();
 
                 m_tasksStarted = false;
+            }
+
+            if (isBootstrapFinished()){
+                LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
+                globalBundleAdjustment();
             }
 
             if (m_mapUpdatePipeline) {

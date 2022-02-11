@@ -284,6 +284,14 @@ namespace MAPPING {
 				}
 			}
 
+			if (m_relocPipeline) {
+				LOG_DEBUG("Start remote relocalization pipeline");
+				if (m_relocPipeline->start() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Cannot start relocalization pipeline");
+					return FrameworkReturnCode::_ERROR_;
+				}
+			}
+
 			if (!m_tasksStarted) {
 				LOG_DEBUG("Start processing tasks");
 
@@ -343,7 +351,14 @@ namespace MAPPING {
                 if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
                     LOG_ERROR("Cannot stop Map Update pipeline");
                 }
-            }            
+            }
+
+			if (m_relocPipeline) {
+				LOG_INFO("Stop remote relocalization pipeline");
+				if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Cannot stop relocalization pipeline");
+				}
+			}
         }
         else {
             LOG_INFO("Pipeline already stopped");
@@ -454,43 +469,24 @@ namespace MAPPING {
 		}
 		LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap: new image to process");
 
-		//if (m_mapUpdatePipeline) {
-		//	// try to get init map from map update service
-		//	LOG_INFO("Try get submap of map update");
-		//	SRef<Map> map;
-		//	if (m_mapUpdatePipeline->getSubmapRequest(frame, map) == FrameworkReturnCode::_SUCCESS) {
-		//		m_mapManager->setMap(map);
-		//		SRef<Keyframe> keyframe;
-		//		m_keyframesManager->getKeyframe(0, keyframe);
-		//		m_tracking->updateReferenceKeyframe(keyframe);
-		//		LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
-		//		LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
-		//		setBootstrapSatus(true);
-		//		return;
-		//	}			
-		//	else {
-		//		LOG_INFO("Cannot get map");
-		//	}
-		//}
-
-		//if (m_relocPipeline) {
-		//	// try to get init map from reloc service
-		//	LOG_INFO("Try get map of reloc");			
-		//	SRef<Map> map;
-		//	if (m_relocPipeline->getMapRequest(map) == FrameworkReturnCode::_SUCCESS) {
-		//		m_mapManager->setMap(map);
-		//		SRef<Keyframe> keyframe;
-		//		m_keyframesManager->getKeyframe(0, keyframe);
-		//		m_tracking->updateReferenceKeyframe(keyframe);
-		//		LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
-		//		LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
-		//		setBootstrapSatus(true);
-		//		return;
-		//	}
-		//	else {
-		//		LOG_INFO("Cannot get map");
-		//	}
-		//}
+		if (m_relocPipeline) {
+			// try to get init map from reloc service
+			LOG_INFO("Try get map of relocalization service");			
+			SRef<Map> map;
+			if (m_relocPipeline->getMapRequest(map) == FrameworkReturnCode::_SUCCESS) {
+				m_mapManager->setMap(map);
+				SRef<Keyframe> keyframe;
+				m_keyframesManager->getKeyframe(0, keyframe);
+				m_tracking->updateReferenceKeyframe(keyframe);
+				LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
+				LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
+				setBootstrapSatus(true);
+				return;
+			}
+			else {
+				LOG_INFO("Cannot get map from relocalization service");
+			}
+		}
 
 		// do bootstrap
 		SRef<Image> view;

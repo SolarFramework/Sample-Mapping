@@ -45,6 +45,7 @@ namespace MAPPING {
             declareInjectable<api::slam::ITracking>(m_tracking);
             declareInjectable<api::slam::IMapping>(m_mapping);
             declareInjectable<api::pipeline::IMapUpdatePipeline>(m_mapUpdatePipeline, true);
+			declareInjectable<api::pipeline::IRelocalizationPipeline>(m_relocPipeline, true);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
 			declareInjectable<api::storage::ICovisibilityGraphManager>(m_covisibilityGraphManager);
@@ -156,6 +157,28 @@ namespace MAPPING {
             LOG_ERROR("Map Update pipeline not defined");
         }
 
+		if (m_relocPipeline != nullptr) {
+
+			LOG_DEBUG("Relocalization pipeline URL = {}",
+				m_relocPipeline->bindTo<xpcf::IConfigurable>()->getProperty("channelUrl")->getStringValue());
+
+			LOG_DEBUG("Initialize the remote reloc pipeline");
+
+			try {
+				if (m_relocPipeline->init() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Error while initializing the remote reloc pipeline");
+					return FrameworkReturnCode::_ERROR_;
+				}
+			}
+			catch (const std::exception &e) {
+				LOG_ERROR("Exception raised during remote request to the reloc pipeline: {}", e.what());
+				return FrameworkReturnCode::_ERROR_;
+			}
+		}
+		else {
+			LOG_ERROR("Reloc pipeline not defined");
+		}
+
         m_init = true;
 
         return FrameworkReturnCode::_SUCCESS;
@@ -241,6 +264,14 @@ namespace MAPPING {
                 }
             }
 
+			if (m_relocPipeline) {
+				LOG_DEBUG("Start remote relocalization pipeline");
+				if (m_relocPipeline->start() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Cannot start relocalization pipeline");
+					return FrameworkReturnCode::_ERROR_;
+				}
+			}
+
             if (!m_tasksStarted) {
                 LOG_DEBUG("Start processing tasks");
 
@@ -305,7 +336,14 @@ namespace MAPPING {
                 if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
                     LOG_ERROR("Cannot stop Map Update pipeline");
                 }
-            }            
+            }   
+
+			if (m_relocPipeline) {
+				LOG_INFO("Stop remote relocalization pipeline");
+				if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Cannot stop relocalization pipeline");
+				}
+			}
         }
         else {
             LOG_INFO("Pipeline already stopped");
@@ -419,6 +457,25 @@ namespace MAPPING {
 			return;
 		}
         LOG_DEBUG("PipelineMappingMultiNoDropProcessing::correctPoseAndBootstrap: new image to process");
+
+		if (m_relocPipeline) {
+			// try to get init map from reloc service
+			LOG_INFO("Try get map of relocalization service");
+			SRef<Map> map;
+			if (m_relocPipeline->getMapRequest(map) == FrameworkReturnCode::_SUCCESS) {
+				m_mapManager->setMap(map);
+				SRef<Keyframe> keyframe;
+				m_keyframesManager->getKeyframe(0, keyframe);
+				m_tracking->updateReferenceKeyframe(keyframe);
+				LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
+				LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
+				setBootstrapSatus(true);
+				return;
+			}
+			else {
+				LOG_INFO("Cannot get map from relocalization service");
+			}
+		}
 
 		// do bootstrap
 		SRef<Image> view;

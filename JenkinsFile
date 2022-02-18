@@ -21,8 +21,7 @@ node("master") {
         moduleName="SolARPipeline_Mapping_Multi_NoDrop"
         dirName="SolARBuild"
         buildDir="Mapping/SolARPipeline_Mapping_Multi_NoDrop"
-        android=false
-	windows=false
+        android=true
     }
 
 

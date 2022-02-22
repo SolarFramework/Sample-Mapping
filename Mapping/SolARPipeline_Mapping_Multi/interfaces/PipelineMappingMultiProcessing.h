@@ -32,7 +32,6 @@
 #include "xpcf/threading/BaseTask.h"
 
 #include <mutex>  // For std::unique_lock
-#include <shared_mutex>
 
 #include "api/pipeline/IMappingPipeline.h"
 #include "api/slam/IBootstrapper.h"
@@ -160,7 +159,7 @@ namespace MAPPING {
     private:
 
         bool												m_isBootstrapFinished; // indicates if the bootstrap step is finished
-        std::mutex											m_mutexUseLocalMap; // Mutex used for mapping task
+        mutable std::mutex									m_mutexUseLocalMap; // Mutex used for mapping task
 
         datastructure::CameraParameters						m_cameraParams;        // camera parameters
 

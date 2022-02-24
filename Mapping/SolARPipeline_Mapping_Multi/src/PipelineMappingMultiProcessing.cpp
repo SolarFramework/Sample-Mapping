@@ -129,30 +129,6 @@ namespace MAPPING {
 
         LOG_DEBUG("PipelineMappingMultiProcessing init");
 
-        LOG_DEBUG("Initialize instance attributes");
-
-        // Initialize private members
-        m_countNewKeyframes = 0;
-
-        if (m_mapManager != nullptr) {
-            m_mapManager->setMap(xpcf::utils::make_shared<Map>());
-        }
-
-        m_T_M_W = Transform3Df::Identity();
-        m_isStopMapping = false;
-
-        // Initial bootstrap status
-        m_isBootstrapFinished = false;
-
-        LOG_DEBUG("Empty buffers");
-
-        m_dropBufferCamImagePoseCapture.clear();
-        m_dropBufferFrame.clear();
-        m_dropBufferFrameBootstrap.clear();
-        m_dropBufferAddKeyframe.clear();
-        m_dropBufferNewKeyframe.clear();
-        m_dropBufferNewKeyframeLoop.clear();
-
         if (m_mapUpdatePipeline != nullptr){
 
             LOG_DEBUG("Map Update pipeline URL = {}",
@@ -168,15 +144,30 @@ namespace MAPPING {
             }  catch (const std::exception &e) {
                 LOG_ERROR("Exception raised during remote request to the map update pipeline: {}", e.what());
                 return FrameworkReturnCode::_ERROR_;
-            }
+            }            
+        }
+        else {
+            LOG_ERROR("Map Update pipeline not defined");
         }
 
+        if (m_init) {
+            LOG_WARNING("Pipeline has already been initialized");
+            return FrameworkReturnCode::_SUCCESS;
+        }
+
+		m_init = true;
+		
         return FrameworkReturnCode::_SUCCESS;
     }
 
     FrameworkReturnCode PipelineMappingMultiProcessing::setCameraParameters(const CameraParameters & cameraParams) {
 
         LOG_DEBUG("PipelineMappingMultiProcessing::setCameraParameters");
+
+        if (!m_init) {
+            LOG_ERROR("Pipeline has not been initialized");
+            return FrameworkReturnCode::_ERROR_;
+        }
 
         m_cameraParams = cameraParams;
 
@@ -205,6 +196,8 @@ namespace MAPPING {
             }
         }
 
+        m_cameraOK = true;
+
         return FrameworkReturnCode::_SUCCESS;
     }
 
@@ -212,11 +205,64 @@ namespace MAPPING {
 
         LOG_DEBUG("PipelineMappingMultiProcessing::start");
 
-        // Check members initialization
-        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)) {
+        if (!m_init) {
+            LOG_ERROR("Pipeline has not been initialized");
+            return FrameworkReturnCode::_ERROR_;
+        }
 
-            if (!m_tasksStarted) {
-                LOG_DEBUG("Start processing tasks");
+        if (!m_cameraOK){
+            LOG_ERROR("Camera parameters have not been set");
+            return FrameworkReturnCode::_ERROR_;
+        }
+
+        if (!m_started) {
+
+            LOG_DEBUG("Initialize instance attributes");
+
+            // Initialize private members
+            m_countNewKeyframes = 0;
+
+// Initialiser la map a partir de Map Update ???
+            if (m_mapManager != nullptr) {
+                m_mapManager->setMap(xpcf::utils::make_shared<Map>());
+            }
+
+            m_T_M_W = Transform3Df::Identity();
+            m_isStopMapping = false;
+
+            // Initial bootstrap status
+            m_isBootstrapFinished = false;
+
+            LOG_DEBUG("Empty buffers");
+
+// Temporaire en attendant le fix du "clear"
+            std::pair<SRef<Image>, Transform3Df> imagePose;
+            m_dropBufferCamImagePoseCapture.tryPop(imagePose);
+            SRef<Frame> frame;
+            m_dropBufferFrame.tryPop(frame);
+            m_dropBufferFrameBootstrap.tryPop(frame);
+            m_dropBufferAddKeyframe.tryPop(frame);
+            SRef<Keyframe> keyframe;
+            m_dropBufferNewKeyframe.tryPop(keyframe);
+            m_dropBufferNewKeyframeLoop.tryPop(keyframe);
+/*
+            m_dropBufferCamImagePoseCapture.clear();
+            m_dropBufferFrame.clear();
+            m_dropBufferFrameBootstrap.clear();
+            m_dropBufferAddKeyframe.clear();
+            m_dropBufferNewKeyframe.clear();
+            m_dropBufferNewKeyframeLoop.clear();
+*/
+            if (m_mapUpdatePipeline) {
+				LOG_DEBUG("Start remote map update pipeline");
+				if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Cannot start Map Update pipeline");
+					return FrameworkReturnCode::_ERROR_;
+				}
+			}
+
+			if (!m_tasksStarted) {
+				LOG_DEBUG("Start processing tasks");
 
                 m_bootstrapTask->start();
                 m_featureExtractionTask->start();
@@ -226,10 +272,11 @@ namespace MAPPING {
 
                 m_tasksStarted = true;
             }
+
+			m_started = true;
         }
         else {
-            LOG_DEBUG("Camera parameters and/or fiducial marker description not set");
-            return FrameworkReturnCode::_ERROR_;
+            LOG_WARNING("Pipeline already started");
         }
 
         return FrameworkReturnCode::_SUCCESS;
@@ -239,21 +286,44 @@ namespace MAPPING {
 
         LOG_DEBUG("PipelineMappingMultiProcessing::stop");
 
-        if (isBootstrapFinished()){
-            LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
-            globalBundleAdjustment();
+        if (!m_init) {
+            LOG_ERROR("Pipeline has not been initialized");
+            return FrameworkReturnCode::_ERROR_;
         }
 
-        if (m_tasksStarted) {
-            LOG_DEBUG("Stop processing tasks");
+        if (!m_cameraOK){
+            LOG_ERROR("Camera parameters have not been set");
+            return FrameworkReturnCode::_ERROR_;
+        }
 
-            m_loopClosureTask->stop();
-            m_mappingTask->stop();
-            m_updateVisibilityTask->stop();
-            m_featureExtractionTask->stop();
-            m_bootstrapTask->stop();
+        if (m_started) {
+			m_started = false;
+            if (m_tasksStarted) {
+                LOG_DEBUG("Stop processing tasks");
 
-            m_tasksStarted = false;
+                m_loopClosureTask->stop();
+                m_mappingTask->stop();
+                m_updateVisibilityTask->stop();
+                m_featureExtractionTask->stop();
+                m_bootstrapTask->stop();
+
+                m_tasksStarted = false;
+            }
+
+            if (isBootstrapFinished()){
+                LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
+                globalBundleAdjustment();
+            }
+
+            if (m_mapUpdatePipeline) {
+                LOG_DEBUG("Stop remote map update pipeline");
+                if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
+                    LOG_ERROR("Cannot stop Map Update pipeline");
+                }
+            }            
+        }
+        else {
+            LOG_INFO("Pipeline already stopped");
         }
 
         return FrameworkReturnCode::_SUCCESS;
@@ -262,20 +332,41 @@ namespace MAPPING {
     FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
 
         LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
+
+        if (!m_init) {
+            LOG_ERROR("Pipeline has not been initialized");
+            return FrameworkReturnCode::_ERROR_;
+        }
+
+        if (!m_cameraOK){
+            LOG_ERROR("Camera parameters have not been set");
+            return FrameworkReturnCode::_ERROR_;
+        }
+
+        if (!m_started){
+            LOG_ERROR("Pipeline has not been started");
+            return FrameworkReturnCode::_ERROR_;
+        }
+
         // Correct pose after loop detection
         Transform3Df poseCorrected = m_T_M_W * pose;
+
 		// Send image and corrected pose to process
         m_dropBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
+
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
+
         return FrameworkReturnCode::_SUCCESS;
     }
 
     FrameworkReturnCode PipelineMappingMultiProcessing::getDataForVisualization(std::vector<SRef<CloudPoint>> & outputPointClouds,
                                                 std::vector<Transform3Df> & keyframePoses) const {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::getDataForVisualization");
+        //LOG_DEBUG("PipelineMappingMultiProcessing::getDataForVisualization");
 
         if (isBootstrapFinished()) {
+
+            std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
 
             std::vector<SRef<Keyframe>> allKeyframes;
             keyframePoses.clear();
@@ -418,6 +509,7 @@ namespace MAPPING {
         }
 
         SRef<Keyframe> keyframe;
+        std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
         if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("New keyframe id: {}", keyframe->getId());
             // Local bundle adjustment
@@ -429,7 +521,7 @@ namespace MAPPING {
 				bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
 			bestIdxToOptimize.push_back(keyframe->getId());
 			LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
-			double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
+            double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdxToOptimize);
 			// map pruning
 			std::vector<SRef<CloudPoint>> localMap;
 			m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
@@ -489,6 +581,7 @@ namespace MAPPING {
             Transform3Df keyframeOldPose = lastKeyframe->getPose();
             m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
             // map pruning
+            std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
             m_mapManager->pointCloudPruning();
             m_mapManager->keyframePruning();
             // update pose correction
@@ -508,9 +601,14 @@ namespace MAPPING {
 
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+        LOG_INFO("Global BA done");
         // Map pruning
-		m_mapManager->pointCloudPruning();
-		m_mapManager->keyframePruning();
+        std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
+        int nbCpPruning = m_mapManager->pointCloudPruning();
+        LOG_INFO("Nb of pruning cloud points: {}", nbCpPruning);
+        int nbKfPruning = m_mapManager->keyframePruning();
+        m_mutexUseLocalMap.unlock();
+        LOG_INFO("Nb of pruning keyframes: {}", nbKfPruning);
         LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 

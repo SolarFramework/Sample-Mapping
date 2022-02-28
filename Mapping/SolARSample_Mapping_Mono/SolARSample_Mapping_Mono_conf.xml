@@ -267,13 +267,13 @@
 			<property name="minWeightNeighbor" type="float" value="50.0"/>
 			<property name="displayTrackedPoints" type="int" value="1"/>
 			<property name="thresAngleViewDirection" type="float" value="0.8"/>
+			<property name="nbPassedFrameAtLeast" type="int" value="2"/>
+			<property name="ratioCPRefKeyframe" type="float" value="0.5"/>
+			<property name="minTrackedPoints" type="int" value="200"/>
 		</configure>
 		<configure component="SolARSLAMMapping">
 			<property name="minWeightNeighbor" type="float" value="5.0"/>
-			<property name="maxNbNeighborKfs" type="int" value="8"/>
-			<property name="nbPassedFrameAtLeast" type="int" value="1"/>
-			<property name="ratioCPRefKeyframe" type="float" value="0.5"/>
-			<property name="minTrackedPoints" type="int" value="200"/>
+			<property name="maxNbNeighborKfs" type="int" value="8"/>			
 		</configure>
 		<configure component="SolARMapManager">
 			<property name="directory" type="string" value="../../data/map_hololens/mapA"/>
@@ -390,7 +390,7 @@
 			<property name="maxMatches" type="int" value="-1"/>
 		</configure>
 		<configure component="SolAROptimizationG2O">
-			<property name="nbIterationsLocal" type="int" value="10"/>
+			<property name="nbIterationsLocal" type="int" value="6"/>
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
@@ -401,7 +401,7 @@
 			<property name="fixedKeyframes" type="int" value="0"/>
 		</configure>
 		<configure component="SolAROptimizationG2O" name="BundleFixedKeyframesProperties">
-			<property name="nbIterationsLocal" type="int" value="10"/>
+			<property name="nbIterationsLocal" type="int" value="6"/>
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>

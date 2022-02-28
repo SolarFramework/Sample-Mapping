@@ -181,8 +181,9 @@ namespace MAPPING {
         SRef<api::loop::ILoopCorrector>						m_loopCorrector;
 		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
 
-        bool												m_isStopMapping;               // indicates if the mapping task is stopped
-        datastructure::Transform3Df							m_T_M_W;               // 3D transformation matrix
+        bool												m_isMappingIdle;		// indicates if the mapping task is idle
+        bool												m_isLoopIdle;			// indicates if the mapping task is idle
+        datastructure::Transform3Df							m_T_M_W;				// 3D transformation matrix
 		float												m_minWeightNeighbor;
         int													m_countNewKeyframes;
 
@@ -203,7 +204,6 @@ namespace MAPPING {
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrame;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameBootstrap;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;
-        xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframeLoop;        
     };
 

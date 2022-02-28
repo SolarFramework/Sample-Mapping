@@ -193,6 +193,8 @@ namespace MAPPING {
         bool m_cameraOK = false;        // Indicate if camera parameters has been set
         bool m_started = false;         // Indicate if pipeline il started
         bool m_tasksStarted = false;    // Indicate if tasks are started
+		bool m_isMappingIdle = true;	// indicates if the mapping task is idle
+		bool m_isLoopIdle = true;		// indicates if the mapping task is idle
 
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;
@@ -205,8 +207,7 @@ namespace MAPPING {
 		xpcf::SharedBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>	m_sharedBufferCamImagePoseCapture{ BUFFER_SIZE_IMAGE };
 		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferFrame{ BUFFER_SIZE_FRAME };
 		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferFrameBootstrap{ BUFFER_SIZE_FRAME };
-		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferAddKeyframe{ 1 };
-        xpcf::DropBuffer<SRef<datastructure::Keyframe>>							m_dropBufferNewKeyframe;
+		xpcf::DropBuffer<SRef<datastructure::Frame>>							m_dropBufferAddKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>							m_dropBufferNewKeyframeLoop; 
     };
 

@@ -208,7 +208,7 @@ namespace MAPPING {
             // Prepare mapping process
 			SRef<Keyframe> keyframe2;
 			m_keyframesManager->getKeyframe(1, keyframe2);
-			m_tracking->updateReferenceKeyframe(keyframe2);
+			m_tracking->setNewKeyframe(keyframe2);
 
             LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
 
@@ -271,17 +271,14 @@ namespace MAPPING {
 
             // mapping
             SRef<Keyframe> keyframe;
-            if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
+            if (m_tracking->checkNeedNewKeyframe() && 
+				m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
                 LOG_DEBUG("New keyframe id: {}", keyframe->getId());
-                // Local bundle adjustment
-                std::vector<uint32_t> bestIdx, bestIdxToOptimize;
-                m_covisibilityGraphManager->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx);
-				if (bestIdx.size() < NB_LOCALKEYFRAMES)
-					bestIdxToOptimize = bestIdx;
-				else
-					bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
-				bestIdxToOptimize.push_back(keyframe->getId());
-				LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
+				// Local bundle adjustment
+				std::vector<uint32_t> bestIdx;
+				m_covisibilityGraphManager->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx, NB_LOCALKEYFRAMES);
+				bestIdx.push_back(keyframe->getId());
+				LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
 				double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
                 // map pruning
 				std::vector<SRef<CloudPoint>> localMap;
@@ -317,11 +314,8 @@ namespace MAPPING {
                         m_T_M_W = transform * m_T_M_W;
                     }
                 }
-            }
-
-            // update reference keyframe
-            if (keyframe) {
-				m_tracking->updateReferenceKeyframe(keyframe);
+				// send new keyframe to tracking
+				m_tracking->setNewKeyframe(keyframe);
             }
         }
     }

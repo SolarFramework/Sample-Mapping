@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
 					double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
 					SRef<Keyframe> keyframe2;
 					keyframesManager->getKeyframe(1, keyframe2);
-					tracking->updateReferenceKeyframe(keyframe2);
+					tracking->setNewKeyframe(keyframe2);
 					bootstrapOk = true;
 					LOG_INFO("Number of initial point cloud: {}", pointCloudManager->getNbPoints());
 				}
@@ -221,18 +221,15 @@ int main(int argc, char *argv[])
 
 				// mapping
 				SRef<Keyframe> keyframe;
-				if (mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
+				if (tracking->checkNeedNewKeyframe() && 
+					mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
 					LOG_DEBUG("New keyframe id: {}", keyframe->getId());
 					// Local bundle adjustment
-					std::vector<uint32_t> bestIdx, bestIdxToOptimize;
-					covisibilityGraphManager->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx);
-					if (bestIdx.size() < NB_LOCALKEYFRAMES)
-						bestIdxToOptimize = bestIdx;
-					else
-						bestIdxToOptimize.insert(bestIdxToOptimize.begin(), bestIdx.begin(), bestIdx.begin() + NB_LOCALKEYFRAMES);
-					bestIdxToOptimize.push_back(keyframe->getId());
-					LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdxToOptimize.size());
-					double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdxToOptimize);
+						std::vector<uint32_t> bestIdx;
+						covisibilityGraphManager->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx, NB_LOCALKEYFRAMES);
+						bestIdx.push_back(keyframe->getId());
+						LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
+						double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdx);
 					// map pruning
 					std::vector<SRef<CloudPoint>> localMap;
 					mapManager->getLocalPointCloud(keyframe, minWeightNeighbor, localMap);
@@ -267,12 +264,9 @@ int main(int argc, char *argv[])
 							T_M_W = transform * T_M_W;
 						}
 					}
+					// update reference keyframe to tracking
+					tracking->setNewKeyframe(keyframe);
 				}
-
-				// update reference keyframe
-				if (keyframe) {
-					tracking->updateReferenceKeyframe(keyframe);
-				}				
 			}
 			// draw pose
 			overlay3D->draw(frame->getPose(), displayImage);

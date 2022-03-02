@@ -10,7 +10,11 @@ fi
 
 CONFIG_FILES=`find . -not \( -path "./bin" -prune \) -type f \( -name "SolARSample*_conf.xml" -or -name "SolARPipelineTest*_conf.xml" \)`
 
+echo "**** Displaying profiles"
+echo $(remaken profile display)
+echo $(conan profile show default)
 echo "**** Install dependencies locally"
+
 remaken install packagedependencies.txt
 remaken install packagedependencies.txt -c debug
 

@@ -140,10 +140,10 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
         LOG_DEBUG("PipelineMappingMultiProcessing init");
 
-        if (m_init) {
-            LOG_WARNING("Pipeline has already been initialized");
-            return FrameworkReturnCode::_SUCCESS;
-        }
+		if (m_init) {
+			LOG_WARNING("Pipeline has already been initialized");
+			return FrameworkReturnCode::_SUCCESS;
+		}
 
         if (m_mapUpdatePipeline != nullptr){
 
@@ -186,7 +186,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 		}
 		else {
 			LOG_ERROR("Reloc pipeline not defined");
-		}
+		}        
 
 		m_init = true;
 		
@@ -421,6 +421,8 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
         if (isBootstrapFinished()) {
 
+            std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
+
             std::vector<SRef<Keyframe>> allKeyframes;
             keyframePoses.clear();
 
@@ -570,6 +572,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 		m_isMappingIdle = false;
 		m_nbMappingProcess++;
         SRef<Keyframe> keyframe;
+        std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
         if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("New keyframe id: {}", keyframe->getId());
 			// Local bundle adjustment
@@ -634,6 +637,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             Transform3Df keyframeOldPose = lastKeyframe->getPose();
             m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
             // map pruning
+            std::unique_lock<std::mutex> lock2(m_mutexUseLocalMap);
             m_mapManager->pointCloudPruning();
             m_mapManager->keyframePruning();
             // update pose correction
@@ -655,9 +659,11 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
         LOG_INFO("Global BA done");
         // Map pruning
+        std::unique_lock<std::mutex> lock2(m_mutexUseLocalMap);
         int nbCpPruning = m_mapManager->pointCloudPruning();
         LOG_INFO("Nb of pruning cloud points: {}", nbCpPruning);
         int nbKfPruning = m_mapManager->keyframePruning();
+        m_mutexUseLocalMap.unlock();
         LOG_INFO("Nb of pruning keyframes: {}", nbKfPruning);
         LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());

@@ -131,10 +131,10 @@ namespace MAPPING {
 
         LOG_DEBUG("PipelineMappingMultiNoDropProcessing init");
 
-        if (m_init) {
-            LOG_WARNING("Pipeline has already been initialized");
-            return FrameworkReturnCode::_SUCCESS;
-        }
+		if (m_init) {
+			LOG_WARNING("Pipeline has already been initialized");
+			return FrameworkReturnCode::_SUCCESS;
+		}
 
         if (m_mapUpdatePipeline != nullptr){
 
@@ -177,7 +177,7 @@ namespace MAPPING {
 		}
 		else {
 			LOG_ERROR("Reloc pipeline not defined");
-		}
+		}        
 
         m_init = true;
 
@@ -397,6 +397,8 @@ namespace MAPPING {
 
         if (isBootstrapFinished()) {
 
+            std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
+
             std::vector<SRef<Keyframe>> allKeyframes;
             keyframePoses.clear();
 
@@ -551,6 +553,7 @@ namespace MAPPING {
         }
 		m_isMappingIdle = false;
         SRef<Keyframe> keyframe;
+        std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
         if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("New keyframe id: {}", keyframe->getId());
             // Local bundle adjustment
@@ -582,8 +585,6 @@ namespace MAPPING {
         boost::timer processing_timer;
         processing_timer.restart();
 
-//        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::loopClosure");
-		std::unique_lock<std::mutex> lock(m_mutexBA);
         SRef<Keyframe> lastKeyframe;
 
         if ((m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) ||
@@ -592,7 +593,7 @@ namespace MAPPING {
             xpcf::DelegateTask::yield();
             return;
         }
-
+		std::unique_lock<std::mutex> lock(m_mutexBA);
         SRef<Keyframe> detectedLoopKeyframe;
         Transform3Df sim3Transform;
         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
@@ -618,6 +619,7 @@ namespace MAPPING {
             Transform3Df keyframeOldPose = lastKeyframe->getPose();
             m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
             // map pruning
+            std::unique_lock<std::mutex> lock2(m_mutexUseLocalMap);
             m_mapManager->pointCloudPruning();
             m_mapManager->keyframePruning();
             // update pose correction
@@ -640,8 +642,11 @@ namespace MAPPING {
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
         // Map pruning
-		m_mapManager->pointCloudPruning();
+        std::unique_lock<std::mutex> lock2(m_mutexUseLocalMap);
+        m_mapManager->pointCloudPruning();
 		m_mapManager->keyframePruning();
+        m_mutexUseLocalMap.unlock();
+
         LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
 

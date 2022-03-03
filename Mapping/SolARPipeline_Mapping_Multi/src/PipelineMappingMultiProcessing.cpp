@@ -282,14 +282,6 @@ namespace MAPPING {
             m_dropBufferNewKeyframe.tryPop(keyframe);
             m_dropBufferNewKeyframeLoop.tryPop(keyframe);
 
-            if (m_mapUpdatePipeline) {
-				LOG_DEBUG("Start remote map update pipeline");
-				if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {
-					LOG_ERROR("Cannot start Map Update pipeline");
-					return FrameworkReturnCode::_ERROR_;
-				}
-			}
-
 			if (m_relocPipeline) {
 				LOG_DEBUG("Start remote relocalization pipeline");
 				if (m_relocPipeline->start() != FrameworkReturnCode::_SUCCESS) {
@@ -350,13 +342,6 @@ namespace MAPPING {
             if (isBootstrapFinished()){
 				LOG_INFO("Bundle adjustment, map pruning and global map udate");
                 globalBundleAdjustment();
-            }
-
-            if (m_mapUpdatePipeline) {
-				LOG_INFO("Stop remote map update pipeline");
-                if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
-                    LOG_ERROR("Cannot stop Map Update pipeline");
-                }
             }
 
 			if (m_relocPipeline) {

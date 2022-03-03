@@ -160,7 +160,6 @@ namespace MAPPING {
     private:
 
         bool												m_isBootstrapFinished; // indicates if the bootstrap step is finished
-        std::mutex											m_mutexBA; // Mutex used for global bundle adjustment
         mutable std::mutex									m_mutexUseLocalMap; // Mutex used for mapping task
 
         datastructure::CameraParameters						m_cameraParams;        // camera parameters

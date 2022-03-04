@@ -45,6 +45,7 @@ namespace MAPPING {
             declareInjectable<api::slam::ITracking>(m_tracking);
             declareInjectable<api::slam::IMapping>(m_mapping);
             declareInjectable<api::pipeline::IMapUpdatePipeline>(m_mapUpdatePipeline, true);
+            declareInjectable<api::pipeline::IRelocalizationPipeline>(m_relocPipeline, true);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
 			declareInjectable<api::storage::ICovisibilityGraphManager>(m_covisibilityGraphManager);
@@ -150,6 +151,28 @@ namespace MAPPING {
             LOG_ERROR("Map Update pipeline not defined");
         }
 
+		if (m_relocPipeline != nullptr) {
+
+			LOG_DEBUG("Relocalization pipeline URL = {}",
+				m_relocPipeline->bindTo<xpcf::IConfigurable>()->getProperty("channelUrl")->getStringValue());
+
+			LOG_DEBUG("Initialize the remote reloc pipeline");
+
+			try {
+				if (m_relocPipeline->init() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Error while initializing the remote reloc pipeline");
+					return FrameworkReturnCode::_ERROR_;
+				}
+			}
+			catch (const std::exception &e) {
+				LOG_ERROR("Exception raised during remote request to the reloc pipeline: {}", e.what());
+				return FrameworkReturnCode::_ERROR_;
+			}
+		}
+		else {
+			LOG_ERROR("Reloc pipeline not defined");
+		}
+
         if (m_init) {
             LOG_WARNING("Pipeline has already been initialized");
             return FrameworkReturnCode::_SUCCESS;
@@ -196,6 +219,21 @@ namespace MAPPING {
             }
         }
 
+        if (m_relocPipeline != nullptr){
+
+            LOG_DEBUG("Set camera parameters for the relocalization service");
+
+            try {
+                if (m_relocPipeline->setCameraParameters(cameraParams) != FrameworkReturnCode::_SUCCESS) {
+                    LOG_ERROR("Error while setting camera parameters for the relocalization service");
+                    return FrameworkReturnCode::_ERROR_;
+                }
+            }  catch (const std::exception &e) {
+                LOG_ERROR("Exception raised during remote request to the relocalization service: {}", e.what());
+                return FrameworkReturnCode::_ERROR_;
+            }
+        }
+
         m_cameraOK = true;
 
         return FrameworkReturnCode::_SUCCESS;
@@ -222,7 +260,6 @@ namespace MAPPING {
             // Initialize private members
             m_countNewKeyframes = 0;
 
-// Initialiser la map a partir de Map Update ???
             if (m_mapManager != nullptr) {
                 m_mapManager->setMap(xpcf::utils::make_shared<Map>());
             }
@@ -235,7 +272,6 @@ namespace MAPPING {
 
             LOG_DEBUG("Empty buffers");
 
-// Temporaire en attendant le fix du "clear"
             std::pair<SRef<Image>, Transform3Df> imagePose;
             m_dropBufferCamImagePoseCapture.tryPop(imagePose);
             SRef<Frame> frame;
@@ -245,18 +281,11 @@ namespace MAPPING {
             SRef<Keyframe> keyframe;
             m_dropBufferNewKeyframe.tryPop(keyframe);
             m_dropBufferNewKeyframeLoop.tryPop(keyframe);
-/*
-            m_dropBufferCamImagePoseCapture.clear();
-            m_dropBufferFrame.clear();
-            m_dropBufferFrameBootstrap.clear();
-            m_dropBufferAddKeyframe.clear();
-            m_dropBufferNewKeyframe.clear();
-            m_dropBufferNewKeyframeLoop.clear();
-*/
-            if (m_mapUpdatePipeline) {
-				LOG_DEBUG("Start remote map update pipeline");
-				if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {
-					LOG_ERROR("Cannot start Map Update pipeline");
+
+			if (m_relocPipeline) {
+				LOG_DEBUG("Start remote relocalization pipeline");
+				if (m_relocPipeline->start() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Cannot start relocalization pipeline");
 					return FrameworkReturnCode::_ERROR_;
 				}
 			}
@@ -284,7 +313,7 @@ namespace MAPPING {
 
     FrameworkReturnCode PipelineMappingMultiProcessing::stop() {
 
-        LOG_DEBUG("PipelineMappingMultiProcessing::stop");
+        LOG_INFO("PipelineMappingMultiProcessing::stop");
 
         if (!m_init) {
             LOG_ERROR("Pipeline has not been initialized");
@@ -311,21 +340,21 @@ namespace MAPPING {
             }
 
             if (isBootstrapFinished()){
-                LOG_DEBUG("Bundle adjustment, map pruning and global map udate");
+				LOG_INFO("Bundle adjustment, map pruning and global map udate");
                 globalBundleAdjustment();
             }
 
-            if (m_mapUpdatePipeline) {
-                LOG_DEBUG("Stop remote map update pipeline");
-                if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
-                    LOG_ERROR("Cannot stop Map Update pipeline");
-                }
-            }            
+			if (m_relocPipeline) {
+				LOG_INFO("Stop remote relocalization pipeline");
+                if (m_relocPipeline->stop() != FrameworkReturnCode::_SUCCESS) {
+					LOG_ERROR("Cannot stop relocalization pipeline");
+				}
+			}
         }
         else {
             LOG_INFO("Pipeline already stopped");
         }
-
+		LOG_INFO("Stop done!");
         return FrameworkReturnCode::_SUCCESS;
     }
 
@@ -398,7 +427,7 @@ namespace MAPPING {
 
 		std::pair<SRef<Image>, Transform3Df> imagePose;
 
-		if (!m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
+		if (!m_started || !m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
 			xpcf::DelegateTask::yield();
 			return;
 		}
@@ -427,11 +456,30 @@ namespace MAPPING {
 		SRef<Frame> frame;
 
 		// Try to get next (image, pose) if bootstrap is not finished
-		if (m_isBootstrapFinished || !m_dropBufferFrameBootstrap.tryPop(frame)) {
+		if (!m_started || m_isBootstrapFinished || !m_dropBufferFrameBootstrap.tryPop(frame)) {
 			xpcf::DelegateTask::yield();
 			return;
 		}
 		LOG_DEBUG("PipelineMappingMultiProcessing::correctPoseAndBootstrap: new image to process");
+
+		if (m_relocPipeline) {
+			// try to get init map from reloc service
+			LOG_INFO("Try get map of relocalization service");			
+			SRef<Map> map;
+			if (m_relocPipeline->getMapRequest(map) == FrameworkReturnCode::_SUCCESS) {
+				m_mapManager->setMap(map);
+				SRef<Keyframe> keyframe;
+				m_keyframesManager->getKeyframe(0, keyframe);
+				m_tracking->updateReferenceKeyframe(keyframe);
+				LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
+				LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
+				setBootstrapSatus(true);
+				return;
+			}
+			else {
+				LOG_INFO("Cannot get map from relocalization service");
+			}
+		}
 
 		// do bootstrap
 		SRef<Image> view;
@@ -461,7 +509,7 @@ namespace MAPPING {
         SRef<Frame> frame;
 
         // Frame to process
-        if (!m_dropBufferFrame.tryPop(frame)) {
+        if (!m_started || !m_dropBufferFrame.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -503,7 +551,7 @@ namespace MAPPING {
         SRef<Frame> frame;
 
         // Images to process ?
-        if (m_isStopMapping || !m_dropBufferAddKeyframe.tryPop(frame)) {
+        if (!m_started || m_isStopMapping || !m_dropBufferAddKeyframe.tryPop(frame)) {
             xpcf::DelegateTask::yield();
             return;
         }
@@ -551,13 +599,12 @@ namespace MAPPING {
 
         SRef<Keyframe> lastKeyframe;
 
-        if ((m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) ||
+        if (!m_started || (m_countNewKeyframes < NB_NEWKEYFRAMES_LOOP) ||
             !m_dropBufferNewKeyframeLoop.tryPop(lastKeyframe))
         {
             xpcf::DelegateTask::yield();
             return;
         }
-
         SRef<Keyframe> detectedLoopKeyframe;
         Transform3Df sim3Transform;
         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;

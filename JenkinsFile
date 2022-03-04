@@ -18,11 +18,10 @@ node("master") {
     }
 
     SolArModulePipeline {
-        moduleName="SolARPipeline_Mapping_Multi_NoDrop"
+        moduleName="SolARPipelineMappingMultiNoDrop"
         dirName="SolARBuild"
         buildDir="Mapping/SolARPipeline_Mapping_Multi_NoDrop"
-        android=false
-	windows=false
+        android=true
     }
 
 

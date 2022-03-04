@@ -223,6 +223,21 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             }
         }
 
+        if (m_relocPipeline != nullptr){
+
+            LOG_DEBUG("Set camera parameters for the relocalization service");
+
+            try {
+                if (m_relocPipeline->setCameraParameters(cameraParams) != FrameworkReturnCode::_SUCCESS) {
+                    LOG_ERROR("Error while setting camera parameters for the relocalization service");
+                    return FrameworkReturnCode::_ERROR_;
+                }
+            }  catch (const std::exception &e) {
+                LOG_ERROR("Exception raised during remote request to the relocalization service: {}", e.what());
+                return FrameworkReturnCode::_ERROR_;
+            }
+        }
+
         m_cameraOK = true;
 
         return FrameworkReturnCode::_SUCCESS;
@@ -249,7 +264,6 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             // Initialize private members
             m_countNewKeyframes = 0;
 
-// Initialiser la map a partir de Map Update ???
             if (m_mapManager != nullptr) {
                 m_mapManager->setMap(xpcf::utils::make_shared<Map>());
             }
@@ -263,7 +277,6 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
             LOG_DEBUG("Empty buffers");
 
-// Temporaire en attendant le fix du "clear"
             std::pair<SRef<Image>, Transform3Df> imagePose;
             m_dropBufferCamImagePoseCapture.tryPop(imagePose);
             SRef<Frame> frame;
@@ -272,21 +285,6 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_dropBufferAddKeyframe.tryPop(frame);
             SRef<Keyframe> keyframe;
             m_dropBufferNewKeyframeLoop.tryPop(keyframe);
-/*
-            m_dropBufferCamImagePoseCapture.clear();
-            m_dropBufferFrame.clear();
-            m_dropBufferFrameBootstrap.clear();
-            m_dropBufferAddKeyframe.clear();
-            m_dropBufferNewKeyframe.clear();
-            m_dropBufferNewKeyframeLoop.clear();
-*/
-            if (m_mapUpdatePipeline) {
-				LOG_DEBUG("Start remote map update pipeline");
-				if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {
-					LOG_ERROR("Cannot start Map Update pipeline");
-					return FrameworkReturnCode::_ERROR_;
-				}
-			}
 
 			if (m_relocPipeline) {
 				LOG_DEBUG("Start remote relocalization pipeline");
@@ -357,16 +355,9 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
                 globalBundleAdjustment();
             }
 
-            if (m_mapUpdatePipeline) {
-				LOG_INFO("Stop remote map update pipeline");
-                if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
-                    LOG_ERROR("Cannot stop Map Update pipeline");
-                }
-            }
-
 			if (m_relocPipeline) {
 				LOG_INFO("Stop remote relocalization pipeline");
-				if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
+                if (m_relocPipeline->stop() != FrameworkReturnCode::_SUCCESS) {
 					LOG_ERROR("Cannot stop relocalization pipeline");
 				}
 			}

@@ -220,6 +220,21 @@ namespace MAPPING {
             }
         }
 
+        if (m_relocPipeline != nullptr){
+
+            LOG_DEBUG("Set camera parameters for the relocalization service");
+
+            try {
+                if (m_relocPipeline->setCameraParameters(cameraParams) != FrameworkReturnCode::_SUCCESS) {
+                    LOG_ERROR("Error while setting camera parameters for the relocalization service");
+                    return FrameworkReturnCode::_ERROR_;
+                }
+            }  catch (const std::exception &e) {
+                LOG_ERROR("Exception raised during remote request to the relocalization service: {}", e.what());
+                return FrameworkReturnCode::_ERROR_;
+            }
+        }
+
         m_cameraOK = true;
 
         return FrameworkReturnCode::_SUCCESS;
@@ -258,14 +273,6 @@ namespace MAPPING {
 			m_isLoopIdle = true;
 
             LOG_DEBUG("Empty buffers");
-
-            if (m_mapUpdatePipeline) {
-                LOG_DEBUG("Start remote map update pipeline");
-                if (m_mapUpdatePipeline->start() != FrameworkReturnCode::_SUCCESS) {
-                    LOG_ERROR("Cannot start Map Update pipeline");
-                    return FrameworkReturnCode::_ERROR_;
-                }
-            }
 
 			if (m_relocPipeline) {
 				LOG_DEBUG("Start remote relocalization pipeline");
@@ -339,16 +346,9 @@ namespace MAPPING {
                 globalBundleAdjustment();
             }
 
-            if (m_mapUpdatePipeline) {
-                LOG_DEBUG("Stop remote map update pipeline");
-                if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
-                    LOG_ERROR("Cannot stop Map Update pipeline");
-                }
-            }   
-
 			if (m_relocPipeline) {
 				LOG_INFO("Stop remote relocalization pipeline");
-				if (m_mapUpdatePipeline->stop() != FrameworkReturnCode::_SUCCESS) {
+                if (m_relocPipeline->stop() != FrameworkReturnCode::_SUCCESS) {
 					LOG_ERROR("Cannot stop relocalization pipeline");
 				}
 			}
@@ -593,7 +593,6 @@ namespace MAPPING {
             xpcf::DelegateTask::yield();
             return;
         }
-		std::unique_lock<std::mutex> lock(m_mutexBA);
         SRef<Keyframe> detectedLoopKeyframe;
         Transform3Df sim3Transform;
         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
@@ -605,6 +604,7 @@ namespace MAPPING {
             LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
             LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
             // performs loop correction
+			std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
             {
                 m_loopCorrector->correct(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
                 m_countNewKeyframes = 0;
@@ -618,8 +618,7 @@ namespace MAPPING {
             // loop optimization
             Transform3Df keyframeOldPose = lastKeyframe->getPose();
             m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
-            // map pruning
-            std::unique_lock<std::mutex> lock2(m_mutexUseLocalMap);
+            // map pruning            
             m_mapManager->pointCloudPruning();
             m_mapManager->keyframePruning();
             // update pose correction
@@ -638,11 +637,11 @@ namespace MAPPING {
         processing_timer.restart();
 
 //        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::globalBundleAdjustment");
-		std::unique_lock<std::mutex> lock(m_mutexBA);
+
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
         // Map pruning
-        std::unique_lock<std::mutex> lock2(m_mutexUseLocalMap);
+        std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
         m_mapManager->pointCloudPruning();
 		m_mapManager->keyframePruning();
         m_mutexUseLocalMap.unlock();

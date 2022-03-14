@@ -612,6 +612,7 @@ namespace MAPPING {
         Transform3Df sim3Transform;
         std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
         if (m_loopDetector->detect(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
+            std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
             // detected loop keyframe
             LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
             LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
@@ -630,8 +631,7 @@ namespace MAPPING {
             // loop optimization
             Transform3Df keyframeOldPose = lastKeyframe->getPose();
             m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
-            // map pruning
-            std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
+            // map pruning            
             m_mapManager->pointCloudPruning();
             m_mapManager->keyframePruning();
             // update pose correction
@@ -648,12 +648,11 @@ namespace MAPPING {
         processing_timer.restart();
 
 //        LOG_DEBUG("PipelineMappingMultiProcessing::globalBundleAdjustment");
-
+        std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
         LOG_INFO("Global BA done");
-        // Map pruning
-        std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
+        // Map pruning        
         int nbCpPruning = m_mapManager->pointCloudPruning();
         LOG_INFO("Nb of pruning cloud points: {}", nbCpPruning);
         int nbKfPruning = m_mapManager->keyframePruning();

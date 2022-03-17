@@ -8,6 +8,7 @@ QMAKE_PROJECT_DEPTH = 0
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Multi_NoDrop
 VERSION=0.11.0
+PROJECTDEPLOYDIR = $${PWD}/../../../..
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z
@@ -18,13 +19,11 @@ include(findremakenrules.pri)
 include(../../../../manualincludepath.pri)
 
 CONFIG(debug,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
 
 CONFIG(release,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Release
     DEFINES += _NDEBUG=1
     DEFINES += NDEBUG=1
 }
@@ -44,6 +43,8 @@ SOURCES += \
 unix {
     LIBS += -ldl
     QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
+
+    QMAKE_POST_LINK += "make install install_deps"
 }
 
 linux {

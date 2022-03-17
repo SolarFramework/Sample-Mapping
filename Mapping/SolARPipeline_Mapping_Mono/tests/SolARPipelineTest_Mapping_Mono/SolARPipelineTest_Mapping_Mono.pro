@@ -6,6 +6,7 @@ CONFIG -= qt
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Mono
 VERSION=0.11.0
+PROJECTDEPLOYDIR = $${PWD}/../../../..
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z
@@ -14,13 +15,11 @@ CONFIG += console
 include(findremakenrules.pri)
 
 CONFIG(debug,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Debug
     DEFINES += _DEBUG=1
     DEFINES += DEBUG=1
 }
 
 CONFIG(release,debug|release) {
-    TARGETDEPLOYDIR = $${PWD}/../../../../bin/Release
     DEFINES += _NDEBUG=1
     DEFINES += NDEBUG=1
 }

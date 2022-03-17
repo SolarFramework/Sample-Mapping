@@ -265,6 +265,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_countNewKeyframes = 0;
 
             if (m_mapManager != nullptr) {
+                std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
                 m_mapManager->setMap(xpcf::utils::make_shared<Map>());
             }
 
@@ -478,8 +479,9 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 			LOG_INFO("Try get map of relocalization service");			
 			SRef<Map> map;
 			if (m_relocPipeline->getMapRequest(map) == FrameworkReturnCode::_SUCCESS) {
-				m_mapManager->setMap(map);
-				SRef<Keyframe> keyframe;
+                std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
+                m_mapManager->setMap(map);
+                SRef<Keyframe> keyframe;
 				m_keyframesManager->getKeyframe(0, keyframe);
 				m_tracking->setNewKeyframe(keyframe);
 				LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
@@ -500,8 +502,9 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 			LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
 			m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
 			SRef<Keyframe> keyframe2;
-			m_keyframesManager->getKeyframe(1, keyframe2);
-			m_tracking->setNewKeyframe(keyframe2);
+            std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
+            m_keyframesManager->getKeyframe(1, keyframe2);
+			m_tracking->updateReferenceKeyframe(keyframe2);
 
 			LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
 

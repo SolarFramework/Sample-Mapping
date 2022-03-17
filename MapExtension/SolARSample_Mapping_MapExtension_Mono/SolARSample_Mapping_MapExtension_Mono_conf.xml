@@ -242,8 +242,8 @@
 
 	<properties>
 		<configure component="SolARDeviceDataLoader">
-			<property name="calibrationFile" type="string" value="../../data/data_hololens/hololens_calibration.json"/>
-			<property name="pathToData" type="string" value="../../data/data_hololens/loop_desktop_B"/>
+			<property name="calibrationFile" type="string" value="../../../../data/data_hololens/hololens_calibration.json"/>
+			<property name="pathToData" type="string" value="../../../../data/data_hololens/loop_desktop_B"/>
 			<property name="delayTime" type="int" value="1"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
@@ -264,7 +264,7 @@
 			<property name="maxNbNeighborKfs" type="int" value="8"/>			
 		</configure>
 		<configure component="SolARMapManager">
-			<property name="directory" type="string" value="../../data/map_hololens/mapA"/>
+			<property name="directory" type="string" value="../../../../data/map_hololens/mapA"/>
 			<property name="identificationFileName" type="string" value="identification.bin"/>
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
@@ -334,7 +334,7 @@
 			<property name="minMeanDistanceIsKeyframe" type="float" value="0.02"/>
 		</configure>
 		<configure component="SolARKeyframeRetrieverFBOW">
-			<property name="VOCpath" type="string" value="../../data/fbow_voc/akaze.fbow"/>
+			<property name="VOCpath" type="string" value="../../../../data/fbow_voc/akaze.fbow"/>
 			<property name="threshold" type="float" value="0.01"/>
 			<property name="level" type="int" value="3"/>
 			<property name="matchingDistanceRatio" type="float" value="0.8"/>

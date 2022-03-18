@@ -607,7 +607,6 @@ namespace MAPPING {
             LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
             LOG_INFO("sim3Transform: \n{}", sim3Transform.matrix());
             // performs loop correction
-			std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
             {
                 m_loopCorrector->correct(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
                 m_countNewKeyframes = 0;

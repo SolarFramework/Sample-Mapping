@@ -496,9 +496,8 @@ namespace MAPPING {
 			LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
 			m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
 			SRef<Keyframe> keyframe2;
-            std::unique_lock<std::mutex> lock(m_mutexUseLocalMap);
-            m_keyframesManager->getKeyframe(1, keyframe2);
-            m_tracking->updateReferenceKeyframe(keyframe2);
+			m_keyframesManager->getKeyframe(1, keyframe2);
+			m_tracking->setNewKeyframe(keyframe2);
 
 			LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
 

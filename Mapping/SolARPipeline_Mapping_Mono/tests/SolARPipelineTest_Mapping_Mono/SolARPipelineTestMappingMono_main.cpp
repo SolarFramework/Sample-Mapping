@@ -30,10 +30,11 @@
 using namespace std;
 using namespace SolAR;
 using namespace SolAR::api;
+using namespace SolAR::api::pipeline;
 using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
-#define INDEX_USE_CAMERA 0
+#define INDEX_USE_CAMERA 1
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -78,8 +79,8 @@ auto fnClientProducer = []() {
         // Get data from hololens files
         if (gArDevice->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
 
-//            gNbImages ++;
-//            LOG_INFO("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
+            gNbImages ++;
+            LOG_DEBUG("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
 			
             SRef<Image> image = images[INDEX_USE_CAMERA];
             Transform3Df pose = poses[INDEX_USE_CAMERA];
@@ -93,13 +94,27 @@ auto fnClientProducer = []() {
 					gIsReloc = true;
 				}
 			}
-			else {
-				// correct pose
-				pose = gT_M_W * pose;
+			else {				
 				// send to mapping
-				gMappingPipeline->mappingProcessRequest(image, pose);
+                Transform3Df updateT_M_W;
+                MappingStatus status;
+                gMappingPipeline->mappingProcessRequest(image, pose, gT_M_W, updateT_M_W, status);
+                gT_M_W = updateT_M_W;
+                switch (status) {
+                case BOOTSTRAP:
+                    LOG_INFO("Bootstrap");
+                    break;
+                case TRACKING_LOST:
+                    LOG_INFO("Tracking lost");
+                    break;
+                case LOOP_CLOSURE:
+                    LOG_INFO("Loop closure");
+                    break;
+                default:
+                    LOG_INFO("Mapping");
+                }
 				// draw pose
-				g3DOverlay->draw(pose, displayImage);
+                g3DOverlay->draw(gT_M_W * pose, displayImage);
 			}			
 
             if (gImageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP) {
@@ -191,8 +206,10 @@ int main(int argc, char ** argv)
         {
             // Create Mapping Pipeline component
             gMappingPipeline = gXpcfComponentManager->resolve<pipeline::IMappingPipeline>();
-
             LOG_INFO("Mapping pipeline component created");
+            // init
+            if (gMappingPipeline->init() != FrameworkReturnCode::_SUCCESS)
+                return -1;
         }
         else {
             LOG_ERROR("Failed to load the configuration file {}", config_file);
@@ -261,6 +278,7 @@ int main(int argc, char ** argv)
                 }
                 else {
                     LOG_ERROR("Cannot start mapping pipeline");
+                    return -1;
                 }
             }
             else {

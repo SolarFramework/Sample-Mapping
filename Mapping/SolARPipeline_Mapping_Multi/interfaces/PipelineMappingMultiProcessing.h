@@ -157,12 +157,17 @@ namespace MAPPING {
 		/// @param status: true (finished) or false (not finished)
 		void setBootstrapSatus(const bool status);
 
+        /// @brief get map data
+        void getMapData();
+
     private:
 
-        bool												m_isBootstrapFinished; // indicates if the bootstrap step is finished
-        mutable std::mutex									m_mutexUseLocalMap; // Mutex used for mapping task
-
-        datastructure::CameraParameters						m_cameraParams;        // camera parameters
+        bool												m_isBootstrapFinished;  // indicates if the bootstrap step is finished
+        mutable std::mutex									m_mutexMapData;         // Mutex for map data
+        std::mutex                                          m_mutexMapping;         // Mutex for mapping
+        datastructure::CameraParameters						m_cameraParams;         // camera parameters
+        std::vector<SRef<datastructure::CloudPoint>>        m_allPointClouds;       // all current point cloud
+        std::vector<datastructure::Transform3Df>            m_allKeyframePoses;     // all current keyframe poses
 
         // Components used
         SRef<api::slam::IBootstrapper>						m_bootstrapper;
@@ -180,8 +185,8 @@ namespace MAPPING {
         SRef<api::loop::ILoopCorrector>						m_loopCorrector;
 		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
 
-        bool												m_isMappingIdle;		// indicates if the mapping task is idle
-        bool												m_isLoopIdle;			// indicates if the mapping task is idle
+        std::atomic_bool                                    m_isMappingIdle;		// indicates if the mapping task is idle
+        std::atomic_bool                                    m_isLoopIdle;			// indicates if the mapping task is idle
         datastructure::Transform3Df							m_T_M_W;				// 3D transformation matrix
 		float												m_minWeightNeighbor;
         int													m_countNewKeyframes;

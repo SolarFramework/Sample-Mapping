@@ -33,6 +33,7 @@
 
 #include <mutex>  // For std::unique_lock
 #include <shared_mutex>
+#include <atomic>
 
 #include "api/pipeline/IMappingPipeline.h"
 #include "api/slam/IBootstrapper.h"
@@ -47,6 +48,7 @@
 #include "api/features/IDescriptorsExtractorFromImage.h"
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
+#include "api/geom/I3DTransform.h"
 
 namespace SolAR {
 using namespace api::pipeline;
@@ -146,23 +148,25 @@ namespace MAPPING {
 		/// @brief method that implementes the full maping processing
 		void processMapping();
 
-        /// @brief returns the status of mapping pipeline
-        MappingStatus getStatus() const;
+        /// @brief get map data
+        void getMapData();
 
-        /// @brief sets the mapping pipeline status
-        void setStatus(MappingStatus status);
+        /// @brief drift correction
+        void driftCorrection(datastructure::Transform3Df driftTransform);
 
     private:
-
-        bool m_isBootstrapFinished; // indicates if the bootstrap step is finished
-        mutable std::shared_mutex m_statusMutex;  // Mutex used for status
-        datastructure::CameraParameters m_cameraParams;        // camera parameters
-        bool m_isDetectedLoop;  // if a loop closure is detected and optimized
-        MappingStatus m_status; // current status of mapping pipeline
-        datastructure::Transform3Df m_lastTransform;    // the last transformation matrix from device to world
-        datastructure::Transform3Df m_loopTransform;    // the correction transformation matrix detected by loop closure
-        bool m_init = false;            // Indicate if initialization has been made
-        bool m_cameraOK = false;        // Indicate if camera parameters has been set
+        datastructure::CameraParameters                 m_cameraParams;     // camera parameters
+        bool                                            m_isDetectedLoop;   // if a loop closure is detected and optimized
+        std::atomic<MappingStatus>                      m_status;           // current status of mapping pipeline
+        datastructure::Transform3Df                     m_lastTransform;    // the last transformation matrix from device to world
+        datastructure::Transform3Df                     m_loopTransform;    // the correction transformation matrix detected by loop closure
+        bool                                            m_init = false;     // Indicate if initialization has been made
+        bool                                            m_cameraOK = false; // Indicate if camera parameters has been set
+        mutable std::mutex                              m_mutexMapData;     // Mutex for map data
+        std::vector<SRef<datastructure::CloudPoint>>    m_allPointClouds;   // all current point cloud
+        std::vector<datastructure::Transform3Df>        m_allKeyframePoses; // all current keyframe poses
+        uint32_t                                        m_lastKeyframeId;   // the last keyframe using the the last transformation
+        uint32_t                                        m_curKeyframeId;    // the current keyframe will be corrected by using the new transformation
 
         // Components used
         SRef<api::slam::IBootstrapper> m_bootstrapper;
@@ -177,6 +181,7 @@ namespace MAPPING {
         SRef<api::loop::ILoopClosureDetector> m_loopDetector;
         SRef<api::loop::ILoopCorrector> m_loopCorrector;
 		SRef<api::geom::IUndistortPoints> m_undistortKeypoints;
+        SRef<api::geom::I3DTransform> m_transform3D;
 
         float m_minWeightNeighbor;
         int m_countNewKeyframes;

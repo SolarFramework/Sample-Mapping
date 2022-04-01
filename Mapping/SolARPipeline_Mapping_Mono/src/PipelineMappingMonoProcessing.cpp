@@ -156,13 +156,13 @@ namespace MAPPING {
         // refine transformation matrix by loop closure detection
         if (m_isDetectedLoop) {
             updatedTransform = m_loopTransform * transform;
+            LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
             m_isDetectedLoop = false;
         }
         // drift correction
         else {
             Transform3Df driftTransform = transform * m_lastTransform.inverse();
             if (!driftTransform.isApprox(Transform3Df::Identity())){
-                LOG_INFO("Drift correction:\n{}", driftTransform.matrix());
                 driftCorrection(driftTransform);
             }
         }
@@ -350,7 +350,11 @@ namespace MAPPING {
 
     void PipelineMappingMonoProcessing::driftCorrection(datastructure::Transform3Df driftTransform)
     {
-        // get neighbor keyframe of the current keyframe
+        LOG_INFO("Drift correction processing");
+        LOG_INFO("Drift transform:\n{}", driftTransform.matrix());
+        LOG_INFO("Last keyframe: {}", m_lastKeyframeId);
+        LOG_INFO("Current keyframe: {}", m_curKeyframeId);
+        // get neighbor keyframe of the current keyframe        
         std::vector<uint32_t> neighborIds;
         std::vector<SRef<Keyframe>> neighborKeyframes;
         m_covisibilityGraphManager->getNeighbors(m_curKeyframeId, m_minWeightNeighbor, neighborIds);
@@ -371,10 +375,13 @@ namespace MAPPING {
         for (int i = m_lastKeyframeId + 1; i < m_curKeyframeId; ++i)
             if (m_keyframesManager->isExistKeyframe(i))
                 loopKfId.push_back(i);
+        LOG_INFO("Nb of keyframes to bundle: {}", loopKfId.size());
+        double errorBundle(0.0);
         if (loopKfId.size() > 0)
-            m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, loopKfId);
+            errorBundle = m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, loopKfId);
         // update last keyframe id
         m_lastKeyframeId = m_curKeyframeId;
+        LOG_INFO("Drift correction done with error: {}", errorBundle);
     }
 
 }

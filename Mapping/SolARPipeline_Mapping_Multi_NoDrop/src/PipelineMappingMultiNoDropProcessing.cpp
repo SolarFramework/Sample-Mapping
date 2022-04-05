@@ -30,7 +30,7 @@ namespace MAPPING {
 
 // Public methods
 
-    PipelineMappingMultiNoDropProcessing::PipelineMappingMultiNoDropProcessing():ConfigurableBase(xpcf::toUUID<PipelineMappingMultiNoDropProcessing>())
+    PipelineMappingMultiNoDropProcessing::PipelineMappingMultiNoDropProcessing(): base::pipeline::AMappingPipeline(xpcf::toMap<PipelineMappingMultiNoDropProcessing>())
     {
         LOG_DEBUG("PipelineMappingMultiNoDropProcessing constructor");
 

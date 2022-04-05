@@ -33,7 +33,7 @@
 
 #include <mutex>  // For std::unique_lock
 
-#include "api/pipeline/IMappingPipeline.h"
+#include "base/pipeline/AMappingPipeline.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
@@ -81,8 +81,7 @@ namespace MAPPING {
      *
      */
 
-    class SOLARPIPELINE_MAPPING_MULTI_EXPORT_API PipelineMappingMultiProcessing : public org::bcom::xpcf::ConfigurableBase,
-            public api::pipeline::IMappingPipeline
+    class SOLARPIPELINE_MAPPING_MULTI_EXPORT_API PipelineMappingMultiProcessing : public base::pipeline::AMappingPipeline
     {
     public:
         PipelineMappingMultiProcessing();

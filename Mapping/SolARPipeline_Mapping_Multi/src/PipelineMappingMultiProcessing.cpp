@@ -32,7 +32,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
 // Public methods
 
-    PipelineMappingMultiProcessing::PipelineMappingMultiProcessing():ConfigurableBase(xpcf::toUUID<PipelineMappingMultiProcessing>())
+    PipelineMappingMultiProcessing::PipelineMappingMultiProcessing(): base::pipeline::AMappingPipeline(xpcf::toMap<PipelineMappingMultiProcessing>())
     {
 
         LOG_DEBUG("PipelineMappingMultiProcessing constructor");

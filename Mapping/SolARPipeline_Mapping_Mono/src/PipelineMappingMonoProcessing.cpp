@@ -27,7 +27,7 @@ namespace MAPPING {
 
 // Public methods
 
-    PipelineMappingMonoProcessing::PipelineMappingMonoProcessing():ConfigurableBase(xpcf::toUUID<PipelineMappingMonoProcessing>())
+    PipelineMappingMonoProcessing::PipelineMappingMonoProcessing(): base::pipeline::AMappingPipeline(xpcf::toMap<PipelineMappingMonoProcessing>())
     {
         LOG_DEBUG("PipelineMappingMonoProcessing constructor");
 

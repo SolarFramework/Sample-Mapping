@@ -35,7 +35,7 @@
 #include <shared_mutex>
 #include <atomic>
 
-#include "api/pipeline/IMappingPipeline.h"
+#include "base/pipeline/AMappingPipeline.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
@@ -81,8 +81,7 @@ namespace MAPPING {
      *
      */
 
-    class SOLARPIPELINE_MAPPING_MONO_EXPORT_API PipelineMappingMonoProcessing : public org::bcom::xpcf::ConfigurableBase,
-            public api::pipeline::IMappingPipeline
+    class SOLARPIPELINE_MAPPING_MONO_EXPORT_API PipelineMappingMonoProcessing : public base::pipeline::AMappingPipeline
     {
     public:
         PipelineMappingMonoProcessing();

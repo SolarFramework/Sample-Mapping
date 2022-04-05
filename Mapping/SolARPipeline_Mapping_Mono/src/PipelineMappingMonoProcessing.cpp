@@ -162,7 +162,7 @@ namespace MAPPING {
         // drift correction
         else {
             Transform3Df driftTransform = transform * m_lastTransform.inverse();
-            if (!driftTransform.isApprox(Transform3Df::Identity())){
+            if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
                 driftCorrection(driftTransform);
             }
         }
@@ -266,6 +266,7 @@ namespace MAPPING {
             if (m_tracking->process(frame, displayImage) != FrameworkReturnCode::_SUCCESS){
                 LOG_INFO("PipelineMappingMultiProcessing::updateVisibility Tracking lost");
                 m_status = MappingStatus::TRACKING_LOST;
+                m_lastKeyframeId = m_curKeyframeId;
                 return;
             }
             else

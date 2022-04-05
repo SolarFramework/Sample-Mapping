@@ -409,7 +409,7 @@ namespace MAPPING {
         // drift correction
         else {
             Transform3Df driftTransform = transform * m_lastTransform.inverse();
-            if (!driftTransform.isApprox(Transform3Df::Identity())){
+            if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
                 m_isDetectedDrift = true;
                 m_dropBufferDriftTransform.push(driftTransform);
             }
@@ -544,7 +544,8 @@ namespace MAPPING {
 		if (m_tracking->process(frame, displayImage) != FrameworkReturnCode::_SUCCESS){
             LOG_INFO("PipelineMappingMultiNoDropProcessing::updateVisibility tracking lost");
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility elapsed time = {} ms", clock.elapsed());
-            m_status = m_status == MappingStatus::LOOP_CLOSURE ? MappingStatus::LOOP_CLOSURE : MappingStatus::TRACKING_LOST;
+            m_status = MappingStatus::TRACKING_LOST;
+            m_lastKeyframeId = m_curKeyframeId;
             return;
         }
         else

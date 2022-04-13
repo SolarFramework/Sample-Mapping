@@ -161,12 +161,17 @@ namespace MAPPING {
 		/// @param status: true (finished) or false (not finished)
 		void setBootstrapSatus(const bool status);
 
+        /// @brief get map data
+        void getMapData();
+
     private:
 
-        bool												m_isBootstrapFinished; // indicates if the bootstrap step is finished
-        mutable std::mutex											m_mutexUseLocalMap; // Mutex used for mapping task
-
-        datastructure::CameraParameters						m_cameraParams;        // camera parameters
+        bool												m_isBootstrapFinished;  // indicates if the bootstrap step is finished
+        mutable std::mutex									m_mutexMapData;         // Mutex for map data
+        std::mutex                                          m_mutexMapping;         // Mutex for mapping
+        datastructure::CameraParameters						m_cameraParams;         // camera parameters
+        std::vector<SRef<datastructure::CloudPoint>>        m_allPointClouds;       // all current point cloud
+        std::vector<datastructure::Transform3Df>            m_allKeyframePoses;     // all current keyframe poses
 
         // Components used
         SRef<api::slam::IBootstrapper>						m_bootstrapper;
@@ -192,6 +197,8 @@ namespace MAPPING {
         bool m_cameraOK = false;        // Indicate if camera parameters has been set
         bool m_started = false;         // Indicate if pipeline il started
         bool m_tasksStarted = false;    // Indicate if tasks are started
+        std::atomic_bool m_isMappingIdle;// indicates if the mapping task is idle
+        std::atomic_bool m_isLoopIdle;  // indicates if the mapping task is idle
 
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;
@@ -204,8 +211,7 @@ namespace MAPPING {
 		xpcf::SharedBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>	m_sharedBufferCamImagePoseCapture{ BUFFER_SIZE_IMAGE };
 		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferFrame{ BUFFER_SIZE_FRAME };
 		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferFrameBootstrap{ BUFFER_SIZE_FRAME };
-		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferAddKeyframe{ 1 };
-        xpcf::DropBuffer<SRef<datastructure::Keyframe>>							m_dropBufferNewKeyframe;
+		xpcf::DropBuffer<SRef<datastructure::Frame>>							m_dropBufferAddKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>							m_dropBufferNewKeyframeLoop; 
     };
 

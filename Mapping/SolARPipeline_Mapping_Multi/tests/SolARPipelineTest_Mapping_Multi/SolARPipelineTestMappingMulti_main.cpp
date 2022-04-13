@@ -26,6 +26,7 @@
 #include "api/input/files/ITrackableLoader.h"
 #include "api/solver/pose/ITrackablePose.h"
 #include "api/display/I3DOverlay.h"
+#include "core/Timer.h"
 
 using namespace std;
 using namespace SolAR;
@@ -34,6 +35,7 @@ using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 0
+#define DELAY_BETWEEN_REQUESTS 5000
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -62,6 +64,11 @@ int gNbImages = 0;
 bool gIsReloc = false;
 // Transformation matrix to the world coordinate system
 Transform3Df gT_M_W = Transform3Df::Identity();
+// Timer to manage delay between two requests to the Mapping service
+Timer timer;
+// data for visualization
+std::vector<SRef<CloudPoint>> pointClouds;
+std::vector<Transform3Df> keyframePoses;
 
 // Fonction for producer client thread
 auto fnClientProducer = []() {
@@ -112,25 +119,30 @@ auto fnClientProducer = []() {
 
 // Fonction for viewer client thread
 auto fnClientViewer = []() {
+    if (timer.elapsed() > DELAY_BETWEEN_REQUESTS) {
+		// Point clouds and keyframe poses used by client viewer
+		std::vector<SRef<CloudPoint>> newPointClouds;
+		std::vector<Transform3Df> newKeyframePoses;
 
-    // Point clouds and keyframe poses used by client viewer
-    std::vector<SRef<CloudPoint>> pointClouds;
-    std::vector<Transform3Df> keyframePoses;
+		// Try to get point clouds and key frame poses to display
+		if (gMappingPipelineMulti->getDataForVisualization(newPointClouds, newKeyframePoses) == FrameworkReturnCode::_SUCCESS) {
+			LOG_DEBUG("Viewer client: get point cloud and keyframe poses");
+			pointClouds = newPointClouds;
+			keyframePoses = newKeyframePoses;
+		}
+        timer.restart();
+	}	
 
-    // Try to get point clouds and key frame poses to display
-    if (gMappingPipelineMulti->getDataForVisualization(pointClouds, keyframePoses) == FrameworkReturnCode::_SUCCESS) {
-
-        LOG_DEBUG("Viewer client: get point cloud and keyframe poses");
-
-        if (gViewer3D == 0) {
-            gViewer3D = gXpcfComponentManager->resolve<display::I3DPointsViewer>();
-            LOG_INFO("Viewer client: I3DPointsViewer component created");
-        }
-
-        // Display new data
-        gViewer3D->display(pointClouds, keyframePoses[keyframePoses.size()-1], keyframePoses, {}, {});
-
-    }
+	if (pointClouds.size() > 0) {
+		if (gViewer3D == 0) {
+			gViewer3D = gXpcfComponentManager->resolve<display::I3DPointsViewer>();
+			LOG_INFO("Viewer client: I3DPointsViewer component created");
+		}
+		// Display
+		if (gViewer3D->display(pointClouds, keyframePoses[keyframePoses.size() - 1], keyframePoses, {}, {}) == FrameworkReturnCode::_STOP) {
+			gClientViewerTask->stop();
+		}
+	}    
     else {
         LOG_DEBUG("Viewer client: nothing to display");
     }
@@ -146,15 +158,15 @@ static void SigInt(int signo) {
     if (gClientProducerTask != 0)
         gClientProducerTask->stop();
 
-    LOG_INFO("Stop viewer client thread");
-
-    if (gClientViewerTask != 0)
-        gClientViewerTask->stop();
-
     LOG_INFO("Stop mapping pipeline process");
 
     if (gMappingPipelineMulti != 0)
         gMappingPipelineMulti->stop();
+
+    LOG_INFO("Stop viewer client thread");
+
+    if (gClientViewerTask != 0)
+        gClientViewerTask->stop();
 
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 

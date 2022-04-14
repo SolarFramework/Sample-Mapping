@@ -277,6 +277,7 @@ namespace MAPPING {
             m_lastTransform = Transform3Df(Maths::Matrix4f::Zero());
             m_status = MappingStatus::BOOTSTRAP;
             m_isDetectedLoop = false;
+            m_isDetectedDrift = false;
             m_loopTransform = Transform3Df::Identity();
             m_isMappingIdle = true;
             m_isLoopIdle = true;
@@ -496,7 +497,8 @@ namespace MAPPING {
                 m_mapManager->setMap(map);
 				SRef<Keyframe> keyframe;
 				m_keyframesManager->getKeyframe(0, keyframe);
-                m_lastKeyframeId = 1;
+                m_lastKeyframeId = 0;
+                m_curKeyframeId = 0;
 				m_tracking->setNewKeyframe(keyframe);
 				LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
 				LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
@@ -518,6 +520,7 @@ namespace MAPPING {
 			SRef<Keyframe> keyframe2;
 			m_keyframesManager->getKeyframe(1, keyframe2);
             m_lastKeyframeId = 1;
+            m_curKeyframeId = 1;
 			m_tracking->setNewKeyframe(keyframe2);
             LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
             LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());

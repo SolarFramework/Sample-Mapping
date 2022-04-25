@@ -101,6 +101,13 @@ namespace MAPPING {
         /// @return FrameworkReturnCode::_SUCCESS if the camera parameters are correctly set, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode setCameraParameters(const datastructure::CameraParameters & cameraParams) override;
 
+        /// @brief Set the rectification parameters (use for stereo camera)
+        /// @param[in] rectCam1 the rectification parameters of the first camera
+        /// @param[in] rectCam2 the rectification parameters of the second camera
+        /// @return FrameworkReturnCode::_SUCCESS if the rectification parameters are correctly set, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode setRectificationParameters(const SolAR::datastructure::RectificationParameters & rectCam1,
+                                                       const SolAR::datastructure::RectificationParameters & rectCam2) override;
+
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode start() override;
@@ -112,14 +119,14 @@ namespace MAPPING {
         /// @brief Request to the mapping pipeline to process a new image/pose
         /// Retrieve the new image (and pose) to process, in the current pipeline context
         /// (camera configuration, fiducial marker, point cloud, key frames, key points)
-        /// @param[in] image the input image to process
-        /// @param[in] pose the input pose in the device coordinate system
+        /// @param[in] images the input image to process
+        /// @param[in] poses the input pose in the device coordinate system
         /// @param[in] transform the transformation matrix from the device coordinate system to the world coordinate system
         /// @param[out] updatedTransform the refined transformation by a loop closure detection
         /// @param[out] status the current status of the mapping pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode mappingProcessRequest(const SRef<SolAR::datastructure::Image> image,
-                                                  const SolAR::datastructure::Transform3Df & pose,
+        FrameworkReturnCode mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
+                                                  const std::vector<SolAR::datastructure::Transform3Df> & poses,
                                                   const SolAR::datastructure::Transform3Df & transform,
                                                   SolAR::datastructure::Transform3Df & updatedTransform,
                                                   MappingStatus & status) override;

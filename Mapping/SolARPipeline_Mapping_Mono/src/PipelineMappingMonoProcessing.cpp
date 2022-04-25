@@ -111,6 +111,13 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
+    FrameworkReturnCode PipelineMappingMonoProcessing::setRectificationParameters(const SolAR::datastructure::RectificationParameters & rectCam1,
+                                                                                  const SolAR::datastructure::RectificationParameters & rectCam2)
+    {
+        LOG_ERROR("Stereo camera is not supported for this pipeline");
+        return FrameworkReturnCode::_ERROR_;
+    }
+
     FrameworkReturnCode PipelineMappingMonoProcessing::start() {
 
         LOG_DEBUG("PipelineMappingMonoProcessing::start");
@@ -140,8 +147,8 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMonoProcessing::mappingProcessRequest(const SRef<SolAR::datastructure::Image> image,
-                                                                             const SolAR::datastructure::Transform3Df & pose,
+    FrameworkReturnCode PipelineMappingMonoProcessing::mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
+                                                                             const std::vector<SolAR::datastructure::Transform3Df> & poses,
                                                                              const SolAR::datastructure::Transform3Df & transform,
                                                                              SolAR::datastructure::Transform3Df & updatedTransform,
                                                                              MappingStatus & status)
@@ -168,7 +175,7 @@ namespace MAPPING {
         }
 
         // Correct pose to the world coordinate system
-        Transform3Df poseCorrected = updatedTransform * pose;
+        Transform3Df poseCorrected = updatedTransform * poses[0];
 
         // update status
         status = m_status;
@@ -177,7 +184,7 @@ namespace MAPPING {
         m_lastTransform = updatedTransform;
 
         // Add pair (image, pose) to input drop buffer for mapping
-        m_inputImagePoseBuffer.push(std::make_pair(image, poseCorrected));               
+        m_inputImagePoseBuffer.push(std::make_pair(images[0], poseCorrected));
 
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 

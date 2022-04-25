@@ -252,6 +252,13 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
+    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::setRectificationParameters(const SolAR::datastructure::RectificationParameters & rectCam1,
+                                                                                         const SolAR::datastructure::RectificationParameters & rectCam2)
+    {
+        LOG_ERROR("Stereo camera is not supported for this pipeline");
+        return FrameworkReturnCode::_ERROR_;
+    }
+
     FrameworkReturnCode PipelineMappingMultiNoDropProcessing::start()
     {
         LOG_DEBUG("PipelineMappingMultiNoDropProcessing::start");
@@ -372,8 +379,8 @@ namespace MAPPING {
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::mappingProcessRequest(const SRef<SolAR::datastructure::Image> image,
-                                                                                    const SolAR::datastructure::Transform3Df & pose,
+    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
+                                                                                    const std::vector<SolAR::datastructure::Transform3Df> & poses,
                                                                                     const SolAR::datastructure::Transform3Df & transform,
                                                                                     SolAR::datastructure::Transform3Df & updatedTransform,
                                                                                     MappingStatus & status)
@@ -417,7 +424,7 @@ namespace MAPPING {
         }
 
         // Correct pose to the world coordinate system
-        Transform3Df poseCorrected = updatedTransform * pose;
+        Transform3Df poseCorrected = updatedTransform * poses[0];
 
         // update status
         status = m_status;
@@ -426,7 +433,7 @@ namespace MAPPING {
         m_lastTransform = updatedTransform;
 
 		// Send image and corrected pose to process
-        m_sharedBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
+        m_sharedBufferCamImagePoseCapture.push(std::make_pair(images[0], poseCorrected));
 
         LOG_DEBUG("Nb images in buffer = {}", m_sharedBufferCamImagePoseCapture.size());
 

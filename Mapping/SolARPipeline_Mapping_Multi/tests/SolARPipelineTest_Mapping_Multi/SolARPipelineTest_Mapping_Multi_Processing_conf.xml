@@ -244,7 +244,7 @@
             <property name="minWeightNeighbor" type="float" value="50.0"/>
             <property name="displayTrackedPoints" type="int" value="1"/>
             <property name="thresAngleViewDirection" type="float" value="0.8"/>
-			<property name="nbPassedFrameAtLeast" type="int" value="3"/>
+			<property name="nbPassedFrameAtLeast" type="int" value="1"/>
             <property name="ratioCPRefKeyframe" type="float" value="0.5"/>
             <property name="minTrackedPoints" type="int" value="200"/>
         </configure>
@@ -335,14 +335,14 @@
 			<property name="iterationsCount" type="int" value="500"/>
 			<property name="reprojError" type="float" value="3.0"/>
 			<property name="confidence" type="float" value="0.9"/>
-			<property name="minNbInliers" type="int" value="20"/>
+			<property name="minNbInliers" type="int" value="30"/>
         </configure>
         <configure component="SolARPoseFinderFrom2D2DOpencv">
 			<property name="confidence" type="float" value="0.99"/>
 			<property name="outlierDistanceRatio" type="float" value="0.005"/>
         </configure>
         <configure component="SolARLoopClosureDetector">
-			<property name="minNbInliers" type="int" value="30"/>
+			<property name="minNbInliers" type="int" value="50"/>
         </configure>
         <configure component="SolARMatchesOverlayOpencv">
 			<property name="thickness" type="uint" value="1"/>

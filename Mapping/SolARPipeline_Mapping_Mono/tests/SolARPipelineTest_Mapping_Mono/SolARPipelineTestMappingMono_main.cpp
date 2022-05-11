@@ -26,30 +26,33 @@
 #include "api/input/files/ITrackableLoader.h"
 #include "api/solver/pose/ITrackablePose.h"
 #include "api/display/I3DOverlay.h"
+#include "core/Timer.h"
+#include "xpcf/threading/DropBuffer.h"
 
 using namespace std;
 using namespace SolAR;
 using namespace SolAR::api;
+using namespace SolAR::api::pipeline;
 using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
-#define INDEX_USE_CAMERA 0
+#define INDEX_USE_CAMERA 1
+#define DELAY_BETWEEN_REQUESTS 2000
+#define NB_IMAGE_BETWEEN_RELOC 5
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
 
 // Global Mapping Pipeline instance
-SRef<pipeline::IMappingPipeline> gMappingPipeline = 0;
+SRef<pipeline::IMappingPipeline> gMappingPipelineMono = 0;
 
 // Global client threads
 xpcf::DelegateTask * gClientProducerTask = 0;
 xpcf::DelegateTask * gClientViewerTask = 0;
+xpcf::DelegateTask * gRelocMarkerTask = 0;
 
 // Viewer used by viewer client
 SRef<api::display::I3DPointsViewer> gViewer3D = 0;
-// Point clouds and keyframe poses used by client viewer
-std::vector<SRef<CloudPoint>> gPointClouds;
-std::vector<Transform3Df> gKeyframePoses;
 
 // Components used by producer client
 SRef<input::devices::IARDevice> gArDevice = 0;
@@ -60,72 +63,123 @@ SRef<display::I3DOverlay> g3DOverlay = 0;
 // Indicates if producer client has images to send to mapping pipeline
 bool gImageToSend = true;
 // Nb of images sent by producer client
-int gNbImages = 0;
+std::atomic_int gNbImages = NB_IMAGE_BETWEEN_RELOC;
 // Check reloc based on a marker
-bool gIsReloc = false;
+std::atomic_bool gIsReloc = false;
 // Transformation matrix to the world coordinate system
 Transform3Df gT_M_W = Transform3Df::Identity();
+// Timer to manage delay between two requests to the Mapping service
+Timer timer;
+// data for visualization
+std::vector<SRef<CloudPoint>> pointClouds;
+std::vector<Transform3Df> keyframePoses;
+// Drop buffer for reloc marker
+xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> gDropBufferRelocalizationMarker;
 
-// Fonction for producer client thread
+// Function for reloc marker thread
+auto fnRelocMarker = []() {
+    std::pair<SRef<Image>, Transform3Df> imagePose;
+
+    if (!gDropBufferRelocalizationMarker.tryPop(imagePose)) {
+        xpcf::DelegateTask::yield();
+        return;
+    }
+
+    SRef<Image> image = imagePose.first;
+    Transform3Df pose = imagePose.second;
+    Transform3Df new_pose;
+
+    LOG_DEBUG("Relocalization marker processing");
+
+    if (gTrackablePose->estimate(image, new_pose) == FrameworkReturnCode::_SUCCESS) {
+        gT_M_W = new_pose * pose.inverse();
+        LOG_INFO("Transform matrix:\n{}", gT_M_W.matrix());
+        gIsReloc = true;
+        std::this_thread::sleep_for(std::chrono::seconds(30));
+    }
+};
+
+// Function for producer client thread
 auto fnClientProducer = []() {
+
+    if (!gImageToSend) {
+        xpcf::DelegateTask::yield();
+        return;
+    }
 
     std::vector<SRef<Image>> images;
     std::vector<Transform3Df> poses;
     std::chrono::system_clock::time_point timestamp;
 
-    // Still images to process?
-    if (gImageToSend) {
-        // Get data from hololens files
-        if (gArDevice->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
+    // Get data from hololens files
+    if (gArDevice->getData(images, poses, timestamp) == FrameworkReturnCode::_SUCCESS) {
+        SRef<Image> image = images[INDEX_USE_CAMERA];
+        Transform3Df pose = poses[INDEX_USE_CAMERA];
+        SRef<Image> displayImage = image->copy();
 
-//            gNbImages ++;
-//            LOG_INFO("Producer client: Send (image, pose) num {} to mapping pipeline", gNbImages);
-			
-            SRef<Image> image = images[INDEX_USE_CAMERA];
-            Transform3Df pose = poses[INDEX_USE_CAMERA];
-			SRef<Image> displayImage = image->copy();
+        if (gNbImages == NB_IMAGE_BETWEEN_RELOC){
+            gDropBufferRelocalizationMarker.push(std::make_pair(image, pose));
+            gNbImages = 0;
+        }
+        else
+            gNbImages++;
 
-			// find T_W_M
-			if (!gIsReloc) {
-				Transform3Df T_M_C;
-				if (gTrackablePose->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
-					gT_M_W = T_M_C * pose.inverse();
-					gIsReloc = true;
-				}
-			}
-			else {
-				// correct pose
-				pose = gT_M_W * pose;
-				// send to mapping
-				gMappingPipeline->mappingProcessRequest(image, pose);
-				// draw pose
-				g3DOverlay->draw(pose, displayImage);
-			}			
-
-            if (gImageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP) {
-                gClientProducerTask->stop();
+        if (gIsReloc) {
+            // send to mapping
+            Transform3Df updateT_M_W;
+            MappingStatus status;
+            gMappingPipelineMono->mappingProcessRequest(image, pose, gT_M_W, updateT_M_W, status);
+            gT_M_W = updateT_M_W;
+            switch (status) {
+            case BOOTSTRAP:
+                LOG_INFO("Bootstrap");
+                break;
+            case TRACKING_LOST:
+                LOG_INFO("Tracking lost");
+                break;
+            case LOOP_CLOSURE:
+                LOG_INFO("Loop closure");
+                break;
+            default:
+                LOG_INFO("Mapping");
             }
+            // draw pose
+            g3DOverlay->draw(gT_M_W * pose, displayImage);
         }
-        else {
-            gImageToSend = false;
-            LOG_INFO("Producer client: no more images to send");
+
+        if (gImageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP) {
+            gClientProducerTask->stop();
         }
+    }
+    else {
+        gImageToSend = false;
+        LOG_INFO("Producer client: no more images to send");
     }
 };
 
-// Fonction for viewer client thread
+// Function for viewer client thread
 auto fnClientViewer = []() {
+    if (timer.elapsed() > DELAY_BETWEEN_REQUESTS) {
+        // Try to get point clouds and key frame poses to display
+        if (gMappingPipelineMono->getDataForVisualization(pointClouds, keyframePoses) == FrameworkReturnCode::_SUCCESS) {
+            LOG_DEBUG("Viewer client: get point cloud and keyframe poses");
+        }
+        timer.restart();
+    }
 
-    // Try to get point clouds and key frame poses to display
-    if (gMappingPipeline->getDataForVisualization(gPointClouds, gKeyframePoses) == FrameworkReturnCode::_SUCCESS) {
-
+    if (pointClouds.size() > 0) {
         if (gViewer3D == 0) {
             gViewer3D = gXpcfComponentManager->resolve<display::I3DPointsViewer>();
             LOG_INFO("Viewer client: I3DPointsViewer component created");
         }
-
-        // Display new data
-        gViewer3D->display(gPointClouds, gKeyframePoses[gKeyframePoses.size()-1], gKeyframePoses, {}, {});
+        // Display
+        if (gViewer3D->display(pointClouds, keyframePoses[keyframePoses.size() - 1], keyframePoses, {}, {}) == FrameworkReturnCode::_STOP) {
+            gClientViewerTask->stop();
+        }
+    }
+    else {
+        LOG_DEBUG("Viewer client: nothing to display");
+        xpcf::DelegateTask::yield();
     }
 };
 
@@ -139,15 +193,20 @@ static void SigInt(int signo) {
     if (gClientProducerTask != 0)
         gClientProducerTask->stop();
 
+    LOG_INFO("Stop mapping pipeline process");
+
+    if (gMappingPipelineMono != 0)
+        gMappingPipelineMono->stop();
+
     LOG_INFO("Stop viewer client thread");
 
     if (gClientViewerTask != 0)
         gClientViewerTask->stop();
 
-    LOG_INFO("Stop mapping pipeline process");
+    LOG_INFO("Stop reloc marker thread");
 
-    if (gMappingPipeline != 0)
-        gMappingPipeline->stop();
+    if (gRelocMarkerTask != 0)
+        gRelocMarkerTask->stop();
 
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
@@ -190,9 +249,11 @@ int main(int argc, char ** argv)
         if (gXpcfComponentManager->load(config_file) == org::bcom::xpcf::_SUCCESS)
         {
             // Create Mapping Pipeline component
-            gMappingPipeline = gXpcfComponentManager->resolve<pipeline::IMappingPipeline>();
-
+            gMappingPipelineMono = gXpcfComponentManager->resolve<pipeline::IMappingPipeline>();
             LOG_INFO("Mapping pipeline component created");
+            // init
+            if (gMappingPipelineMono->init() != FrameworkReturnCode::_SUCCESS)
+                return -1;
         }
         else {
             LOG_ERROR("Failed to load the configuration file {}", config_file);
@@ -210,57 +271,61 @@ int main(int argc, char ** argv)
             gImageViewer = gXpcfComponentManager->resolve<display::IImageViewer>();
             LOG_INFO("Producer client: Image viewer component created");
 
-			gTrackableLoader = gXpcfComponentManager->resolve<input::files::ITrackableLoader>();
-			LOG_INFO("Producer client: Trackable loader component created");
+            gTrackableLoader = gXpcfComponentManager->resolve<input::files::ITrackableLoader>();
+            LOG_INFO("Producer client: Trackable loader component created");
 
-			gTrackablePose = gXpcfComponentManager->resolve<solver::pose::ITrackablePose>();
-			LOG_INFO("Producer client: Trackable pose estimator component created");
+            gTrackablePose = gXpcfComponentManager->resolve<solver::pose::ITrackablePose>();
+            LOG_INFO("Producer client: Trackable pose estimator component created");
 
-			g3DOverlay = gXpcfComponentManager->resolve<display::I3DOverlay>();
-			LOG_INFO("Producer client: 3D overlay component created");
+            g3DOverlay = gXpcfComponentManager->resolve<display::I3DOverlay>();
+            LOG_INFO("Producer client: 3D overlay component created");
 
-			// set camera parameters
-			CameraRigParameters camRigParams = gArDevice->getCameraParameters();
-			CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
-			g3DOverlay->setCameraParameters(camParams.intrinsic, camParams.distortion);
-			gTrackablePose->setCameraParameters(camParams.intrinsic, camParams.distortion);
+            // set camera parameters
+            CameraRigParameters camRigParams = gArDevice->getCameraParameters();
+            CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
+            g3DOverlay->setCameraParameters(camParams.intrinsic, camParams.distortion);
+            gTrackablePose->setCameraParameters(camParams.intrinsic, camParams.distortion);
 
-			// Load and set Trackable
-			SRef<Trackable> trackable;
-			if (gTrackableLoader->loadTrackable(trackable) != FrameworkReturnCode::_SUCCESS)
-			{
-				LOG_ERROR("Cannot load trackable");
-				return -1;
-			}
-			else
-			{
-				if (gTrackablePose->setTrackable(trackable) != FrameworkReturnCode::_SUCCESS)
-				{
-					LOG_ERROR("Cannot set trackable to trackable pose estimator");
-					return -1;
-				}
-			}
+            // Load and set Trackable
+            SRef<Trackable> trackable;
+            if (gTrackableLoader->loadTrackable(trackable) != FrameworkReturnCode::_SUCCESS)
+            {
+                LOG_ERROR("Cannot load trackable");
+                return -1;
+            }
+            else
+            {
+                if (gTrackablePose->setTrackable(trackable) != FrameworkReturnCode::_SUCCESS)
+                {
+                    LOG_ERROR("Cannot set trackable to trackable pose estimator");
+                    return -1;
+                }
+            }
 
             // Connect remotely to the HoloLens streaming app
             if (gArDevice->start() == FrameworkReturnCode::_SUCCESS) {
 
                 // Load camera intrinsics parameters
-				CameraRigParameters camRigParams = gArDevice->getCameraParameters();
-				CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
+                CameraRigParameters camRigParams = gArDevice->getCameraParameters();
+                CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
 
                 LOG_INFO("Producer client: Set mapping pipeline camera parameters");
-                gMappingPipeline->setCameraParameters(camParams);
+                gMappingPipelineMono->setCameraParameters(camParams);
 
                 LOG_INFO("Producer client: Start mapping pipeline");
 
-                if (gMappingPipeline->start() == FrameworkReturnCode::_SUCCESS) {
+                if (gMappingPipelineMono->start() == FrameworkReturnCode::_SUCCESS) {
                     LOG_INFO("Start producer client thread");
 
                     gClientProducerTask  = new xpcf::DelegateTask(fnClientProducer);
                     gClientProducerTask->start();
+
+                    gRelocMarkerTask  = new xpcf::DelegateTask(fnRelocMarker);
+                    gRelocMarkerTask->start();
                 }
                 else {
                     LOG_ERROR("Cannot start mapping pipeline");
+                    return -1;
                 }
             }
             else {
@@ -292,6 +357,7 @@ int main(int argc, char ** argv)
 
         // Wait for interruption
         while (true);
+
     }
     catch (xpcf::Exception & e) {
         LOG_ERROR("The following exception has been caught {}", e.what());

@@ -33,7 +33,7 @@
 
 #include <mutex>  // For std::unique_lock
 
-#include "api/pipeline/IMappingPipeline.h"
+#include "base/pipeline/AMappingPipeline.h"
 #include "api/slam/IBootstrapper.h"
 #include "api/solver/map/IBundler.h"
 #include "api/geom/IUndistortPoints.h"
@@ -48,8 +48,10 @@
 #include "api/loop/ILoopCorrector.h"
 #include "api/pipeline/IMapUpdatePipeline.h"
 #include "api/pipeline/IRelocalizationPipeline.h"
+#include "api/geom/I3DTransform.h"
 
 namespace SolAR {
+using namespace api::pipeline;
 namespace PIPELINES {
 namespace MAPPING {
 
@@ -79,8 +81,7 @@ namespace MAPPING {
      *
      */
 
-    class SOLARPIPELINE_MAPPING_MULTI_EXPORT_API PipelineMappingMultiProcessing : public org::bcom::xpcf::ConfigurableBase,
-            public api::pipeline::IMappingPipeline
+    class SOLARPIPELINE_MAPPING_MULTI_EXPORT_API PipelineMappingMultiProcessing : public base::pipeline::AMappingPipeline
     {
     public:
         PipelineMappingMultiProcessing();
@@ -111,11 +112,17 @@ namespace MAPPING {
         /// @brief Request to the mapping pipeline to process a new image/pose
         /// Retrieve the new image (and pose) to process, in the current pipeline context
         /// (camera configuration, fiducial marker, point cloud, key frames, key points)
-        /// @param[in] image: the input image to process
-        /// @param[in] pose: the input pose to process
+        /// @param[in] image the input image to process
+        /// @param[in] pose the input pose in the device coordinate system
+        /// @param[in] transform the transformation matrix from the device coordinate system to the world coordinate system
+        /// @param[out] updatedTransform the refined transformation by a loop closure detection
+        /// @param[out] status the current status of the mapping pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode mappingProcessRequest(const SRef<datastructure::Image> image,
-                                                  const datastructure::Transform3Df & pose) override;
+        FrameworkReturnCode mappingProcessRequest(const SRef<SolAR::datastructure::Image> image,
+                                                  const SolAR::datastructure::Transform3Df & pose,
+                                                  const SolAR::datastructure::Transform3Df & transform,
+                                                  SolAR::datastructure::Transform3Df & updatedTransform,
+                                                  MappingStatus & status) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization
         /// (resulting from all mapping processing since the start of the pipeline)
@@ -148,21 +155,14 @@ namespace MAPPING {
 		/// and update global map
 		void globalBundleAdjustment();
 
-		/// @brief returns the status of bootstrap
-		/// @return true if bootstrap is finished (m_isBootstrapFinished value)
-		bool isBootstrapFinished() const;
-
-		/// @brief sets the bootstrap status
-		/// (the m_isBootstrapFinished variable value)
-		/// @param status: true (finished) or false (not finished)
-		void setBootstrapSatus(const bool status);
+        /// @brief drift correction
+        void driftCorrection();
 
         /// @brief get map data
-        void getMapData();
+        void getMapData();        
 
     private:
 
-        bool												m_isBootstrapFinished;  // indicates if the bootstrap step is finished
         mutable std::mutex									m_mutexMapData;         // Mutex for map data
         std::mutex                                          m_mutexMapping;         // Mutex for mapping
         datastructure::CameraParameters						m_cameraParams;         // camera parameters
@@ -184,10 +184,17 @@ namespace MAPPING {
         SRef<api::loop::ILoopClosureDetector>				m_loopDetector;
         SRef<api::loop::ILoopCorrector>						m_loopCorrector;
 		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
+        SRef<api::geom::I3DTransform>                       m_transform3D;
 
         std::atomic_bool                                    m_isMappingIdle;		// indicates if the mapping task is idle
-        std::atomic_bool                                    m_isLoopIdle;			// indicates if the mapping task is idle
-        datastructure::Transform3Df							m_T_M_W;				// 3D transformation matrix
+        std::atomic_bool                                    m_isLoopIdle;			// indicates if the loop closure task is idle
+        std::atomic_bool                                    m_isDetectedLoop;       // indicates if a loop is detected
+        std::atomic_bool                                    m_isDetectedDrift;      // indicates if a drift is detected by relocalization
+        std::atomic<MappingStatus>                          m_status;               // current status of mapping pipeline
+        datastructure::Transform3Df                         m_lastTransform;        // the last transformation matrix from device to world
+        datastructure::Transform3Df                         m_loopTransform;        // the correction transformation matrix detected by loop closure
+        uint32_t                                            m_lastKeyframeId;       // the last keyframe using the the last transformation
+        uint32_t                                            m_curKeyframeId;        // the current keyframe will be corrected by using the new transformation
 		float												m_minWeightNeighbor;
         int													m_countNewKeyframes;
 
@@ -202,6 +209,7 @@ namespace MAPPING {
         xpcf::DelegateTask * m_updateVisibilityTask = nullptr;
         xpcf::DelegateTask * m_mappingTask = nullptr;
         xpcf::DelegateTask * m_loopClosureTask = nullptr;
+        xpcf::DelegateTask * m_driftCorrectionTask = nullptr;
 
         // Drop buffers used by mapping processing
         xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCapture;
@@ -209,6 +217,7 @@ namespace MAPPING {
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameBootstrap;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;
         xpcf::DropBuffer<SRef<datastructure::Keyframe>>                        m_dropBufferNewKeyframeLoop;        
+        xpcf::DropBuffer<datastructure::Transform3Df>                          m_dropBufferDriftTransform;
     };
 
 }

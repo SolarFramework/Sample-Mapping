@@ -244,7 +244,7 @@
             <property name="minWeightNeighbor" type="float" value="50.0"/>
             <property name="displayTrackedPoints" type="int" value="1"/>
             <property name="thresAngleViewDirection" type="float" value="0.8"/>
-			<property name="nbPassedFrameAtLeast" type="int" value="3"/>
+                        <property name="nbPassedFrameAtLeast" type="int" value="1"/>
             <property name="ratioCPRefKeyframe" type="float" value="0.5"/>
             <property name="minTrackedPoints" type="int" value="200"/>
         </configure>

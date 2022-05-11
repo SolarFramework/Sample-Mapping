@@ -27,7 +27,7 @@ namespace MAPPING {
 
 // Public methods
 
-    PipelineMappingMonoProcessing::PipelineMappingMonoProcessing():ConfigurableBase(xpcf::toUUID<PipelineMappingMonoProcessing>())
+    PipelineMappingMonoProcessing::PipelineMappingMonoProcessing(): base::pipeline::AMappingPipeline(xpcf::toMap<PipelineMappingMonoProcessing>())
     {
         LOG_DEBUG("PipelineMappingMonoProcessing constructor");
 
@@ -48,75 +48,65 @@ namespace MAPPING {
             declareInjectable<api::features::IDescriptorsExtractorFromImage>(m_descriptorExtractor);
             declareInjectable<api::loop::ILoopClosureDetector>(m_loopDetector);
             declareInjectable<api::loop::ILoopCorrector>(m_loopCorrector);
-
+            declareInjectable<api::geom::I3DTransform>(m_transform3D);
             LOG_DEBUG("All component injections declared");
-
-            LOG_DEBUG("Initialize instance attributes");
-
-            // Initialize private members
-            m_cameraParams.resolution.width = 0;
-            m_cameraParams.resolution.height = 0;
-            m_countNewKeyframes = 0;
-
-            m_T_M_W = Transform3Df::Identity();
-            m_minWeightNeighbor = 0;
-
-            // Initial bootstrap status
-            m_isBootstrapFinished = false;
-
-            LOG_DEBUG("Set the mapping function for asynchronous task");
-            // Mapping processing function
-            if (m_mappingTask == nullptr) {
-                auto fnMappingProcessing = [&]() {
-                    processMapping();
-                };
-
-                m_mappingTask = new xpcf::DelegateTask(fnMappingProcessing);
-            }
         }
         catch (xpcf::Exception & e) {
             LOG_ERROR("The following exception has been caught {}", e.what());
         }
     }
 
-    void PipelineMappingMonoProcessing::onInjected() {
-
+    void PipelineMappingMonoProcessing::onInjected()
+    {
         LOG_DEBUG("PipelineMappingMonoProcessing::onInjected");
-
         // Get properties
-        m_reprojErrorThreshold = m_mapManager->bindTo<xpcf::IConfigurable>()->getProperty("reprojErrorThreshold")->getFloatingValue();
         m_minWeightNeighbor = m_mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
     }
 
-    PipelineMappingMonoProcessing::~PipelineMappingMonoProcessing() {
-
+    PipelineMappingMonoProcessing::~PipelineMappingMonoProcessing()
+    {
         LOG_DEBUG("PipelineMappingMonoProcessing destructor");
-
         delete m_mappingTask;
     }
 
-    FrameworkReturnCode PipelineMappingMonoProcessing::init() {
-
-        LOG_DEBUG("PipelineMappingMonoProcessing::setCameraParameters");
-
+    FrameworkReturnCode PipelineMappingMonoProcessing::init()
+    {
+        LOG_DEBUG("PipelineMappingMonoProcessing::init");
+        // Initialize private members
+        m_countNewKeyframes = 0;        
+        m_lastTransform = Transform3Df(Maths::Matrix4f::Zero());
+        // Initial bootstrap status
+        m_status = MappingStatus::BOOTSTRAP;
+        // loop
+        m_isDetectedLoop = false;
+        m_loopTransform = Transform3Df::Identity();
+        // init task
+        // Mapping processing function
+        if (m_mappingTask == nullptr) {
+            auto fnMappingProcessing = [&]() {
+                processMapping();
+            };
+            m_mappingTask = new xpcf::DelegateTask(fnMappingProcessing);
+        }
+        // init done
+        m_init = true;
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMonoProcessing::setCameraParameters(const CameraParameters & cameraParams) {
-
+    FrameworkReturnCode PipelineMappingMonoProcessing::setCameraParameters(const CameraParameters & cameraParams)
+    {
         LOG_DEBUG("PipelineMappingMonoProcessing::setCameraParameters");
-
         m_cameraParams = cameraParams;
-
         m_bootstrapper->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_mapping->setCameraParameters(m_cameraParams);
         m_loopDetector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
         m_loopCorrector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-		m_undistortKeypoints->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
+        m_undistortKeypoints->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 		m_tracking->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
 
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
                   m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
+        m_cameraOK = true;
 
         return FrameworkReturnCode::_SUCCESS;
     }
@@ -126,40 +116,68 @@ namespace MAPPING {
         LOG_DEBUG("PipelineMappingMonoProcessing::start");
 
         // Check members initialization
-        if ((m_cameraParams.resolution.width > 0) && (m_cameraParams.resolution.height > 0)) {
+        if (m_init && m_cameraOK) {
 
             LOG_DEBUG("Start mapping processing task");
             m_mappingTask->start();
         }
         else {
-            LOG_DEBUG("Camera parameters and/or fiducial marker description not set");
+            LOG_DEBUG("Check init or set camera parameters");
             return FrameworkReturnCode::_ERROR_;
         }
 
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMonoProcessing::stop() {
-
+    FrameworkReturnCode PipelineMappingMonoProcessing::stop()
+    {
         LOG_DEBUG("PipelineMappingMonoProcessing::stop");
-        if (isBootstrapFinished()){
-            globalBundleAdjustment();
-        }
         LOG_DEBUG("Stop mapping processing task");
         m_mappingTask->stop();
-
+        if (m_status != MappingStatus::BOOTSTRAP){
+            globalBundleAdjustment();
+        }        
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMonoProcessing::mappingProcessRequest(const SRef<Image> image, const Transform3Df & pose) {
+    FrameworkReturnCode PipelineMappingMonoProcessing::mappingProcessRequest(const SRef<SolAR::datastructure::Image> image,
+                                                                             const SolAR::datastructure::Transform3Df & pose,
+                                                                             const SolAR::datastructure::Transform3Df & transform,
+                                                                             SolAR::datastructure::Transform3Df & updatedTransform,
+                                                                             MappingStatus & status)
+    {
+        LOG_DEBUG("PipelineMappingMonoProcessing::mappingProcessRequest");        
+        // init last transform
+        if (m_lastTransform.matrix().isZero())
+            m_lastTransform = transform;        
 
-        LOG_DEBUG("PipelineMappingMonoProcessing::mappingProcessRequest");
+        updatedTransform = transform;
 
-        // Correct pose after loop detection
-        Transform3Df poseCorrected = m_T_M_W * pose;
+        // refine transformation matrix by loop closure detection
+        if (m_isDetectedLoop) {
+            updatedTransform = m_loopTransform * transform;
+            LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
+            m_isDetectedLoop = false;
+        }
+        // drift correction
+        else {
+            Transform3Df driftTransform = transform * m_lastTransform.inverse();
+            if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
+                driftCorrection(driftTransform);
+            }
+        }
+
+        // Correct pose to the world coordinate system
+        Transform3Df poseCorrected = updatedTransform * pose;
+
+        // update status
+        status = m_status;
+
+        // update last transform
+        m_lastTransform = updatedTransform;
 
         // Add pair (image, pose) to input drop buffer for mapping
-        m_inputImagePoseBuffer.push(std::make_pair(image, poseCorrected));
+        m_inputImagePoseBuffer.push(std::make_pair(image, poseCorrected));               
 
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 
@@ -167,29 +185,17 @@ namespace MAPPING {
     }
 
     FrameworkReturnCode PipelineMappingMonoProcessing::getDataForVisualization(std::vector<SRef<CloudPoint>> & outputPointClouds,
-                                                std::vector<Transform3Df> & keyframePoses) const {
-
+                                                                               std::vector<Transform3Df> & keyframePoses) const
+    {
         LOG_DEBUG("PipelineMappingMonoProcessing::getDataForVisualization");
-
-        if (isBootstrapFinished()) {
-
-            std::vector<SRef<Keyframe>> allKeyframes;
-            keyframePoses.clear();
-
-            if (m_keyframesManager->getAllKeyframes(allKeyframes) == FrameworkReturnCode::_SUCCESS)
-            {
-                for (auto const &it : allKeyframes)
-                    keyframePoses.push_back(it->getPose());
-
-                return m_pointCloudManager->getAllPoints(outputPointClouds);
-            }
-            else {
-                return FrameworkReturnCode::_ERROR_;
-            }
+        if (m_status != MappingStatus::BOOTSTRAP) {
+            std::unique_lock<std::mutex> lock(m_mutexMapData);
+            outputPointClouds = m_allPointClouds;
+            keyframePoses = m_allKeyframePoses;
+            return FrameworkReturnCode::_SUCCESS;
         }
-        else {
+        else
             return FrameworkReturnCode::_ERROR_;
-        }
 
     }
 
@@ -202,30 +208,27 @@ namespace MAPPING {
         SRef<Image> view;
         if (m_bootstrapper->process(frame, view) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
-
             m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
-
             // Prepare mapping process
 			SRef<Keyframe> keyframe2;
 			m_keyframesManager->getKeyframe(1, keyframe2);
+            m_lastKeyframeId = 1;
 			m_tracking->setNewKeyframe(keyframe2);
-
             LOG_DEBUG("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
-
-            setBootstrapSatus(true);
+            m_status = MappingStatus::MAPPING;
+            getMapData();
         }
         else {
             LOG_DEBUG("Boostrap not finished");
-
             return false;
         }
 
         return true;
     }
 
-    void PipelineMappingMonoProcessing::globalBundleAdjustment() {
+    void PipelineMappingMonoProcessing::globalBundleAdjustment()
+    {
         LOG_DEBUG("PipelineMappingMonoProcessing::globalBundleAdjustment");
-
         // Global bundle adjustment
         m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
 		// map pruning
@@ -233,13 +236,11 @@ namespace MAPPING {
 		m_mapManager->keyframePruning();
         LOG_DEBUG("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
-
-        LOG_DEBUG("Update global map");
         m_mapManager->saveToFile();
     }
 
-    void PipelineMappingMonoProcessing::processMapping() {
-
+    void PipelineMappingMonoProcessing::processMapping()
+    {
         LOG_DEBUG("PipelineMappingMonoProcessing::processMapping");
         std::pair<SRef<Image>, Transform3Df> image_pose_pair;
 		if (!m_inputImagePoseBuffer.tryPop(image_pose_pair))
@@ -255,24 +256,30 @@ namespace MAPPING {
 		LOG_DEBUG("Keypoints size = {}", keypoints.size());		
 		SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
 
-        if (!isBootstrapFinished()) {
+        if (m_status == MappingStatus::BOOTSTRAP) {
             // Process bootstrap
             correctPoseAndBootstrap(frame);
         }
         else {
 			// update visibility for the current frame
 			SRef<Image> displayImage;
-			m_tracking->process(frame, displayImage);
+            if (m_tracking->process(frame, displayImage) != FrameworkReturnCode::_SUCCESS){
+                LOG_INFO("PipelineMappingMultiProcessing::updateVisibility Tracking lost");
+                m_status = MappingStatus::TRACKING_LOST;
+                m_lastKeyframeId = m_curKeyframeId;
+                return;
+            }
+            else
+                m_status = MappingStatus::MAPPING;
             LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
-			if (frame->getVisibility().size() < m_minWeightNeighbor) {
-				xpcf::DelegateTask::yield();
-				return;
-			}
+
+            if (!m_tracking->checkNeedNewKeyframe())
+                return;
 
             // mapping
             SRef<Keyframe> keyframe;
-            if (m_tracking->checkNeedNewKeyframe() && 
-				m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
+            if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
+                m_curKeyframeId = keyframe->getId();
                 LOG_DEBUG("New keyframe id: {}", keyframe->getId());
 				// Local bundle adjustment
 				std::vector<uint32_t> bestIdx;
@@ -285,6 +292,7 @@ namespace MAPPING {
 				m_mapManager->getLocalPointCloud(keyframe, m_minWeightNeighbor, localMap);
                 int nbRemovedCP = m_mapManager->pointCloudPruning(localMap);
 				std::vector<SRef<Keyframe>> localKeyframes;
+                bestIdx.pop_back();
 				m_keyframesManager->getKeyframes(bestIdx, localKeyframes);
 				int nbRemovedKf = m_mapManager->keyframePruning(localKeyframes);
 				LOG_DEBUG("Nb of pruning cloud points / keyframes: {} / {}", nbRemovedCP, nbRemovedKf);
@@ -296,6 +304,7 @@ namespace MAPPING {
                     Transform3Df sim3Transform;
                     std::vector<std::pair<uint32_t, uint32_t>> duplicatedPointsIndices;
                     if (m_loopDetector->detect(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices) == FrameworkReturnCode::_SUCCESS) {
+                        m_status = MappingStatus::LOOP_CLOSURE;
                         // detected loop keyframe
                         LOG_INFO("Detected loop keyframe id: {}", detectedLoopKeyframe->getId());
                         LOG_INFO("Nb of duplicatedPointsIndices: {}", duplicatedPointsIndices.size());
@@ -310,32 +319,70 @@ namespace MAPPING {
 						m_mapManager->keyframePruning();
                         m_countNewKeyframes = 0;
                         // update pose correction
-                        Transform3Df transform = keyframe->getPose() * keyframeOldPose.inverse();
-                        m_T_M_W = transform * m_T_M_W;
+                        m_loopTransform = keyframe->getPose() * keyframeOldPose.inverse();
+                        LOG_INFO("Loop correction transform: \n{}", m_loopTransform.matrix());
+                        m_isDetectedLoop = true;
+                        m_status = MappingStatus::MAPPING;
+                        std::this_thread::sleep_for(std::chrono::milliseconds(30));
                     }
-                }
+                }                
 				// send new keyframe to tracking
 				m_tracking->setNewKeyframe(keyframe);
+                // update map data
+                getMapData();
             }
+            else
+                LOG_DEBUG("Mapping fails");
         }
     }
 
-    bool PipelineMappingMonoProcessing::isBootstrapFinished() const {
-
-        // Protect variable access with mutex
-        std::shared_lock lock(m_bootstrap_mutex);
-
-        return m_isBootstrapFinished;
+    void PipelineMappingMonoProcessing::getMapData()
+    {
+        std::unique_lock<std::mutex> lock(m_mutexMapData);
+        std::vector<SRef<Keyframe>> allKeyframes;
+        m_allKeyframePoses.clear();
+        if (m_keyframesManager->getAllKeyframes(allKeyframes) == FrameworkReturnCode::_SUCCESS) {
+            for (auto const &it : allKeyframes)
+                m_allKeyframePoses.push_back(it->getPose());
+        }
+        m_allPointClouds.clear();
+        m_pointCloudManager->getAllPoints(m_allPointClouds);
     }
 
-    void PipelineMappingMonoProcessing::setBootstrapSatus(const bool status) {
-
-        LOG_DEBUG("Set bootstrap status to: {}", status);
-
-        // Protect variable access with mutex
-        std::unique_lock lock(m_bootstrap_mutex);
-
-        m_isBootstrapFinished = status;
+    void PipelineMappingMonoProcessing::driftCorrection(datastructure::Transform3Df driftTransform)
+    {
+        LOG_INFO("Drift correction processing");
+        LOG_INFO("Drift transform:\n{}", driftTransform.matrix());
+        LOG_INFO("Last keyframe: {}", m_lastKeyframeId);
+        LOG_INFO("Current keyframe: {}", m_curKeyframeId);
+        // get neighbor keyframe of the current keyframe        
+        std::vector<uint32_t> neighborIds;
+        std::vector<SRef<Keyframe>> neighborKeyframes;
+        m_covisibilityGraphManager->getNeighbors(m_curKeyframeId, m_minWeightNeighbor, neighborIds);
+        neighborIds.push_back(m_curKeyframeId);
+        for (auto it : neighborIds) {
+            SRef<Keyframe> keyframe;
+            if (m_keyframesManager->getKeyframe(it, keyframe) == FrameworkReturnCode::_SUCCESS)
+                neighborKeyframes.push_back(keyframe);
+        }
+        // get local map point
+        std::vector<SRef<CloudPoint>> localPC;
+        m_mapManager->getLocalPointCloud(neighborKeyframes, localPC);
+        // correct drift of local keyframes and point cloud
+        m_transform3D->transformInPlace(driftTransform, neighborKeyframes);
+        m_transform3D->transformInPlace(driftTransform, localPC);
+        // apply a bundle adjustment from the last keyframe to the current keyframe
+        std::vector<uint32_t> loopKfId;
+        for (int i = m_lastKeyframeId + 1; i < m_curKeyframeId; ++i)
+            if (m_keyframesManager->isExistKeyframe(i))
+                loopKfId.push_back(i);
+        LOG_INFO("Nb of keyframes to bundle: {}", loopKfId.size());
+        double errorBundle(0.0);
+        if (loopKfId.size() > 0)
+            errorBundle = m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, loopKfId);
+        // update last keyframe id
+        m_lastKeyframeId = m_curKeyframeId;
+        LOG_INFO("Drift correction done with error: {}", errorBundle);
     }
 
 }

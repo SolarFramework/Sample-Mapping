@@ -1,8 +1,8 @@
-SolARModuleOpenCV|0.11.0|SolARModuleOpenCV|SolARBuild@github|https://github.com/SolarFramework/SolarModuleOpenCV/releases/download
-SolARModuleOpenGL|0.11.0|SolARModuleOpenGL|SolARBuild@github|https://github.com/SolarFramework/SolarModuleOpenGL/releases/download
-SolARModuleTools|0.11.0|SolARModuleTools|SolARBuild@github|https://github.com/SolarFramework/SolARModuleTools/releases/download
-SolARModuleFBOW|0.11.0|SolARModuleFBOW|SolARBuild@github|https://github.com/SolarFramework/SolARModuleFBOW/releases/download
-SolARModuleG2O|0.11.0|SolARModuleG2O|SolARBuild@github|https://github.com/SolarFramework/SolARModuleG2O/releases/download
-SolARPipelineMappingMulti|0.11.0|SolARPipelineMappingMulti|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
-SolARPipelineMappingMono|0.11.0|SolARPipelineMappingMono|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
-SolARPipelineMappingMultiNoDrop|0.11.0|SolARPipelineMappingMultiNoDrop|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
+SolARModuleOpenCV|1.0.0|SolARModuleOpenCV|SolARBuild@github|https://github.com/SolarFramework/SolarModuleOpenCV/releases/download
+SolARModuleOpenGL|1.0.0|SolARModuleOpenGL|SolARBuild@github|https://github.com/SolarFramework/SolarModuleOpenGL/releases/download
+SolARModuleTools|1.0.0|SolARModuleTools|SolARBuild@github|https://github.com/SolarFramework/SolARModuleTools/releases/download
+SolARModuleFBOW|1.0.0|SolARModuleFBOW|SolARBuild@github|https://github.com/SolarFramework/SolARModuleFBOW/releases/download
+SolARModuleG2O|1.0.0|SolARModuleG2O|SolARBuild@github|https://github.com/SolarFramework/SolARModuleG2O/releases/download
+SolARPipelineMappingMulti|1.0.0|SolARPipelineMappingMulti|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
+SolARPipelineMappingMono|1.0.0|SolARPipelineMappingMono|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
+SolARPipelineMappingMultiNoDrop|1.0.0|SolARPipelineMappingMultiNoDrop|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download

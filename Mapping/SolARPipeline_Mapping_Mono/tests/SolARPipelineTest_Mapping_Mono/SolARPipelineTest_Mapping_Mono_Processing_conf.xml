@@ -241,11 +241,12 @@
 			<property name="angleThres" type="float" value="0.08"/>
 		</configure>
 		<configure component="SolARSLAMTracking">
-			<property name="displayTrackedPoints" type="int" value="1"/>
-			<property name="thresAngleViewDirection" type="float" value="0.8"/>
-			<property name="nbPassedFrameAtLeast" type="int" value="2"/>
-			<property name="ratioCPRefKeyframe" type="float" value="0.5"/>
-			<property name="minTrackedPoints" type="int" value="200"/>
+                    <property name="minWeightNeighbor" type="float" value="50.0"/>
+                    <property name="displayTrackedPoints" type="int" value="1"/>
+                    <property name="thresAngleViewDirection" type="float" value="0.8"/>
+                    <property name="nbPassedFrameAtLeast" type="int" value="1"/>
+                    <property name="ratioCPRefKeyframe" type="float" value="0.5"/>
+                    <property name="minTrackedPoints" type="int" value="200"/>
 		</configure>
 		<configure component="SolARSLAMMapping">
 			<property name="minWeightNeighbor" type="float" value="5.0"/>
@@ -259,7 +260,7 @@
 			<property name="keyframesManagerFileName" type="string" value="keyframes.bin"/>
 			<property name="covisibilityGraphFileName" type="string" value="covisibility_graph.bin"/>
 			<property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
-			<property name="reprojErrorThreshold" type="float" value="5.0"/>
+                        <property name="reprojErrorThreshold" type="float" value="10.0"/>
 			<property name="thresConfidence" type="float" value="0.03"/>
 		</configure>
 		<configure component="SolARKeypointDetectorOpencv">
@@ -272,20 +273,6 @@
 		</configure>
 		<configure component="SolARDescriptorsExtractorAKAZEOpencv">
 			<property name="threshold" type="double" value="3e-4"/>
-		</configure>
-		<configure component="SolARDescriptorsExtractorAKAZE2Opencv">
-			<property name="threshold" type="double" value="3e-4"/>
-		</configure>
-		<configure component="SolARDescriptorsExtractorORBOpencv">
-			<property name="nbFeatures" type="int" value="500"/>
-			<property name="scaleFactor" type="float" value="1.2"/>
-			<property name="nbLevels" type="int" value="8"/>
-			<property name="edgeThreshold" type="int" value="31"/>
-			<property name="firstLevel" type="int" value="0"/>
-			<property name="WTAK" type="int" value="2"/>
-			<property name="scoreType" type="string" value="Harris"/>
-			<property name="patchSize" type="int" value="31"/>
-			<property name="fastThreshold" type="int" value="20"/>
 		</configure>
 		<configure component="SolARDescriptorsExtractorSIFTOpencv">
 			<property name="nbFeatures" type="int" value="2000"/>
@@ -319,10 +306,10 @@
 			<property name="iterationsCount" type="int" value="500"/>
 			<property name="reprojError" type="float" value="3.0"/>
 			<property name="confidence" type="float" value="0.99"/>
-			<property name="minNbInliers" type="int" value="20"/>
+                        <property name="minNbInliers" type="int" value="15"/>
 		</configure>
 		<configure component="SolARMapFilter">
-			<property name="reprojErrorThreshold" type="float" value="5.0"/>
+                        <property name="reprojErrorThreshold" type="float" value="3.0"/>
 			<property name="minTriangulationAngle" type="float" value="0.01"/>
 			<property name="maxTriangulationAngle" type="float" value="2.0"/>
 			<property name="cheiralityCheck" type="int" value="1"/>
@@ -342,14 +329,14 @@
 			<property name="iterationsCount" type="int" value="500"/>
 			<property name="reprojError" type="float" value="3.0"/>
 			<property name="confidence" type="float" value="0.9"/>
-			<property name="minNbInliers" type="int" value="40"/>
+                        <property name="minNbInliers" type="int" value="20"/>
 		</configure>
 		<configure component="SolARPoseFinderFrom2D2DOpencv">
 			<property name="confidence" type="float" value="0.99"/>
 			<property name="outlierDistanceRatio" type="float" value="0.005"/>
 		</configure>
 		<configure component="SolARLoopClosureDetector">
-			<property name="minNbInliers" type="int" value="50"/>
+                        <property name="minNbInliers" type="int" value="30"/>
 		</configure>
 		<configure component="SolARMatchesOverlayOpencv">
 			<property name="thickness" type="uint" value="1"/>
@@ -365,7 +352,7 @@
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
-			<property name="errorOutlier" type="float" value="5.0"/>
+                        <property name="errorOutlier" type="float" value="10.0"/>
 			<property name="useSpanningTree" type="int" value="0"/>
 			<property name="isRobust" type="int" value="0"/>
 			<property name="fixedMap" type="int" value="0"/>
@@ -376,7 +363,7 @@
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
-			<property name="errorOutlier" type="float" value="5.0"/>
+                        <property name="errorOutlier" type="float" value="10.0"/>
 			<property name="useSpanningTree" type="int" value="0"/>
 			<property name="isRobust" type="int" value="0"/>
 			<property name="fixedMap" type="int" value="0"/>

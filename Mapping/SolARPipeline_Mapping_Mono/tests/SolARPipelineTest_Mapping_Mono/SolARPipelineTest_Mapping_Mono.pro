@@ -68,7 +68,8 @@ win32 {
 config_files.path = $${TARGETDEPLOYDIR}
 config_files.files= $$files($${PWD}/SolARPipelineTest_Mapping_Mono_Producer_conf.xml)\
                     $$files($${PWD}/SolARPipelineTest_Mapping_Mono_Viewer_conf.xml)\
-                    $$files($${PWD}/SolARPipelineTest_Mapping_Mono_Processing_conf.xml)
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Mono_Processing_conf.xml)\
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Mono_Processing_Cuda_conf.xml)
 INSTALLS += config_files
 
 linux {

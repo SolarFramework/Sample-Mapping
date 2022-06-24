@@ -37,7 +37,7 @@ using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 1
-#define DELAY_BETWEEN_REQUESTS 2000
+#define DELAY_BETWEEN_REQUESTS 500
 #define NB_IMAGE_BETWEEN_RELOC 5
 
 // Global XPCF Component Manager

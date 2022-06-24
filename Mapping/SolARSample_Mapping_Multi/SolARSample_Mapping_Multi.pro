@@ -79,7 +79,8 @@ android {
 }
 
 configfile.path = $${TARGETDEPLOYDIR}/
-configfile.files = $$files($${PWD}/SolARSample_Mapping_Multi_conf.xml)
+configfile.files = $$files($${PWD}/SolARSample_Mapping_Multi_conf.xml) \
+                   $$files($${PWD}/SolARSample_Mapping_Multi_Cuda_conf.xml) \
 
 INSTALLS += configfile
 

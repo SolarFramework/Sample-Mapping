@@ -4,6 +4,8 @@ mkdir -p data/fbow_voc
 unzip -o fbow_voc.zip -d ./data/fbow_voc
 rm fbow_voc.zip
 
+curl https://artifact.b-com.com/solar-generic-local/FbowVoc/popsift_uint8.fbow -L -o ./data/fbow_voc/popsift_uint8.fbow
+
 # Download AR device captures
 curl https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/loopDesktopA.zip -L -o loopDesktopA.zip
 unzip -o loopDesktopA.zip -d ./data/data_hololens

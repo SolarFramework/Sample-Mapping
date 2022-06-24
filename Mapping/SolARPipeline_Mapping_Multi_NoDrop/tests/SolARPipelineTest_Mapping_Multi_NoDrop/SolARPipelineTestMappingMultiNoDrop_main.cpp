@@ -37,7 +37,7 @@ using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 1
-#define DELAY_BETWEEN_REQUESTS 2000
+#define DELAY_BETWEEN_REQUESTS 100
 #define NB_IMAGE_BETWEEN_RELOC 5
 
 // Global XPCF Component Manager
@@ -178,7 +178,7 @@ auto fnClientViewer = []() {
         }
     }
     else {
-        LOG_DEBUG("Viewer client: nothing to display");
+       // LOG_DEBUG("Viewer client: nothing to display");
         xpcf::DelegateTask::yield();
     }
 };

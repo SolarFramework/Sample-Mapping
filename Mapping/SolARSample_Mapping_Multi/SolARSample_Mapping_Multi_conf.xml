@@ -256,7 +256,7 @@
 		<configure component="SolARDeviceDataLoader">
 			<property name="calibrationFile" type="string" value="../../../../data/data_hololens/hololens_calibration.json"/>
 			<property name="pathToData" type="string" value="../../../../data/data_hololens/loop_desktop_A"/>
-			<property name="delayTime" type="int" value="200"/>
+                        <property name="delayTime" type="int" value="200"/>
 		</configure>
 		<configure component="SolARSLAMBootstrapper">
 			<property name="hasPose" type="int" value="1"/>
@@ -267,9 +267,9 @@
 			<property name="minWeightNeighbor" type="float" value="50.0"/>
 			<property name="displayTrackedPoints" type="int" value="1"/>
 			<property name="thresAngleViewDirection" type="float" value="0.8"/>
-			<property name="nbPassedFrameAtLeast" type="int" value="2"/>
+                        <property name="nbPassedFrameAtLeast" type="int" value="1"/>
 			<property name="ratioCPRefKeyframe" type="float" value="0.5"/>
-			<property name="minTrackedPoints" type="int" value="200"/>
+                        <property name="minTrackedPoints" type="int" value="200"/>
 		</configure>
 		<configure component="SolARSLAMMapping">
 			<property name="minWeightNeighbor" type="float" value="5.0"/>

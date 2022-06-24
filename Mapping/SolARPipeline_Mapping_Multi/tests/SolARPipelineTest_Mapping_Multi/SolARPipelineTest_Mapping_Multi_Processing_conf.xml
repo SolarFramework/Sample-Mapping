@@ -274,12 +274,6 @@
         <configure component="SolARDescriptorsExtractorAKAZEOpencv">
 			<property name="threshold" type="float" value="3e-4"/>
         </configure>
-        <configure component="SolARDescriptorsExtractorAKAZE2Opencv">
-			<property name="threshold" type="float" value="3e-4"/>
-        </configure>
-        <configure component="SolARDescriptorsExtractorORBOpencv">
-			<property name="threshold" type="float" value="3e-4"/>
-        </configure>
         <configure component="SolARDescriptorsExtractorSIFTOpencv">
 			<property name="nbFeatures" type="int" value="2000"/>
 			<property name="nbOctaveLayers" type="int" value="4"/>
@@ -301,7 +295,7 @@
 			<property name="distanceRatio" type="float" value="0.9"/>
         </configure>
         <configure component="SolARDescriptorMatcherRadiusOpencv">
-			<property name="maxDistance" type="float" value="0.9"/>
+                        <property name="maxDistance" type="float" value="1.0"/>
         </configure>
         <configure component="SolARGeometricMatchesFilterOpencv">
 			<property name="confidence" type="float" value="0.99"/>
@@ -335,14 +329,14 @@
 			<property name="iterationsCount" type="int" value="500"/>
 			<property name="reprojError" type="float" value="3.0"/>
 			<property name="confidence" type="float" value="0.9"/>
-			<property name="minNbInliers" type="int" value="30"/>
+                        <property name="minNbInliers" type="int" value="20"/>
         </configure>
         <configure component="SolARPoseFinderFrom2D2DOpencv">
 			<property name="confidence" type="float" value="0.99"/>
 			<property name="outlierDistanceRatio" type="float" value="0.005"/>
         </configure>
         <configure component="SolARLoopClosureDetector">
-			<property name="minNbInliers" type="int" value="50"/>
+                        <property name="minNbInliers" type="int" value="30"/>
         </configure>
         <configure component="SolARMatchesOverlayOpencv">
 			<property name="thickness" type="uint" value="1"/>

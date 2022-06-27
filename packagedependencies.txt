@@ -10,4 +10,3 @@ SolARModulePopSift|1.0.0|SolARModulePopSift|SolARBuild@github|https://github.com
 SolARPipelineMappingMulti|1.0.0|SolARPipelineMappingMulti|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
 SolARPipelineMappingMono|1.0.0|SolARPipelineMappingMono|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
 SolARPipelineMappingMultiNoDrop|1.0.0|SolARPipelineMappingMultiNoDrop|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
-

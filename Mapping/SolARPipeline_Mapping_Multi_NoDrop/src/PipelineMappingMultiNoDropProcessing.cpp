@@ -205,15 +205,7 @@ namespace MAPPING {
             return FrameworkReturnCode::_ERROR_;
         }
 
-        m_cameraParams = cameraParams;
-
-        m_bootstrapper->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-		m_tracking->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-        m_mapping->setCameraParameters(m_cameraParams);
-        m_loopDetector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-        m_loopCorrector->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-		m_undistortKeypoints->setCameraParameters(m_cameraParams.intrinsic, m_cameraParams.distortion);
-
+        m_cameraParams = cameraParams;     
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
                   m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
 
@@ -466,10 +458,11 @@ namespace MAPPING {
 		if (m_descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb keypoints = {} / nb descriptors = {}",
                      keypoints.size(), descriptors->getNbDescriptors());
-			m_undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+            m_undistortKeypoints->undistort(keypoints, m_cameraParams, undistortedKeypoints);
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb undistortedKeypoints = {}",
                      undistortedKeypoints.size());
             SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
+            frame->setCameraParameters(m_cameraParams);
             if (m_status != MappingStatus::BOOTSTRAP)
 				m_sharedBufferFrame.push(frame);
 			else
@@ -516,7 +509,7 @@ namespace MAPPING {
 		if (m_bootstrapper->process(frame, view) == FrameworkReturnCode::_SUCCESS) {
 
 			LOG_DEBUG("Bootstrap finished: apply bundle adjustement");
-			m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+            m_bundler->bundleAdjustment();
 			SRef<Keyframe> keyframe2;
 			m_keyframesManager->getKeyframe(1, keyframe2);
             m_lastKeyframeId = 1;
@@ -582,7 +575,7 @@ namespace MAPPING {
 			m_covisibilityGraphManager->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx, NB_LOCALKEYFRAMES);
 			bestIdx.push_back(keyframe->getId());
 			LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
-			double bundleReprojError = m_bundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, bestIdx);
+            double bundleReprojError = m_bundler->bundleAdjustment(bestIdx);
             LOG_DEBUG("Local bundle adjustment error: {}", bundleReprojError);
 			// map pruning
 			std::vector<SRef<CloudPoint>> localMap;
@@ -634,7 +627,7 @@ namespace MAPPING {
             Transform3Df keyframeOldPose = lastKeyframe->getPose();
             m_loopCorrector->correct(lastKeyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
             // loop optimization
-            m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+            m_globalBundler->bundleAdjustment();
             // map pruning
             m_mapManager->pointCloudPruning();
             m_mapManager->keyframePruning();
@@ -660,7 +653,7 @@ namespace MAPPING {
         std::unique_lock<std::mutex> lock(m_mutexMapping);
         Timer clock;        
         // Global bundle adjustment
-        m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion);
+        m_globalBundler->bundleAdjustment();
         // Map pruning        
         m_mapManager->pointCloudPruning();
 		m_mapManager->keyframePruning();
@@ -745,7 +738,7 @@ namespace MAPPING {
         LOG_INFO("Nb of keyframes to bundle: {}", loopKfId.size());
         double errorBundle(0.0);
         if (loopKfId.size() > 0)
-            errorBundle = m_globalBundler->bundleAdjustment(m_cameraParams.intrinsic, m_cameraParams.distortion, loopKfId);
+            errorBundle = m_globalBundler->bundleAdjustment(loopKfId);
         // update last keyframe id
         m_lastKeyframeId = m_curKeyframeId;
         m_isDetectedDrift = false;

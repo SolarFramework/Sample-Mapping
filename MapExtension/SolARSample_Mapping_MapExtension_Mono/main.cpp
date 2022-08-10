@@ -110,15 +110,7 @@ int main(int argc, char *argv[])
 
 		// Load camera intrinsics parameters
 		CameraRigParameters camRigParams = arDevice->getCameraParameters();
-		CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
-		overlay3D->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		tracking->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		mapping->setCameraParameters(camParams);
-		pnpRansac->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
+		CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];		
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
 
 		// get properties
@@ -163,8 +155,9 @@ int main(int argc, char *argv[])
 			SRef<DescriptorBuffer> descriptors;
 			if (descriptorExtractor->extract(image, keypoints, descriptors) != FrameworkReturnCode::_SUCCESS)
 				continue;
-			undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+			undistortKeypoints->undistort(keypoints, camParams, undistortedKeypoints);
 			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, refKeyframe, pose);
+			frame->setCameraParameters(camParams);
 
 			// Relocalization
 			if (lostTracking) {	
@@ -188,7 +181,7 @@ int main(int argc, char *argv[])
 					// pnp ransac
 					std::vector<uint32_t> inliers;
 					Transform3Df poseFound;
-					if (pnpRansac->estimate(pts2d, pts3d, inliers, poseFound) == FrameworkReturnCode::_SUCCESS) {
+					if (pnpRansac->estimate(pts2d, pts3d, camParams, inliers, poseFound) == FrameworkReturnCode::_SUCCESS) {
 						LOG_DEBUG(" pnp inliers size: {} / {}", inliers.size(), pts3d.size());
 						LOG_INFO(" Retrieval Success with keyframe id: {}", retKeyframesId[0]);
 						// found T_W_M
@@ -224,7 +217,7 @@ int main(int argc, char *argv[])
 					covisibilityGraphManager->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx, NB_LOCALKEYFRAMES);
 					bestIdx.push_back(keyframe->getId());
 					LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
-					double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdx);
+					double bundleReprojError = bundler->bundleAdjustment(bestIdx);
 					// map pruning
 					std::vector<SRef<CloudPoint>> localMap;
 					mapManager->getLocalPointCloud(keyframe, minWeightNeighbor, localMap);
@@ -249,7 +242,7 @@ int main(int argc, char *argv[])
 							Transform3Df keyframeOldPose = keyframe->getPose();
 							loopCorrector->correct(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
 							// loop optimization
-							globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+							globalBundler->bundleAdjustment();
 							// map pruning
 							mapManager->pointCloudPruning();
 							mapManager->keyframePruning();
@@ -264,7 +257,7 @@ int main(int argc, char *argv[])
 				}
 
 				// draw pose
-				overlay3D->draw(frame->getPose(), displayImage);				
+				overlay3D->draw(frame->getPose(), frame->getCameraParameters(), displayImage);				
 			}						
 
 			// display
@@ -290,7 +283,7 @@ int main(int argc, char *argv[])
         }
 
 		// global bundle adjustment
-		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+		globalBundler->bundleAdjustment();
 		// map pruning
 		mapManager->pointCloudPruning();
 		mapManager->keyframePruning();

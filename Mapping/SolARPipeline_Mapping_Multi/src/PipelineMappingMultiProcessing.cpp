@@ -210,21 +210,6 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
                   m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
 
-        if (m_mapUpdatePipeline != nullptr){
-
-            LOG_DEBUG("Set camera parameters for the map update service");
-
-            try {
-                if (m_mapUpdatePipeline->setCameraParameters(cameraParams) != FrameworkReturnCode::_SUCCESS) {
-                    LOG_ERROR("Error while setting camera parameters for the map update service");
-                    return FrameworkReturnCode::_ERROR_;
-                }
-            }  catch (const std::exception &e) {
-                LOG_ERROR("Exception raised during remote request to the map update service: {}", e.what());
-                return FrameworkReturnCode::_ERROR_;
-            }
-        }
-
         if (m_relocPipeline != nullptr){
 
             LOG_DEBUG("Set camera parameters for the relocalization service");

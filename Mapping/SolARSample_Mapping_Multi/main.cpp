@@ -110,14 +110,6 @@ int main(int argc, char *argv[])
 		// Load camera intrinsics parameters
 		CameraRigParameters camRigParams = arDevice->getCameraParameters();
 		CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
-		overlay3D->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		tracking->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		mapping->setCameraParameters(camParams);
-		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
 
 		// get properties
@@ -187,7 +179,7 @@ int main(int argc, char *argv[])
 			if (!isFoundTransform) {
 				m_dropBufferDisplay.push(frame->getView());
 				Transform3Df T_M_C;
-				if (fiducialMarkerPoseEstimator->estimate(frame->getView(), T_M_C) == FrameworkReturnCode::_SUCCESS) {
+				if (fiducialMarkerPoseEstimator->estimate(frame->getView(), frame->getCameraParameters(), T_M_C) == FrameworkReturnCode::_SUCCESS) {
 					T_M_W = T_M_C * frame->getPose().inverse();
 					isFoundTransform = true;
 				}
@@ -199,7 +191,7 @@ int main(int argc, char *argv[])
 			SRef<Image> view;
 			if (bootstrapper->process(frame, view) == FrameworkReturnCode::_SUCCESS) {
 				// apply bundle adjustement 
-				bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);	
+				bundler->bundleAdjustment();	
 				SRef<Keyframe> keyframe2;
 				keyframesManager->getKeyframe(1, keyframe2);
 				tracking->setNewKeyframe(keyframe2);
@@ -208,7 +200,7 @@ int main(int argc, char *argv[])
 				bootstrapOk = true;
 				return;
 			}
-			overlay3D->draw(frame->getPose(), view);
+			overlay3D->draw(frame->getPose(), frame->getCameraParameters(), view);
 			m_dropBufferDisplay.push(view);
 		};	
 
@@ -241,8 +233,9 @@ int main(int argc, char *argv[])
 			std::vector<Keypoint> keypoints, undistortedKeypoints;
 			SRef<DescriptorBuffer> descriptors;
 			if (descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
-				undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+				undistortKeypoints->undistort(keypoints, camParams, undistortedKeypoints);
 				SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
+				frame->setCameraParameters(camParams);
 				if (bootstrapOk) {
 					// correct pose
 					frame->setPose(T_M_W * pose);
@@ -271,7 +264,7 @@ int main(int argc, char *argv[])
 				return;
 			}
 			LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
-			overlay3D->draw(frame->getPose(), displayImage);
+			overlay3D->draw(frame->getPose(), frame->getCameraParameters(), displayImage);
 
 			// send frame to mapping task
 			if (isMappingIdle && isLoopIdle && tracking->checkNeedNewKeyframe())
@@ -298,7 +291,7 @@ int main(int argc, char *argv[])
 				covisibilityGraphManager->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx, NB_LOCALKEYFRAMES);
 				bestIdx.push_back(keyframe->getId());
 				LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
-				double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdx);
+				double bundleReprojError = bundler->bundleAdjustment(bestIdx);
 				// map pruning
 				std::vector<SRef<CloudPoint>> localMap;
 				mapManager->getLocalPointCloud(keyframe, minWeightNeighbor, localMap);
@@ -346,7 +339,7 @@ int main(int argc, char *argv[])
 				}
 				// loop optimization
 				Transform3Df keyframeOldPose = lastKeyframe->getPose();
-				globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+				globalBundler->bundleAdjustment();
 				// map pruning
 				mapManager->pointCloudPruning();
 				mapManager->keyframePruning();
@@ -409,7 +402,7 @@ int main(int argc, char *argv[])
 		printf("Number of processed frame per second : %8.2f\n", nbFrameDisplay / duration);
 
 		// global bundle adjustment
-		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+		globalBundler->bundleAdjustment();
 		// map pruning
 		mapManager->pointCloudPruning();
 		mapManager->keyframePruning();

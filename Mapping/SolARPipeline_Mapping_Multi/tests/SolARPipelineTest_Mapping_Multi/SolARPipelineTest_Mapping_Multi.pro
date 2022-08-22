@@ -7,7 +7,7 @@ QMAKE_PROJECT_DEPTH = 0
 
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Multi
-VERSION=0.11.0
+VERSION=1.0.0
 PROJECTDEPLOYDIR = $${PWD}/../../../..
 
 DEFINES += MYVERSION=$${VERSION}
@@ -72,7 +72,8 @@ win32 {
 config_files.path = $${TARGETDEPLOYDIR}
 config_files.files= $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Producer_conf.xml)\
                     $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Viewer_conf.xml)\
-                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Processing_conf.xml)
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Processing_conf.xml)\
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_Processing_Cuda_conf.xml)
 INSTALLS += config_files
 
 linux {

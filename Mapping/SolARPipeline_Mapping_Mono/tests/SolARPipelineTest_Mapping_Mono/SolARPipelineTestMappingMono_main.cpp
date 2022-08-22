@@ -37,7 +37,7 @@ using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
 #define INDEX_USE_CAMERA 1
-#define DELAY_BETWEEN_REQUESTS 2000
+#define DELAY_BETWEEN_REQUESTS 500
 #define NB_IMAGE_BETWEEN_RELOC 5
 
 // Global XPCF Component Manager
@@ -75,6 +75,8 @@ std::vector<SRef<CloudPoint>> pointClouds;
 std::vector<Transform3Df> keyframePoses;
 // Drop buffer for reloc marker
 xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> gDropBufferRelocalizationMarker;
+// Camera parameters
+CameraParameters camParams;
 
 // Function for reloc marker thread
 auto fnRelocMarker = []() {
@@ -91,7 +93,7 @@ auto fnRelocMarker = []() {
 
     LOG_DEBUG("Relocalization marker processing");
 
-    if (gTrackablePose->estimate(image, new_pose) == FrameworkReturnCode::_SUCCESS) {
+    if (gTrackablePose->estimate(image, camParams, new_pose) == FrameworkReturnCode::_SUCCESS) {
         gT_M_W = new_pose * pose.inverse();
         LOG_INFO("Transform matrix:\n{}", gT_M_W.matrix());
         gIsReloc = true;
@@ -144,7 +146,7 @@ auto fnClientProducer = []() {
                 LOG_INFO("Mapping");
             }
             // draw pose
-            g3DOverlay->draw(gT_M_W * pose, displayImage);
+            g3DOverlay->draw(gT_M_W * pose, camParams, displayImage);
         }
 
         if (gImageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP) {
@@ -282,9 +284,7 @@ int main(int argc, char ** argv)
 
             // set camera parameters
             CameraRigParameters camRigParams = gArDevice->getCameraParameters();
-            CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
-            g3DOverlay->setCameraParameters(camParams.intrinsic, camParams.distortion);
-            gTrackablePose->setCameraParameters(camParams.intrinsic, camParams.distortion);
+            camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
 
             // Load and set Trackable
             SRef<Trackable> trackable;

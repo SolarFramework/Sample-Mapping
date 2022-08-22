@@ -106,15 +106,7 @@ int main(int argc, char *argv[])
 
 		// Load camera intrinsics parameters
 		CameraRigParameters camRigParams = arDevice->getCameraParameters();
-		CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
-		overlay3D->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		loopDetector->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		loopCorrector->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		bootstrapper->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		tracking->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		mapping->setCameraParameters(camParams);
-		fiducialMarkerPoseEstimator->setCameraParameters(camParams.intrinsic, camParams.distortion);
-		undistortKeypoints->setCameraParameters(camParams.intrinsic, camParams.distortion);
+		CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];		
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
 
 		// get properties
@@ -181,7 +173,7 @@ int main(int argc, char *argv[])
 				if (imageViewer->display(image) == SolAR::FrameworkReturnCode::_STOP)
 					return -1;
 				Transform3Df T_M_C;
-				if (fiducialMarkerPoseEstimator->estimate(image, T_M_C) == FrameworkReturnCode::_SUCCESS) {
+				if (fiducialMarkerPoseEstimator->estimate(image, camParams, T_M_C) == FrameworkReturnCode::_SUCCESS) {
 					T_M_W = T_M_C * pose.inverse();
 					isFoundTransform = true;
 				}
@@ -196,14 +188,15 @@ int main(int argc, char *argv[])
 			SRef<DescriptorBuffer> descriptors;
 			if (descriptorExtractor->extract(image, keypoints, descriptors) != FrameworkReturnCode::_SUCCESS)
 				continue;
-			undistortKeypoints->undistort(keypoints, undistortedKeypoints);
+			undistortKeypoints->undistort(keypoints, camParams, undistortedKeypoints);
 			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
+			frame->setCameraParameters(camParams);
 			framePoses.push_back(pose);
 
 			// check bootstrap
 			if (!bootstrapOk) {
 				if (bootstrapper->process(frame, displayImage) == FrameworkReturnCode::_SUCCESS) {
-					double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+					double bundleReprojError = bundler->bundleAdjustment();
 					SRef<Keyframe> keyframe2;
 					keyframesManager->getKeyframe(1, keyframe2);
 					tracking->setNewKeyframe(keyframe2);
@@ -229,7 +222,7 @@ int main(int argc, char *argv[])
 						covisibilityGraphManager->getNeighbors(keyframe->getId(), minWeightNeighbor, bestIdx, NB_LOCALKEYFRAMES);
 						bestIdx.push_back(keyframe->getId());
 						LOG_DEBUG("Nb keyframe to local bundle: {}", bestIdx.size());
-						double bundleReprojError = bundler->bundleAdjustment(camParams.intrinsic, camParams.distortion, bestIdx);
+						double bundleReprojError = bundler->bundleAdjustment(bestIdx);
 					// map pruning
 					std::vector<SRef<CloudPoint>> localMap;
 					mapManager->getLocalPointCloud(keyframe, minWeightNeighbor, localMap);
@@ -254,7 +247,7 @@ int main(int argc, char *argv[])
 							Transform3Df keyframeOldPose = keyframe->getPose();
 							loopCorrector->correct(keyframe, detectedLoopKeyframe, sim3Transform, duplicatedPointsIndices);
 							// loop optimization
-							globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+							globalBundler->bundleAdjustment();
 							// map pruning
 							mapManager->pointCloudPruning();
 							mapManager->keyframePruning();
@@ -269,7 +262,7 @@ int main(int argc, char *argv[])
 				}
 			}
 			// draw pose
-			overlay3D->draw(frame->getPose(), displayImage);
+			overlay3D->draw(frame->getPose(), frame->getCameraParameters(), displayImage);
 			// display image
 			if (imageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP)
 				break;
@@ -279,7 +272,7 @@ int main(int argc, char *argv[])
         }
 
 		// global bundle adjustment
-		globalBundler->bundleAdjustment(camParams.intrinsic, camParams.distortion);
+		globalBundler->bundleAdjustment();
 		// map pruning
 		mapManager->pointCloudPruning();
 		mapManager->keyframePruning();

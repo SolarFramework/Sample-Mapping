@@ -6,6 +6,8 @@ echo Unzip bag of word dictionnaries
 powershell Expand-Archive fbow_voc.zip -DestinationPath .\data\fbow_voc -F
 del fbow_voc.zip
 
+curl https://artifact.b-com.com/solar-generic-local/FbowVoc/popsift_uint8.fbow -L -o ./data/fbow_voc/popsift_uint8.fbow
+
 :: Download AR device captures
 echo Download and install AR device captures
 curl https://artifact.b-com.com/solar-generic-local/captures/hololens/bcomLab/loopDesktopA.zip -L -o loopDesktopA.zip

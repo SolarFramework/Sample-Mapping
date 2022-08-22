@@ -6,7 +6,7 @@ QMAKE_PROJECT_DEPTH = 0
 
 ## global defintions : target lib name, version
 TARGET = SolARSample_Mapping_Multi
-VERSION=0.11.0
+VERSION=1.0.0
 PROJECTDEPLOYDIR = $${PWD}/../..
 
 DEFINES += MYVERSION=$${VERSION}
@@ -79,7 +79,8 @@ android {
 }
 
 configfile.path = $${TARGETDEPLOYDIR}/
-configfile.files = $$files($${PWD}/SolARSample_Mapping_Multi_conf.xml)
+configfile.files = $$files($${PWD}/SolARSample_Mapping_Multi_conf.xml) \
+                   $$files($${PWD}/SolARSample_Mapping_Multi_Cuda_conf.xml) \
 
 INSTALLS += configfile
 

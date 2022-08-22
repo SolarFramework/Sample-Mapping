@@ -7,7 +7,7 @@ QMAKE_PROJECT_DEPTH = 0
 
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Multi_NoDrop
-VERSION=0.11.0
+VERSION=1.0.0
 PROJECTDEPLOYDIR = $${PWD}/../../../..
 
 DEFINES += MYVERSION=$${VERSION}
@@ -71,7 +71,8 @@ win32 {
 config_files.path = $${TARGETDEPLOYDIR}
 config_files.files= $$files($${PWD}/SolARPipelineTest_Mapping_Multi_NoDrop_Producer_conf.xml)\
                     $$files($${PWD}/SolARPipelineTest_Mapping_Multi_NoDrop_Viewer_conf.xml)\
-                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_NoDrop_Processing_conf.xml)
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_NoDrop_Processing_conf.xml)\
+                    $$files($${PWD}/SolARPipelineTest_Mapping_Multi_NoDrop_Processing_Cuda_conf.xml)
 INSTALLS += config_files
 
 linux {
@@ -94,7 +95,8 @@ DISTFILES += \
     .gitignore \
     SolARPipelineTest_Mapping_Multi_NoDrop_Producer_conf.xml \
     SolARPipelineTest_Mapping_Multi_NoDrop_Viewer_conf.xml \
-    SolARPipelineTest_Mapping_Multi_NoDrop_Processing_conf.xml
+    SolARPipelineTest_Mapping_Multi_NoDrop_Processing_conf.xml \
+    SolARPipelineTest_Mapping_Multi_NoDrop_Processing_Cuda_conf.xml
 
 #NOTE : Must be placed at the end of the .pro
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/remaken_install_target.pri)))) # Shell_quote & shell_path required for visual on windows

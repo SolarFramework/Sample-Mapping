@@ -144,6 +144,9 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
     {
         LOG_DEBUG("PipelineMappingMultiProcessing init");
 
+        if (m_started)
+            stop();
+
 		if (m_init) {
 			LOG_WARNING("Pipeline has already been initialized");
 			return FrameworkReturnCode::_SUCCESS;

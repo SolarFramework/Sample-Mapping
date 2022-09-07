@@ -143,6 +143,9 @@ namespace MAPPING {
     {
         LOG_DEBUG("PipelineMappingMultiNoDropProcessing init");
 
+        if (m_started)
+            stop();
+
 		if (m_init) {
 			LOG_WARNING("Pipeline has already been initialized");
 			return FrameworkReturnCode::_SUCCESS;

@@ -27,6 +27,7 @@
 #include "api/reloc/IKeyframeRetriever.h"
 #include "api/storage/IMapManager.h"
 #include "api/storage/ICovisibilityGraphManager.h"
+#include "api/storage/ICameraParametersManager.h"
 #include "api/storage/IKeyframesManager.h"
 #include "api/storage/IPointCloudManager.h"
 #include "api/loop/ILoopClosureDetector.h"
@@ -79,6 +80,7 @@ int main(int argc, char *argv[])
 		auto overlay3D = xpcfComponentManager->resolve<display::I3DOverlay>();
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
 		auto pointCloudManager = xpcfComponentManager->resolve<IPointCloudManager>();
+        auto cameraParametersManager = xpcfComponentManager->resolve<ICameraParametersManager>();
 		auto keyframesManager = xpcfComponentManager->resolve<IKeyframesManager>();
 		auto covisibilityGraphManager = xpcfComponentManager->resolve<ICovisibilityGraphManager>();
 		auto keyframeRetriever = xpcfComponentManager->resolve<IKeyframeRetriever>();
@@ -154,6 +156,16 @@ int main(int argc, char *argv[])
         // Mapping
 		std::vector<Transform3Df> framePoses;
 		int countNewKeyframes(0);
+        SRef<datastructure::Map> map;
+        if (mapManager->getMap(map) == FrameworkReturnCode::_ERROR_)
+        {
+            LOG_ERROR("The map manager does not contain a map");
+            return false;
+        }
+
+        cameraParametersManager->addCameraParameters(camParams);
+        uint32_t cameraID = camParams.id;
+
 		while (true)
 		{
 			// get data
@@ -189,8 +201,7 @@ int main(int argc, char *argv[])
 			if (descriptorExtractor->extract(image, keypoints, descriptors) != FrameworkReturnCode::_SUCCESS)
 				continue;
 			undistortKeypoints->undistort(keypoints, camParams, undistortedKeypoints);
-			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
-			frame->setCameraParameters(camParams);
+            SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, cameraID, pose);
 			framePoses.push_back(pose);
 
 			// check bootstrap
@@ -262,7 +273,7 @@ int main(int argc, char *argv[])
 				}
 			}
 			// draw pose
-			overlay3D->draw(frame->getPose(), frame->getCameraParameters(), displayImage);
+            overlay3D->draw(frame->getPose(), camParams, displayImage);
 			// display image
 			if (imageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP)
 				break;

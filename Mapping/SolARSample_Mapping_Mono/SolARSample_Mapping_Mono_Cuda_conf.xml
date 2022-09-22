@@ -143,6 +143,10 @@
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="2c147595-6c74-4f69-b63d-91e162c311ed" name="IKeyframesManager" description="IPointCloudManager"/>
 		</component>
+                <component uuid="e046cf87-d0a4-4c6f-af3d-18dc70881a34" name="SolARCameraParametersManager" description="SolARCameraParametersManager">
+                        <interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
+                        <interface uuid="31f151fc-326d-11ed-a261-0242ac120002" name="ICameraParametersManager" description="ICameraParametersManager"/>
+                </component>
 		<component uuid="17c7087f-3394-4b4b-8e6d-3f8639bb00ea" name="SolARCovisibilityGraphManager" description="SolARCovisibilityGraphManager">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="15455f5a-0e99-49e5-a3fb-39de3eeb5b9b" name="ICovisibilityGraphManager" description="ICovisibilityGraphManager"/>
@@ -208,7 +212,7 @@
 
 	<factory>
 		<bindings>
-                        <bind interface="IDescriptorsExtractorFromImage" to="SolARDescritorsExtractorFromImagePopSift" />
+			<bind interface="IDescriptorsExtractorFromImage" to="SolARDescritorsExtractorFromImagePopSift" />
 			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv"/>
 			<bind interface="I3DTransform" to="SolAR3DTransform"/>
 			<bind interface="IBundler" to="SolAROptimizationG2O"/>
@@ -216,6 +220,7 @@
 			<bind interface="IMapManager" to="SolARMapManager" scope="Singleton"/>
 			<bind interface="IPointCloudManager" to="SolARPointCloudManager" scope="Singleton"/>
 			<bind interface="IKeyframesManager" to="SolARKeyframesManager" scope="Singleton"/>
+                        <bind interface="ICameraParametersManager" to="SolARCameraParametersManager" scope="Singleton"/>
 			<bind interface="ICovisibilityGraphManager" to="SolARCovisibilityGraphManager" scope="Singleton"/>
 			<bind interface="IKeyframeRetriever" to="SolARKeyframeRetrieverFBOW" scope="Singleton"/>
 		</bindings>
@@ -228,9 +233,9 @@
 				<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
 				<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Red" properties="RedProperties"/>
 			</inject>
-                        <inject to="SolARDescritorsExtractorFromImagePopSift">
-                                <bind interface="IImageConvertor" to="SolARImageConvertorOpencv"/>
-                        </inject>
+			<inject to="SolARDescritorsExtractorFromImagePopSift">
+				<bind interface="IImageConvertor" to="SolARImageConvertorOpencv"/>
+			</inject>
 		</injects>
 	</factory>
 
@@ -246,17 +251,17 @@
 			<property name="angleThres" type="float" value="0.08"/>
 		</configure>
 		<configure component="SolARSLAMTracking">
-                        <property name="minWeightNeighbor" type="float" value="20.0"/>
+			<property name="minWeightNeighbor" type="float" value="20.0"/>
 			<property name="displayTrackedPoints" type="int" value="1"/>
 			<property name="thresAngleViewDirection" type="float" value="0.8"/>
-                        <property name="nbPassedFrameAtLeast" type="int" value="1"/>
-                        <property name="ratioCPRefKeyframe" type="float" value="0.5"/>
-                        <property name="minTrackedPoints" type="int" value="200"/>
-                        <property name="nbVisibilityAtLeast" type="int" value="5"/>
+			<property name="nbPassedFrameAtLeast" type="int" value="1"/>
+			<property name="ratioCPRefKeyframe" type="float" value="0.5"/>
+			<property name="minTrackedPoints" type="int" value="200"/>
+			<property name="nbVisibilityAtLeast" type="int" value="5"/>
 		</configure>
 		<configure component="SolARSLAMMapping">
 			<property name="minWeightNeighbor" type="float" value="5.0"/>
-                        <property name="maxNbNeighborKfs" type="int" value="8"/>
+			<property name="maxNbNeighborKfs" type="int" value="8"/>
 		</configure>
 		<configure component="SolARMapManager">
 			<property name="directory" type="string" value="../../../../data/map_hololens/mapA"/>
@@ -264,35 +269,36 @@
 			<property name="coordinateFileName" type="string" value="coordinate.bin"/>
 			<property name="pointCloudManagerFileName" type="string" value="pointcloud.bin"/>
 			<property name="keyframesManagerFileName" type="string" value="keyframes.bin"/>
+                        <property name="cameraParametersManagerFileName" type="string" value="cameraParameters.bin"/>
 			<property name="covisibilityGraphFileName" type="string" value="covisibility_graph.bin"/>
 			<property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
-                        <property name="reprojErrorThreshold" type="float" value="5.0"/>
+			<property name="reprojErrorThreshold" type="float" value="5.0"/>
 			<property name="thresConfidence" type="float" value="0.03"/>
 		</configure>
-                <configure component="SolARDescritorsExtractorFromImagePopSift">
-                        <property name="mode" type="string" value="PopSift"/>
-                        <property name="imageMode" type="string" value="Unsigned Char"/>
-                        <property name="nbOctaves" type="integer" value="3"/>
-                        <property name="nbLevelPerOctave" type="integer" value="3"/>
-                        <property name="sigma" type="float" value="1.6"/>
-                        <property name="threshold" type="float" value="0.001"/>
-                        <property name="edgeLimit" type="float" value="10.0"/>
-                        <property name="downsampling" type="float" value="-1.0"/>
-                        <property name="initialBlur" type="float" value="-1.0"/>
-                        <property name="maxTotalKeypoints" type="uint" value="1000"/>
-                </configure>
+		<configure component="SolARDescritorsExtractorFromImagePopSift">
+				<property name="mode" type="string" value="PopSift"/>
+				<property name="imageMode" type="string" value="Unsigned Char"/>
+				<property name="nbOctaves" type="integer" value="3"/>
+				<property name="nbLevelPerOctave" type="integer" value="3"/>
+				<property name="sigma" type="float" value="1.6"/>
+				<property name="threshold" type="float" value="0.001"/>
+				<property name="edgeLimit" type="float" value="10.0"/>
+				<property name="downsampling" type="float" value="-1.0"/>
+				<property name="initialBlur" type="float" value="-1.0"/>
+				<property name="maxTotalKeypoints" type="uint" value="1000"/>
+		</configure>
 		<configure component="SolARDescriptorMatcherKNNOpencv">
 			<property name="distanceRatio" type="float" value="0.8"/>
 		</configure>
 		<configure component="SolARDescriptorMatcherRegionOpencv">
 			<property name="distanceRatio" type="float" value="0.8"/>
 			<property name="radius" type="float" value="15"/>
-                        <property name="matchingDistanceMax" type="float" value="300"/>
+			<property name="matchingDistanceMax" type="float" value="300"/>
 		</configure>
 		<configure component="SolARDescriptorMatcherGeometricOpencv">
-                        <property name="distanceRatio" type="float" value="0.8"/>
+			<property name="distanceRatio" type="float" value="0.8"/>
 			<property name="paddingRatio" type="float" value="0.003"/>
-                        <property name="matchingDistanceMax" type="float" value="300"/>
+			<property name="matchingDistanceMax" type="float" value="300"/>
 		</configure>
 		<configure component="SolARDescriptorMatcherHammingBruteForceOpencv">
 			<property name="distanceRatio" type="float" value="0.9"/>
@@ -306,10 +312,11 @@
 			<property name="epilinesDistance" type="float" value="3.0"/>
 		</configure>
 		<configure component="SolARPoseEstimationSACPnpOpencv">
-			<property name="iterationsCount" type="int" value="500"/>
-			<property name="reprojError" type="float" value="3.0"/>
-			<property name="confidence" type="float" value="0.99"/>
-			<property name="minNbInliers" type="int" value="15"/>
+                        <property name="method" type="string" value="USAC MAGSAC"/>
+                        <property name="iterationsCount" type="int" value="500"/>
+                        <property name="reprojError" type="float" value="3.0"/>
+                        <property name="confidence" type="float" value="0.99"/>
+                        <property name="minNbInliers" type="int" value="15"/>
 		</configure>
 		<configure component="SolARMapFilter">
                         <property name="reprojErrorThreshold" type="float" value="4.0"/>

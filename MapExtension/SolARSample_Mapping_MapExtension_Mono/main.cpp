@@ -31,6 +31,7 @@
 #include "api/reloc/IKeyframeRetriever.h"
 #include "api/storage/ICovisibilityGraphManager.h"
 #include "api/storage/IMapManager.h"
+#include "api/storage/ICameraParametersManager.h"
 #include "api/storage/IKeyframesManager.h"
 #include "api/storage/IPointCloudManager.h"
 #include "api/loop/ILoopClosureDetector.h"
@@ -81,7 +82,8 @@ int main(int argc, char *argv[])
 		auto overlay3D = xpcfComponentManager->resolve<display::I3DOverlay>();
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
 		auto pointCloudManager = xpcfComponentManager->resolve<IPointCloudManager>();
-		auto keyframesManager = xpcfComponentManager->resolve<IKeyframesManager>();
+        auto cameraParametersManager = xpcfComponentManager->resolve<ICameraParametersManager>();
+        auto keyframesManager = xpcfComponentManager->resolve<IKeyframesManager>();
 		auto covisibilityGraphManager = xpcfComponentManager->resolve<ICovisibilityGraphManager>();
 		auto keyframeRetriever = xpcfComponentManager->resolve<IKeyframeRetriever>();
 		auto mapManager = xpcfComponentManager->resolve<IMapManager>();
@@ -131,6 +133,9 @@ int main(int argc, char *argv[])
 		LOG_INFO("Number of initial point cloud: {}", pointCloudManager->getNbPoints());
 		LOG_INFO("Number of initial keyframes: {}", keyframesManager->getNbKeyframes());
 
+        cameraParametersManager->addCameraParameters(camParams);
+        uint32_t cameraID = camParams.id;
+
         // Relocalization and mapping
 		std::vector<Transform3Df>   framePoses;
 		SRef<Keyframe> refKeyframe; 
@@ -156,7 +161,7 @@ int main(int argc, char *argv[])
 			if (descriptorExtractor->extract(image, keypoints, descriptors) != FrameworkReturnCode::_SUCCESS)
 				continue;
 			undistortKeypoints->undistort(keypoints, camParams, undistortedKeypoints);
-			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, refKeyframe, pose);
+            SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, refKeyframe, cameraID, pose);
 			frame->setCameraParameters(camParams);
 
 			// Relocalization

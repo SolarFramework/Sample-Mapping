@@ -42,6 +42,7 @@ namespace MAPPING {
             declareInjectable<api::slam::ITracking>(m_tracking);
             declareInjectable<api::slam::IMapping>(m_mapping);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
+            declareInjectable<api::storage::ICameraParametersManager>(m_cameraParametersManager);
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
 			declareInjectable<api::storage::ICovisibilityGraphManager>(m_covisibilityGraphManager);
 			declareInjectable<api::storage::IMapManager>(m_mapManager);
@@ -99,6 +100,10 @@ namespace MAPPING {
         m_cameraParams = cameraParams;
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
                   m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
+
+        m_cameraParametersManager->addCameraParameters(m_cameraParams);
+        m_cameraParamsID = m_cameraParams.id;
+
         m_cameraOK = true;
 
         return FrameworkReturnCode::_SUCCESS;
@@ -246,8 +251,7 @@ namespace MAPPING {
 			return;		
         m_undistortKeypoints->undistort(keypoints, m_cameraParams, undistortedKeypoints);
 		LOG_DEBUG("Keypoints size = {}", keypoints.size());		
-		SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
-        frame->setCameraParameters(m_cameraParams);
+        SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, m_cameraParamsID, pose);
 
         if (m_status == MappingStatus::BOOTSTRAP) {
             // Process bootstrap

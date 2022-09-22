@@ -60,6 +60,7 @@ SRef<display::IImageViewer> gImageViewer = 0;
 SRef<input::files::ITrackableLoader> gTrackableLoader = 0;
 SRef<solver::pose::ITrackablePose> gTrackablePose = 0;
 SRef<display::I3DOverlay> g3DOverlay = 0;
+
 // Indicates if producer client has images to send to mapping pipeline
 bool gImageToSend = true;
 // Nb of images sent by producer client

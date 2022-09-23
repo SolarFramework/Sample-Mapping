@@ -131,7 +131,7 @@ auto fnClientProducer = []() {
             // send to mapping
             Transform3Df updateT_M_W;
             MappingStatus status;
-            gMappingPipelineMulti->mappingProcessRequest(image, pose, gT_M_W, updateT_M_W, status);
+            gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, gT_M_W, updateT_M_W, status);
             gT_M_W = updateT_M_W;
             switch (status) {
             case BOOTSTRAP:

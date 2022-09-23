@@ -228,33 +228,33 @@
 	</module>
 
 	<factory>
-		<bindings>
-			<bind interface="IDescriptorsExtractorFromImage" to="SolARDescriptorsExtractorFromImageOpencv" />
-			<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv"/>
-			<bind interface="I3DTransform" to="SolAR3DTransform"/>
-			<bind interface="IBundler" to="SolAROptimizationG2O"/>
-			<bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" range="default|all" properties="BundleFixedKeyframesProperties"/>
-			<bind interface="IMapManager" to="SolARMapManager" scope="Singleton"/>
-			<bind interface="IPointCloudManager" to="SolARPointCloudManager" scope="Singleton"/>
-			<bind interface="IKeyframesManager" to="SolARKeyframesManager" scope="Singleton"/>
-                        <bind interface="ICameraParametersManager" to="SolARCameraParametersManager" scope="Singleton"/>
-			<bind interface="ICovisibilityGraphManager" to="SolARCovisibilityGraphManager" scope="Singleton"/>
-			<bind interface="IKeyframeRetriever" to="SolARKeyframeRetrieverFBOW" scope="Singleton"/>
-		</bindings>
-		<injects>
-			<inject to="SolARFiducialMarkerPoseEstimator">
-				<bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherRadiusOpencv"/>				
-				<bind interface="IImageFilter" to="SolARImageFilterBinaryOpencv"/>
-			</inject>			
-			<inject to="SolARDescriptorsExtractorFromImageOpencv">
-				<bind interface="IKeypointDetector" to="SolARKeypointDetectorOpencv"/>
-				<bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv"/>
-			</inject>
-			<inject to="SolARSLAMTracking">
-				<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
-				<bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Red" properties="RedProperties"/>
-			</inject>
-		</injects>
+            <bindings>
+                    <bind interface="IDescriptorsExtractorFromImage" to="SolARDescriptorsExtractorFromImageOpencv" />
+                    <bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherKNNOpencv"/>
+                    <bind interface="I3DTransform" to="SolAR3DTransform"/>
+                    <bind interface="IBundler" to="SolAROptimizationG2O"/>
+                    <bind interface="IBundler" to="SolAROptimizationG2O" name="BundleFixedKeyframes" range="default|all" properties="BundleFixedKeyframesProperties"/>
+                    <bind interface="IMapManager" to="SolARMapManager" scope="Singleton"/>
+                    <bind interface="IPointCloudManager" to="SolARPointCloudManager" scope="Singleton"/>
+                    <bind interface="IKeyframesManager" to="SolARKeyframesManager" scope="Singleton"/>
+                    <bind interface="ICameraParametersManager" to="SolARCameraParametersManager" scope="Singleton"/>
+                    <bind interface="ICovisibilityGraphManager" to="SolARCovisibilityGraphManager" scope="Singleton"/>
+                    <bind interface="IKeyframeRetriever" to="SolARKeyframeRetrieverFBOW" scope="Singleton"/>
+            </bindings>
+            <injects>
+                    <inject to="SolARFiducialMarkerPoseEstimator">
+                            <bind interface="IDescriptorMatcher" to="SolARDescriptorMatcherRadiusOpencv"/>
+                            <bind interface="IImageFilter" to="SolARImageFilterBinaryOpencv"/>
+                    </inject>
+                    <inject to="SolARDescriptorsExtractorFromImageOpencv">
+                            <bind interface="IKeypointDetector" to="SolARKeypointDetectorOpencv"/>
+                            <bind interface="IDescriptorsExtractor" to="SolARDescriptorsExtractorAKAZE2Opencv"/>
+                    </inject>
+                    <inject to="SolARSLAMTracking">
+                            <bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Green" properties="GreenProperties"/>
+                            <bind interface="I2DOverlay" to="SolAR2DOverlayOpencv" name="Red" properties="RedProperties"/>
+                    </inject>
+            </injects>
 	</factory>
 
 	<properties>

@@ -162,7 +162,6 @@ int main(int argc, char *argv[])
 				continue;
 			undistortKeypoints->undistort(keypoints, camParams, undistortedKeypoints);
             SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, refKeyframe, cameraID, pose);
-			frame->setCameraParameters(camParams);
 
 			// Relocalization
 			if (lostTracking) {	
@@ -262,7 +261,7 @@ int main(int argc, char *argv[])
 				}
 
 				// draw pose
-				overlay3D->draw(frame->getPose(), frame->getCameraParameters(), displayImage);				
+                overlay3D->draw(frame->getPose(), camParams, displayImage);
 			}						
 
 			// display

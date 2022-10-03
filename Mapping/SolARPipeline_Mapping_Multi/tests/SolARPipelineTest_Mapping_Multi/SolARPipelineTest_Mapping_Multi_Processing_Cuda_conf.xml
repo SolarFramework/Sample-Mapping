@@ -7,7 +7,7 @@
 		</component>
 	</module>
 
-        <module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" description="SolARModuleOpenCV" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleOpenCV/1.0.0/lib/x86_64/shared">
+        <module uuid="fde83ee6-3e22-4531-9e1c-54cb0a3bf3fa" name="SolARModuleOpenCVCuda" description="SolARModuleOpenCVCuda" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleOpenCVCuda/1.0.0/lib/x86_64/shared">
 		<component uuid="7823dac8-1597-41cf-bdef-59aa22f3d40a" name="SolARDescriptorMatcherKNNOpencv" description="SolARDescriptorMatcherKNNOpencv">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="dda38a40-c50a-4e7d-8433-0f04c7c98518" name="IDescriptorMatcher" description="IDescriptorMatcher"/>
@@ -171,7 +171,7 @@
 		</component>
 	</module>
 
-        <module uuid="b81f0b90-bdbc-11e8-a355-529269fb1459" name="SolARModuleFBOW" description="SolARModuleFBOW" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleFBOW/1.0.0/lib/x86_64/shared">
+        <module uuid="0aa58e12-b5ac-11ec-b909-0242ac120002" name="SolARModuleFBOWCuda" description="SolARModuleFBOWCuda" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleFBOWCuda/1.0.0/lib/x86_64/shared">
 		<component uuid="9d1b1afa-bdbc-11e8-a355-529269fb1459" name="SolARKeyframeRetrieverFBOW" description="SolARKeyframeRetrieverFBOW">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="f60980ce-bdbd-11e8-a355-529269fb1459" name="IKeyframeRetriever" description="IKeyframeRetriever"/>

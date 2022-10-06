@@ -410,18 +410,20 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
         updatedTransform = transform;
 
-        // refine transformation matrix by loop closure detection
-        if (m_isDetectedLoop) {
-            updatedTransform = m_loopTransform * transform;
-            LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
-            m_isDetectedLoop = false;
-        }
-        // drift correction
-        else {
-            Transform3Df driftTransform = transform * m_lastTransform.inverse();
-            if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
-                m_isDetectedDrift = true;
-                m_dropBufferDriftTransform.push(driftTransform);
+        if (m_status != MappingStatus::BOOTSTRAP) {
+            // refine transformation matrix by loop closure detection
+            if (m_isDetectedLoop) {
+                updatedTransform = m_loopTransform * transform;
+                LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
+                m_isDetectedLoop = false;
+            }
+            // drift correction
+            else {
+                Transform3Df driftTransform = transform * m_lastTransform.inverse();
+                if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
+                    m_isDetectedDrift = true;
+                    m_dropBufferDriftTransform.push(driftTransform);
+                }
             }
         }
 
@@ -524,8 +526,6 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
                 LOG_DEBUG("Cannot get map from relocalization service");
 			}
 		}
-
-
 
 		// do bootstrap
 		SRef<Image> view;

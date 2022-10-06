@@ -212,7 +212,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
         m_cameraParams = cameraParams;
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
-                  m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
+        m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
 
         if (m_relocPipeline != nullptr){
 

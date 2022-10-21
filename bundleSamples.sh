@@ -8,7 +8,7 @@ else
    filename=$1
 fi
 
-CONFIG_FILES=`find . -not \( -path "./bin" -prune \) -type f \( -name "SolARSample*_conf.xml" -or -name "SolARPipelineTest*_conf.xml" \)`
+CONFIG_FILES=`find . -not \( -path "./deploy/bin" -prune \) -type f \( -name "SolARSample*_conf.xml" -or -name "SolARPipelineTest*_conf.xml" \)`
 
 echo "**** Displaying profiles"
 echo $(remaken profile display)
@@ -22,15 +22,15 @@ echo "**** Bundle dependencies in bin folder"
 for file in $CONFIG_FILES
 do
    echo "install dependencies for config file: $file"
-   remaken bundleXpcf $file -d ./bin/x86_64/shared/release -s modules
-   remaken bundleXpcf $file -d ./bin/x86_64/shared/debug -s modules -c debug
+   remaken bundleXpcf $file -d ./deploy/bin/x86_64/shared/release -s modules
+   remaken bundleXpcf $file -d ./deploy/bin/x86_64/shared/debug -s modules -c debug
 done
 
 cp ./runFromBundle.sh ./run.sh
-mv ./run.sh ./bin/x86_64/shared/release/
+mv ./run.sh ./deploy/bin/x86_64/shared/release/
 cp ./runFromBundle.sh ./run.sh
-mv ./run.sh ./bin/x86_64/shared/debug
+mv ./run.sh ./deploy/bin/x86_64/shared/debug
 
 
-zip --symlinks -r "./bin/${filename}_release.zip" ./bin/x86_64/shared/release ./README.md ./installData.sh ./LICENSE
-zip --symlinks -r "./bin/${filename}_debug.zip" ./bin/x86_64/shared/debug ./README.md ./installData.sh ./LICENSE 
+zip --symlinks -r "./deploy/${filename}_release.zip" ./deploy/bin/x86_64/shared/release ./README.md ./installData.sh ./LICENSE
+zip --symlinks -r "./deploy/${filename}_debug.zip" ./deploy/bin/x86_64/shared/debug ./README.md ./installData.sh ./LICENSE 

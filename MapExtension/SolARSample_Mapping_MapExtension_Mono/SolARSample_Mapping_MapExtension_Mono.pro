@@ -7,7 +7,6 @@ QMAKE_PROJECT_DEPTH = 0
 ## global defintions : target lib name, version
 TARGET = SolARSample_Mapping_MapExtension_Mono
 VERSION=0.11.0
-PROJECTDEPLOYDIR = $${PWD}/../..
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z

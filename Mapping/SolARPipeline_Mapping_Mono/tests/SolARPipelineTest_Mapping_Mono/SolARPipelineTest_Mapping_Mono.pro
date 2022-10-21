@@ -6,7 +6,7 @@ CONFIG -= qt
 ## global defintions : target lib name, version
 TARGET = SolARPipelineTest_Mapping_Mono
 VERSION=0.11.0
-PROJECTDEPLOYDIR = $${PWD}/../../../..
+PROJECTDEPLOYDIR = $${PWD}/../../../../deploy
 
 DEFINES += MYVERSION=$${VERSION}
 CONFIG += c++1z

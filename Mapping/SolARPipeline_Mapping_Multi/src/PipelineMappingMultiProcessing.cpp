@@ -145,6 +145,9 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
     {
         LOG_DEBUG("PipelineMappingMultiProcessing init");
 
+        if (m_started)
+            stop();
+
 		if (m_init) {
 			LOG_WARNING("Pipeline has already been initialized");
 			return FrameworkReturnCode::_SUCCESS;
@@ -229,6 +232,13 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         m_cameraOK = true;
 
         return FrameworkReturnCode::_SUCCESS;
+    }
+
+    FrameworkReturnCode PipelineMappingMultiProcessing::setRectificationParameters(const SolAR::datastructure::RectificationParameters & rectCam1,
+                                                                                   const SolAR::datastructure::RectificationParameters & rectCam2)
+    {
+        LOG_ERROR("Stereo camera is not supported for this pipeline");
+        return FrameworkReturnCode::_ERROR_;
     }
 
     FrameworkReturnCode PipelineMappingMultiProcessing::start()
@@ -371,8 +381,8 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         return FrameworkReturnCode::_SUCCESS;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const SRef<SolAR::datastructure::Image> image,
-                                                                              const SolAR::datastructure::Transform3Df & pose,
+    FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
+                                                                              const std::vector<SolAR::datastructure::Transform3Df> & poses,
                                                                               const SolAR::datastructure::Transform3Df & transform,
                                                                               SolAR::datastructure::Transform3Df & updatedTransform,
                                                                               MappingStatus & status)
@@ -416,7 +426,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         }
 
         // Correct pose to the world coordinate system
-        Transform3Df poseCorrected = updatedTransform * pose;
+        Transform3Df poseCorrected = updatedTransform * poses[0];
 
         // update status
         status = m_status;
@@ -426,7 +436,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
 		// Send image and corrected pose to process
 		m_nbImageRequest++;
-        m_dropBufferCamImagePoseCapture.push(std::make_pair(image, poseCorrected));
+        m_dropBufferCamImagePoseCapture.push(std::make_pair(images[0], poseCorrected));
 
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 

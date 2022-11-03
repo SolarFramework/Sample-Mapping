@@ -285,7 +285,8 @@
 		</configure>
 		<configure component="SolARSLAMMapping">
 			<property name="minWeightNeighbor" type="float" value="5.0"/>
-			<property name="maxNbNeighborKfs" type="int" value="8"/>			
+                        <property name="maxNbNeighborKfs" type="int" value="8"/>
+                        <property name="saveImage" type="int" value="0"/>
 		</configure>
 		<configure component="SolARMapManager">
 			<property name="directory" type="string" value="../../../../data/map_hololens/mapA"/>

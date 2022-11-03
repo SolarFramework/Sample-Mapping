@@ -48,6 +48,7 @@ namespace MAPPING {
             declareInjectable<api::pipeline::IMapUpdatePipeline>(m_mapUpdatePipeline, true);
 			declareInjectable<api::pipeline::IRelocalizationPipeline>(m_relocPipeline, true);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
+            declareInjectable<api::storage::ICameraParametersManager>(m_cameraParametersManager);
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
 			declareInjectable<api::storage::ICovisibilityGraphManager>(m_covisibilityGraphManager);
 			declareInjectable<api::storage::IMapManager>(m_mapManager);
@@ -257,6 +258,11 @@ namespace MAPPING {
             // Initialiser la map a partir de Map Update ???
             if (m_mapManager != nullptr) {
                 m_mapManager->setMap(xpcf::utils::make_shared<Map>());
+
+                // add current camera parameters to the map manager
+                SRef<CameraParameters> camParams = xpcf::utils::make_shared<CameraParameters>(m_cameraParams);
+                m_mapManager->addCameraParameters(camParams);
+                m_cameraParamsID = camParams->id;
             }
 
             // Initialize private members
@@ -388,18 +394,20 @@ namespace MAPPING {
 
         updatedTransform = transform;
 
-        // refine transformation matrix by loop closure detection
-        if (m_isDetectedLoop) {
-            updatedTransform = m_loopTransform * transform;
-            LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
-            m_isDetectedLoop = false;
-        }
-        // drift correction
-        else {
-            Transform3Df driftTransform = transform * m_lastTransform.inverse();
-            if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
-                m_isDetectedDrift = true;
-                m_dropBufferDriftTransform.push(driftTransform);
+        if (m_status != MappingStatus::BOOTSTRAP){
+            // refine transformation matrix by loop closure detection
+            if (m_isDetectedLoop) {
+                updatedTransform = m_loopTransform * transform;
+                LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
+                m_isDetectedLoop = false;
+            }
+            // drift correction
+            else {
+                Transform3Df driftTransform = transform * m_lastTransform.inverse();
+                if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
+                    m_isDetectedDrift = true;
+                    m_dropBufferDriftTransform.push(driftTransform);
+                }
             }
         }
 
@@ -456,8 +464,7 @@ namespace MAPPING {
             m_undistortKeypoints->undistort(keypoints, m_cameraParams, undistortedKeypoints);
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb undistortedKeypoints = {}",
                      undistortedKeypoints.size());
-            SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
-            frame->setCameraParameters(m_cameraParams);
+            SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, m_cameraParamsID, pose);
             if (m_status != MappingStatus::BOOTSTRAP)
 				m_sharedBufferFrame.push(frame);
 			else
@@ -483,6 +490,11 @@ namespace MAPPING {
 			SRef<Map> map;
 			if (m_relocPipeline->getMapRequest(map) == FrameworkReturnCode::_SUCCESS) {
                 m_mapManager->setMap(map);
+                // add current camera parameters to the new map
+                SRef<CameraParameters> camParams = xpcf::utils::make_shared<CameraParameters>(m_cameraParams);
+                m_mapManager->addCameraParameters(camParams);
+                m_cameraParamsID = camParams->id;
+
 				SRef<Keyframe> keyframe;
 				m_keyframesManager->getKeyframe(0, keyframe);
                 m_lastKeyframeId = 0;

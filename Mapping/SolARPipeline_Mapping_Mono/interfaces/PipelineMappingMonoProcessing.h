@@ -42,6 +42,7 @@
 #include "api/slam/ITracking.h"
 #include "api/slam/IMapping.h"
 #include "api/storage/IKeyframesManager.h"
+#include "api/storage/ICameraParametersManager.h"
 #include "api/storage/IPointCloudManager.h"
 #include "api/storage/ICovisibilityGraphManager.h"
 #include "api/storage/IMapManager.h"
@@ -65,6 +66,7 @@ namespace MAPPING {
      * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}     
      * @SolARComponentInjectable{SolAR::api::slam::IMapping}
      * @SolARComponentInjectable{SolAR::api::storage::IKeyframesManager}
+     * @SolARComponentInjectable{SolAR::api::storage::ICameraParametersManager}
      * @SolARComponentInjectable{SolAR::api::storage::IPointCloudManager}
 	 * @SolARComponentInjectable{SolAR::api::storage::ICovisibilityGraphManager}
 	 * @SolARComponentInjectable{SolAR::api::storage::IMapManager}
@@ -162,6 +164,7 @@ namespace MAPPING {
 
     private:
         datastructure::CameraParameters                 m_cameraParams;     // camera parameters
+        uint32_t                                        m_cameraParamsID;   // camera parameters ID
         bool                                            m_isDetectedLoop;   // if a loop closure is detected and optimized
         std::atomic<MappingStatus>                      m_status;           // current status of mapping pipeline
         datastructure::Transform3Df                     m_lastTransform;    // the last transformation matrix from device to world
@@ -180,6 +183,7 @@ namespace MAPPING {
         SRef<api::slam::ITracking> m_tracking;
         SRef<api::slam::IMapping> m_mapping;
         SRef<api::storage::IKeyframesManager> m_keyframesManager;
+        SRef<api::storage::ICameraParametersManager> m_cameraParametersManager;
         SRef<api::storage::IPointCloudManager> m_pointCloudManager;
 		SRef<api::storage::ICovisibilityGraphManager> m_covisibilityGraphManager;
 		SRef<api::storage::IMapManager> m_mapManager;

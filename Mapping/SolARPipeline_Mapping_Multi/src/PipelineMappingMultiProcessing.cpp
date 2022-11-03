@@ -51,6 +51,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             declareInjectable<api::pipeline::IMapUpdatePipeline>(m_mapUpdatePipeline, true);
             declareInjectable<api::pipeline::IRelocalizationPipeline>(m_relocPipeline, true);
             declareInjectable<api::storage::IKeyframesManager>(m_keyframesManager);
+            declareInjectable<api::storage::ICameraParametersManager>(m_cameraParametersManager);
             declareInjectable<api::storage::IPointCloudManager>(m_pointCloudManager);
 			declareInjectable<api::storage::ICovisibilityGraphManager>(m_covisibilityGraphManager);
 			declareInjectable<api::storage::IMapManager>(m_mapManager);
@@ -211,7 +212,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
         m_cameraParams = cameraParams;
         LOG_DEBUG("Camera width / height / distortion = {} / {} / {}",
-                  m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
+        m_cameraParams.resolution.width, m_cameraParams.resolution.height, m_cameraParams.distortion);
 
         if (m_relocPipeline != nullptr){
 
@@ -261,7 +262,13 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             // Initialize private members            
             if (m_mapManager != nullptr) {
                 m_mapManager->setMap(xpcf::utils::make_shared<Map>());
+
+                // add current camera parameters to the map manager
+                SRef<CameraParameters> camParams = xpcf::utils::make_shared<CameraParameters>(m_cameraParams);
+                m_mapManager->addCameraParameters(camParams);
+                m_cameraParamsID = camParams->id;
             }
+
             m_countNewKeyframes = 0;
             m_lastTransform = Transform3Df(Maths::Matrix4f::Zero());
             m_status = MappingStatus::BOOTSTRAP;
@@ -403,18 +410,20 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
         updatedTransform = transform;
 
-        // refine transformation matrix by loop closure detection
-        if (m_isDetectedLoop) {
-            updatedTransform = m_loopTransform * transform;
-            LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
-            m_isDetectedLoop = false;
-        }
-        // drift correction
-        else {
-            Transform3Df driftTransform = transform * m_lastTransform.inverse();
-            if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
-                m_isDetectedDrift = true;
-                m_dropBufferDriftTransform.push(driftTransform);
+        if (m_status != MappingStatus::BOOTSTRAP) {
+            // refine transformation matrix by loop closure detection
+            if (m_isDetectedLoop) {
+                updatedTransform = m_loopTransform * transform;
+                LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
+                m_isDetectedLoop = false;
+            }
+            // drift correction
+            else {
+                Transform3Df driftTransform = transform * m_lastTransform.inverse();
+                if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
+                    m_isDetectedDrift = true;
+                    m_dropBufferDriftTransform.push(driftTransform);
+                }
             }
         }
 
@@ -466,8 +475,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 		SRef<DescriptorBuffer> descriptors;
 		if (m_descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
             m_undistortKeypoints->undistort(keypoints, m_cameraParams, undistortedKeypoints);
-			SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
-            frame->setCameraParameters(m_cameraParams);
+            SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, m_cameraParamsID, pose);
             if (m_status != MappingStatus::BOOTSTRAP) {
 				m_nbFrameToUpdate++;
 				m_dropBufferFrame.push(frame);
@@ -497,6 +505,11 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 			SRef<Map> map;
 			if (m_relocPipeline->getMapRequest(map) == FrameworkReturnCode::_SUCCESS) {
                 m_mapManager->setMap(map);
+                // add current camera parameters to the new map
+                SRef<CameraParameters> camParams = xpcf::utils::make_shared<CameraParameters>(m_cameraParams);
+                m_mapManager->addCameraParameters(camParams);
+                m_cameraParamsID = camParams->id;
+
                 SRef<Keyframe> keyframe;
 				m_keyframesManager->getKeyframe(0, keyframe);
                 m_lastKeyframeId = 0;

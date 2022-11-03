@@ -31,6 +31,7 @@
 #include "api/reloc/IKeyframeRetriever.h"
 #include "api/storage/ICovisibilityGraphManager.h"
 #include "api/storage/IKeyframesManager.h"
+#include "api/storage/ICameraParametersManager.h"
 #include "api/storage/IPointCloudManager.h"
 #include "api/loop/ILoopClosureDetector.h"
 #include "api/loop/ILoopCorrector.h"
@@ -83,6 +84,7 @@ int main(int argc, char *argv[])
 		auto viewer3D = xpcfComponentManager->resolve<display::I3DPointsViewer>();
 		auto pointCloudManager = xpcfComponentManager->resolve<IPointCloudManager>();
 		auto keyframesManager = xpcfComponentManager->resolve<IKeyframesManager>();
+        auto cameraParametersManager = xpcfComponentManager->resolve<ICameraParametersManager>();
 		auto covisibilityGraphManager = xpcfComponentManager->resolve<ICovisibilityGraphManager>();
 		auto keyframeRetriever = xpcfComponentManager->resolve<IKeyframeRetriever>();
 		auto mapManager = xpcfComponentManager->resolve<IMapManager>();
@@ -111,6 +113,9 @@ int main(int argc, char *argv[])
 		CameraRigParameters camRigParams = arDevice->getCameraParameters();
 		CameraParameters camParams = camRigParams.cameraParams[INDEX_USE_CAMERA];
 		LOG_DEBUG("Loaded intrinsics \n{}\n\n{}", camParams.intrinsic, camParams.distortion);
+
+        cameraParametersManager->addCameraParameters(camParams);
+        uint32_t cameraID = camParams.id;
 
 		// get properties
 		float minWeightNeighbor = mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
@@ -179,7 +184,7 @@ int main(int argc, char *argv[])
 			if (!isFoundTransform) {
 				m_dropBufferDisplay.push(frame->getView());
 				Transform3Df T_M_C;
-				if (fiducialMarkerPoseEstimator->estimate(frame->getView(), frame->getCameraParameters(), T_M_C) == FrameworkReturnCode::_SUCCESS) {
+                if (fiducialMarkerPoseEstimator->estimate(frame->getView(), camParams, T_M_C) == FrameworkReturnCode::_SUCCESS) {
 					T_M_W = T_M_C * frame->getPose().inverse();
 					isFoundTransform = true;
 				}
@@ -200,7 +205,7 @@ int main(int argc, char *argv[])
 				bootstrapOk = true;
 				return;
 			}
-			overlay3D->draw(frame->getPose(), frame->getCameraParameters(), view);
+            overlay3D->draw(frame->getPose(), camParams, view);
 			m_dropBufferDisplay.push(view);
 		};	
 
@@ -234,8 +239,9 @@ int main(int argc, char *argv[])
 			SRef<DescriptorBuffer> descriptors;
 			if (descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
 				undistortKeypoints->undistort(keypoints, camParams, undistortedKeypoints);
-				SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, pose);
-				frame->setCameraParameters(camParams);
+
+                SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, cameraID, pose);
+
 				if (bootstrapOk) {
 					// correct pose
 					frame->setPose(T_M_W * pose);
@@ -264,7 +270,7 @@ int main(int argc, char *argv[])
 				return;
 			}
 			LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
-			overlay3D->draw(frame->getPose(), frame->getCameraParameters(), displayImage);
+            overlay3D->draw(frame->getPose(), camParams, displayImage);
 
 			// send frame to mapping task
 			if (isMappingIdle && isLoopIdle && tracking->checkNeedNewKeyframe())

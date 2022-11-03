@@ -236,6 +236,7 @@
             <property name="nbPassedFrameAtLeast" type="int" value="1"/>
             <property name="ratioCPRefKeyframe" type="float" value="0.5"/>
             <property name="minTrackedPoints" type="int" value="200"/>
+            <property name="saveImage" type="int" value="0"/>
         </configure>
         <configure component="SolARMapper">
             <property name="directory" type="string" value="../../data/map_hololens/mapA"/>

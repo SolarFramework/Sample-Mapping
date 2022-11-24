@@ -383,6 +383,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
     FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
                                                                               const std::vector<SolAR::datastructure::Transform3Df> & poses,
+                                                                              bool fixedPose,
                                                                               const SolAR::datastructure::Transform3Df & transform,
                                                                               SolAR::datastructure::Transform3Df & updatedTransform,
                                                                               MappingStatus & status)

@@ -183,7 +183,7 @@ namespace MAPPING {
         m_lastTransform = updatedTransform;
 
         // Add pair (image, pose) to input drop buffer for mapping
-        m_inputImagePoseBuffer.push(std::make_pair(images[0], poseCorrected));
+        m_inputImagePoseBuffer.push({ images[0], poseCorrected, fixedPose });
 
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 
@@ -247,11 +247,11 @@ namespace MAPPING {
     void PipelineMappingMonoProcessing::processMapping()
     {
         LOG_DEBUG("PipelineMappingMonoProcessing::processMapping");
-        std::pair<SRef<Image>, Transform3Df> image_pose_pair;
+        SharedInputBufferElement image_pose_pair;
 		if (!m_inputImagePoseBuffer.tryPop(image_pose_pair))
 			return;
-		SRef<Image> image = image_pose_pair.first;
-		Transform3Df pose = image_pose_pair.second;
+        SRef<Image> image = image_pose_pair.image;
+        Transform3Df pose = image_pose_pair.pose;
 		// feature extraction image
 		std::vector<Keypoint> keypoints, undistortedKeypoints;
 		SRef<DescriptorBuffer> descriptors;
@@ -260,6 +260,7 @@ namespace MAPPING {
         m_undistortKeypoints->undistort(keypoints, m_cameraParams, undistortedKeypoints);
 		LOG_DEBUG("Keypoints size = {}", keypoints.size());		
         SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, m_cameraParamsID, pose);
+        frame->setFixedPose(image_pose_pair.fixedPose);
 
         if (m_status == MappingStatus::BOOTSTRAP) {
             // Process bootstrap

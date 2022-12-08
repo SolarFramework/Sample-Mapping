@@ -225,7 +225,13 @@ namespace MAPPING {
         xpcf::DelegateTask * m_driftCorrectionTask = nullptr;
 
         // Drop buffers used by mapping processing
-        xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCapture;
+        struct CaptureDropBufferElement
+        {
+            SRef<datastructure::Image> image;
+            datastructure::Transform3Df pose;
+            bool fixedPose;
+        };
+        xpcf::DropBuffer<CaptureDropBufferElement>                             m_dropBufferCamImagePoseCapture;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrame;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameBootstrap;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;

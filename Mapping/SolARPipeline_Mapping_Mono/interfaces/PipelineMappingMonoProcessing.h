@@ -201,8 +201,14 @@ namespace MAPPING {
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_mappingTask = nullptr;
 
-        // Drop buffer containing (image,pose) pairs sent by client
-        xpcf::SharedFifo<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_inputImagePoseBuffer;       
+        // Drop buffer containing data sent by client
+        struct SharedInputBufferElement
+        {
+            SRef<datastructure::Image> image;
+            datastructure::Transform3Df pose;
+            bool fixedPose;
+        };
+        xpcf::SharedFifo<SharedInputBufferElement> m_inputImagePoseBuffer;
     };
 
 }

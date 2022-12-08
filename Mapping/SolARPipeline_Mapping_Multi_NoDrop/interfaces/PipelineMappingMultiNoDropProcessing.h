@@ -228,8 +228,14 @@ namespace MAPPING {
         xpcf::DelegateTask * m_loopClosureTask = nullptr;
         xpcf::DelegateTask * m_driftCorrectionTask = nullptr;
 
-        // Buffers used by mapping processing        
-		xpcf::SharedBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>	m_sharedBufferCamImagePoseCapture{ BUFFER_SIZE_IMAGE };
+        // Buffers used by mapping processing
+        struct SharedBufferImagePoseElement
+        {
+            SRef<datastructure::Image> image;
+            datastructure::Transform3Df pose;
+            bool fixedPose;
+        };
+        xpcf::SharedBuffer<SharedBufferImagePoseElement>                        m_sharedBufferCamImagePoseCapture{ BUFFER_SIZE_IMAGE };
 		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferFrame{ BUFFER_SIZE_FRAME };
 		xpcf::SharedBuffer<SRef<datastructure::Frame>>                          m_sharedBufferFrameBootstrap{ BUFFER_SIZE_FRAME };
 		xpcf::DropBuffer<SRef<datastructure::Frame>>							m_dropBufferAddKeyframe;

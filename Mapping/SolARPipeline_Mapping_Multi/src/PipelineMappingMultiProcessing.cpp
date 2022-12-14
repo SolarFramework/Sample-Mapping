@@ -288,7 +288,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
             LOG_DEBUG("Empty buffers");
 
-            std::pair<SRef<Image>, Transform3Df> imagePose;
+            CaptureDropBufferElement imagePose;
             m_dropBufferCamImagePoseCapture.tryPop(imagePose);
             SRef<Frame> frame;
             m_dropBufferFrame.tryPop(frame);
@@ -383,6 +383,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
     FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
                                                                               const std::vector<SolAR::datastructure::Transform3Df> & poses,
+                                                                              bool fixedPose,
                                                                               const SolAR::datastructure::Transform3Df & transform,
                                                                               SolAR::datastructure::Transform3Df & updatedTransform,
                                                                               MappingStatus & status)
@@ -438,7 +439,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
 		// Send image and corrected pose to process
 		m_nbImageRequest++;
-        m_dropBufferCamImagePoseCapture.push(std::make_pair(images[0], poseCorrected));
+        m_dropBufferCamImagePoseCapture.push({ images[0], poseCorrected, fixedPose });
 
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 
@@ -463,19 +464,20 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
     void PipelineMappingMultiProcessing::featureExtraction()
     {
-		std::pair<SRef<Image>, Transform3Df> imagePose;
+        CaptureDropBufferElement imagePose;
 		if (!m_started || !m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
 			xpcf::DelegateTask::yield();
 			return;
 		}
         Timer clock;
-		SRef<Image> image = imagePose.first;
-		Transform3Df pose = imagePose.second;
+        SRef<Image> image = imagePose.image;
+        Transform3Df pose = imagePose.pose;
 		std::vector<Keypoint> keypoints, undistortedKeypoints;
 		SRef<DescriptorBuffer> descriptors;
 		if (m_descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
             m_undistortKeypoints->undistort(keypoints, m_cameraParams, undistortedKeypoints);
             SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, m_cameraParamsID, pose);
+            frame->setFixedPose(imagePose.fixedPose);
             if (m_status != MappingStatus::BOOTSTRAP) {
 				m_nbFrameToUpdate++;
 				m_dropBufferFrame.push(frame);

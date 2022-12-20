@@ -203,6 +203,7 @@ namespace MAPPING {
         std::atomic_bool                                    m_isLoopIdle;			// indicates if the loop closure task is idle
         std::atomic_bool                                    m_isDetectedLoop;       // indicates if a loop is detected
         std::atomic_bool                                    m_isDetectedDrift;      // indicates if a drift is detected by relocalization
+		std::atomic_bool									m_isGTPoseReady;		// indicates if a groundtruth pose is freshly received and ready to use 
         std::atomic<MappingStatus>                          m_status;               // current status of mapping pipeline
         datastructure::Transform3Df                         m_lastTransform;        // the last transformation matrix from device to world
         datastructure::Transform3Df                         m_loopTransform;        // the correction transformation matrix detected by loop closure

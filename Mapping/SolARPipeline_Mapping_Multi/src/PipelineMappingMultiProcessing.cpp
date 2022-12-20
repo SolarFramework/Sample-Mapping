@@ -277,6 +277,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_loopTransform = Transform3Df::Identity();
             m_isMappingIdle = true;
             m_isLoopIdle = true;
+			m_isGTPoseReady = false;
 
             // Init report variables
             m_nbImageRequest = 0;
@@ -441,6 +442,16 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 		m_nbImageRequest++;
         m_dropBufferCamImagePoseCapture.push({ images[0], poseCorrected, fixedPose });
 
+		/*if (fixedPose) {
+			auto w2c = poseCorrected.inverse();
+			std::ofstream outPoseFile("D://SolAR/Doc/GTFramePose/GlobalBA/pose.txt");
+			outPoseFile << w2c(0, 0) << ", " << w2c(0, 1) << ", " << w2c(0, 2) << ", " << w2c(0, 3)
+				<< ", " << w2c(1, 0) << ", " << w2c(1, 1) << ", " << w2c(1, 2) << ", " << w2c(1, 3)
+				<< ", " << w2c(2, 0) << ", " << w2c(2, 1) << ", " << w2c(2, 2) << ", " << w2c(2, 3)
+				<< ", " << w2c(3, 0) << ", " << w2c(3, 1) << ", " << w2c(3, 2) << ", " << w2c(3, 3) << "\n";
+			outPoseFile.close();
+			images[0]->save("D://SolAR/Doc/GTFramePose/GlobalBA/image.png");
+		}*/
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 
         return FrameworkReturnCode::_SUCCESS;
@@ -572,12 +583,24 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         else
             m_status = m_status == MappingStatus::LOOP_CLOSURE ? MappingStatus::LOOP_CLOSURE : MappingStatus::MAPPING;
 		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
+		
+		// once groundtruth frame is received, wait for the following keyframe and set keyframe fixedPose to true 
+		if (!m_isGTPoseReady) {
+			if (frame->isFixedPose())
+				m_isGTPoseReady = true;
+		}
 
         // send frame to mapping task
 		if (m_isMappingIdle && m_isLoopIdle && m_tracking->checkNeedNewKeyframe()) {
+			if (m_isGTPoseReady) {
+				// the keyframe closest to the groundtruth frame is set to be GT keyframe 
+				frame->setFixedPose(true);
+				// once the groundtruth is used, waits for the next groundtruth frame 
+				m_isGTPoseReady = false;
+			}
 			m_nbFrameToMapping++;
 			m_dropBufferAddKeyframe.push(frame);
-		}		
+		}
 
         LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility elapsed time = {} ms", clock.elapsed());
     }
@@ -590,11 +613,12 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             xpcf::DelegateTask::yield();
             return;
         }        
+
 		m_isMappingIdle = false;
         std::unique_lock<std::mutex> lock(m_mutexMapping);
         Timer clock;
 		m_nbMappingProcess++;
-        SRef<Keyframe> keyframe;        
+		SRef<Keyframe> keyframe;
         if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
             m_curKeyframeId = keyframe->getId();
             LOG_DEBUG("New keyframe id: {}", keyframe->getId());
@@ -689,6 +713,31 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
         lock.unlock();
+
+		// debug 
+		/*std::vector<SRef<Keyframe>> kfs;
+		m_keyframesManager->getAllKeyframes(kfs);
+		std::string outPath = "D://SolAR/Doc/GTFramePose/GlobalBA/withoutGT/";
+		std::ofstream outPoseFile(outPath + "pose.txt");
+		std::ofstream outGTFlagFile(outPath + "gtflag.txt");
+		for (int i = 0; i < kfs.size(); i++) {
+			char fn[1024];
+			sprintf(fn, "%05d.png", i);
+			kfs[i]->getView()->save(outPath + "images/" + fn);
+			auto pose_w_c = kfs[i]->getPose().inverse();
+			outPoseFile << pose_w_c(0, 0) << ", " << pose_w_c(0, 1) << ", " << pose_w_c(0, 2) << ", " << pose_w_c(0, 3)
+				<< ", " << pose_w_c(1, 0) << ", " << pose_w_c(1, 1) << ", " << pose_w_c(1, 2) << ", " << pose_w_c(1, 3)
+				<< ", " << pose_w_c(2, 0) << ", " << pose_w_c(2, 1) << ", " << pose_w_c(2, 2) << ", " << pose_w_c(2, 3)
+				<< ", " << pose_w_c(3, 0) << ", " << pose_w_c(3, 1) << ", " << pose_w_c(3, 2) << ", " << pose_w_c(3, 3) << "\n";
+			if (kfs[i]->isFixedPose())
+				outGTFlagFile << 1 << "\n";
+			else
+				outGTFlagFile << 0 << "\n";
+		}
+		outPoseFile.close();
+		outGTFlagFile.close();
+		*/
+
         if (m_mapUpdatePipeline != nullptr){
             try {
                 LOG_DEBUG("Start the remote map update pipeline");

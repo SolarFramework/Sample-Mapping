@@ -39,6 +39,7 @@ namespace xpcf=org::bcom::xpcf;
 #define INDEX_USE_CAMERA 0
 #define DELAY_BETWEEN_REQUESTS 500
 #define NB_IMAGE_BETWEEN_RELOC 5
+#define NB_MAX_FID 10
 
 // groundtruth related
 struct groundtruth {
@@ -47,8 +48,13 @@ struct groundtruth {
     int marker_id;
     Transform3Df transform;
 };
+std::map<std::chrono::system_clock::time_point, groundtruth> gGT; // map from timestamp to gt 
+std::array<std::vector<std::chrono::system_clock::time_point>, NB_MAX_FID> gGTActivateTimestamps;  // activated timestamps of each FID
+std::array<bool, NB_MAX_FID> gGTPoseInjected;
+std::array<Transform3Df, NB_MAX_FID> gFIDtransforms;
 
-vector<string> splitString(const string& str, string delimiter = " ") {
+// method split string into sub ones 
+vector<string> ssplit(const string& str, string delimiter = " ") {
     vector<string> out;
     string strtmp = str;
     auto pos = strtmp.find(delimiter);
@@ -61,10 +67,7 @@ vector<string> splitString(const string& str, string delimiter = " ") {
     return out;
 }
 
-std::map<std::chrono::system_clock::time_point, groundtruth> gGT;
-std::atomic_bool gGTPoseInjected = false;
 MappingStatus gMappingStatus = BOOTSTRAP; 
-std::array<std::vector<std::chrono::system_clock::time_point>, 10> gGTActivateTimestamps;
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -153,9 +156,9 @@ auto fnClientProducer = []() {
 					gDropBufferRelocalizationMarker.push(std::make_pair(image, pose));
 				else {
 					auto gtData = gGT.find(timestamp);
-					if (gtData != gGT.end()) // found
-						if (gtData->second.marker_id == 0) // reference FID
-							gDropBufferRelocalizationMarker.push(std::make_pair(image, pose));
+					if (gtData != gGT.end()) // groundtruth found
+						if (gtData->second.marker_id == 0) // reference FID (FID_0 is used by Bootstrap)
+						    gDropBufferRelocalizationMarker.push(std::make_pair(image, pose));
 				}
 			}
             gNbImages = 0;
@@ -164,9 +167,9 @@ auto fnClientProducer = []() {
             gNbImages++;
 
         if (gIsReloc) {
-            // check if current data contains other FID
-            auto gtData = gGT.find(timestamp);
+            // check if current data contains FID other than the reference one 
             bool other_marker_found = false;
+            auto gtData = gGT.find(timestamp);
             if (gtData != gGT.end())
                 if (gtData->second.marker_id > 0)
                     other_marker_found = true;
@@ -179,11 +182,12 @@ auto fnClientProducer = []() {
                 gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, /* fixedPose = */ false, gT_M_W, updateT_M_W, status);
             }
             else {
-                // 2nd FID found, estimate camera pose in its CS
-                if (!gGTPoseInjected) {
-					// if current frame is activated for GT pose estimation 
-					const auto& fid_acti_map = gGTActivateTimestamps[gtData->second.marker_id];
-					if (std::find(fid_acti_map.begin(), fid_acti_map.end(), timestamp) != fid_acti_map.end()) {
+                // other FID found, get its id 
+                int other_fid = gtData->second.marker_id;
+                if (!gGTPoseInjected[other_fid]) {
+					// check if current frame is activated for GT pose estimation 
+					const auto& fid_acti_map = gGTActivateTimestamps[other_fid];
+					if (std::find(fid_acti_map.begin(), fid_acti_map.end(), timestamp) != fid_acti_map.end()) { // if activated 
 						Transform3Df pose_fid;
 						if (gTrackablePose->estimate(image, camParams, pose_fid) == FrameworkReturnCode::_SUCCESS) {
 							// GT camera pose in SolAR CS (1st FID CS)
@@ -191,11 +195,12 @@ auto fnClientProducer = []() {
 							// correct gT_M_W
 							gT_M_W = gt_pose_solar * pose.inverse();
 							gMappingPipelineMulti->mappingProcessRequest({ image }, { pose }, true, gT_M_W, updateT_M_W, status);
-							gGTPoseInjected = true;
+							gGTPoseInjected[other_fid] = true;
 						}
 					}
                 }
                 else {
+                    // GT pose already injected (gT_M_W has been updated), continue mapping 
                     gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, /* fixedPose = */ false, gT_M_W, updateT_M_W, status);
                 }
             }
@@ -218,7 +223,10 @@ auto fnClientProducer = []() {
             }
             // draw pose
             g3DOverlay->draw(poseCamera, camParams, displayImage);
-			g3DOverlay->draw(gtData->second.transform.inverse()*poseCamera, camParams, displayImage);
+			// draw pose on other FID 
+			for (int i = 1; i < NB_MAX_FID; i++)
+				if (!gFIDtransforms[i].isApprox(Transform3Df::Identity()))
+					g3DOverlay->draw(gFIDtransforms[i].inverse()*poseCamera, camParams, displayImage);
         }
 
         if (gImageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP) {
@@ -361,7 +369,9 @@ int main(int argc, char ** argv)
 			g3DOverlay = gXpcfComponentManager->resolve<display::I3DOverlay>();
 			LOG_INFO("Producer client: 3D overlay component created");
 
-            // load groundtruth data
+            // load groundtruth data if provided 
+			gGTPoseInjected.fill(false);
+			gFIDtransforms.fill(Transform3Df::Identity());
             std::string pathToData = gArDevice->bindTo<xpcf::IConfigurable>()->getProperty("pathToData")->getStringValue();
             std::ifstream infile(pathToData + "/groundtruth.txt");
             if (infile.is_open()) {
@@ -373,38 +383,38 @@ int main(int argc, char ** argv)
                 std::vector<std::chrono::system_clock::time_point> timestamps;
                 std::string line;
                 while (std::getline(fileTimestamps, line)) {
-                    long long int duration = std::stoll(line);
-                    std::chrono::milliseconds dur(duration);
+                    std::chrono::milliseconds dur(std::stoll(line));
                     timestamps.push_back(std::chrono::time_point<std::chrono::system_clock>(dur));
                 }
                 fileTimestamps.close();
 
                 // read GT data
                 while (std::getline(infile, line)) {
-                    if (line.substr(0, line.find_first_of("_")) == "FID") {
-                        auto line_subs = splitString(line, ",");
-                        int marker_id = std::stoi(splitString(line_subs[0], "_")[1]);
-                        int frame_start = std::stoi(splitString(line_subs[1], "_")[0]);
-                        int frame_end = std::stoi(splitString(line_subs[1], "_")[1]);
-                        auto mat = splitString(line_subs[2], "_");
+                    vector<string> line_subs;
+                    int marker_id, frame_start, frame_end;
+                    auto key = line.substr(0, line.find_first_of("_"));
+                    if (key == "FID" || key == "ACTIVATED") {
+                        line_subs = ssplit(line, ",");
+                        marker_id = std::stoi(ssplit(line_subs[0], "_")[1]);
+                        frame_start = std::stoi(ssplit(line_subs[1], "_")[0]);
+                        frame_end = std::stoi(ssplit(line_subs[1], "_")[1]);
+                    }
+                    if (key == "FID") {
+                        auto mat = ssplit(line_subs[2], "_");
                         Transform3Df transform;
                         for (int r = 0; r < 4; r++)
                             for (int c = 0; c < 4; c++)
                                 transform(r,c) = std::stof(mat[r*4+c]);
                         for (int t = frame_start; t <= frame_end; t++)
                             gGT[timestamps[t]] = groundtruth(marker_id, transform);
+						gFIDtransforms[marker_id] = transform;
                     }
-					else if (line.substr(0, line.find_first_of("_")) == "ACTIVATED") {
-						auto line_subs = splitString(line, ",");
-						int marker_id = std::stoi(splitString(line_subs[0], "_")[1]);
-						int frame_start = std::stoi(splitString(line_subs[1], "_")[0]);
-						int frame_end = std::stoi(splitString(line_subs[1], "_")[1]);
+					else if (key == "ACTIVATED") {
 						gGTActivateTimestamps[marker_id] = { timestamps.begin() + frame_start, timestamps.begin() + frame_end + 1 };
 					}
                 }
                 infile.close();
             }
-			//gGT.clear();
 
 			// set camera parameters
 			CameraRigParameters camRigParams = gArDevice->getCameraParameters();

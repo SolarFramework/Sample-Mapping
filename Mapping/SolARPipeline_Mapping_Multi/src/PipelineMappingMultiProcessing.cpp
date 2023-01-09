@@ -28,7 +28,7 @@ namespace MAPPING {
 
 Timer timerPipeline;
 int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
-	m_nbUpdateProcess(0), m_nbFrameToMapping(0), m_nbMappingProcess(0);
+	m_nbUpdateProcess(0), m_nbFrameToMapping(0), m_nbMappingProcess(0), m_idProcessGTReceived(0);
 
 // Public methods
 
@@ -277,7 +277,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_loopTransform = Transform3Df::Identity();
             m_isMappingIdle = true;
             m_isLoopIdle = true;
-			m_isGTPoseReady = false;
+            m_isGTPoseReady = false;
 
             // Init report variables
             m_nbImageRequest = 0;
@@ -286,6 +286,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_nbUpdateProcess = 0;
             m_nbFrameToMapping = 0;
             m_nbMappingProcess = 0;
+            m_idProcessGTReceived = 0;
 
             LOG_DEBUG("Empty buffers");
 
@@ -574,22 +575,32 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_status = m_status == MappingStatus::LOOP_CLOSURE ? MappingStatus::LOOP_CLOSURE : MappingStatus::MAPPING;
 		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
 		
-		// once groundtruth frame is received, wait for the following keyframe and set keyframe fixedPose to true 
-		if (!m_isGTPoseReady)
-			if (frame->isFixedPose())
-				m_isGTPoseReady = true;
+        // once groundtruth frame is received, wait for the following keyframe and set keyframe fixedPose to true
+        // currently, for each received GT frame, we will wait for the following keyframe to see if GT can be used
+        if (!m_isGTPoseReady) { 
+            if (frame->isFixedPose()) {
+                m_isGTPoseReady = true;
+                m_idProcessGTReceived = m_nbUpdateProcess;
+            }
+        }
 
         // send frame to mapping task
-		if (m_isMappingIdle && m_isLoopIdle && m_tracking->checkNeedNewKeyframe()) {
-			if (m_isGTPoseReady) {
-				// the keyframe closest to the groundtruth frame is set to be GT keyframe 
-				frame->setFixedPose(true);
-				// once the groundtruth is used, waits for the next groundtruth frame 
-				m_isGTPoseReady = false;
-			}
-			m_nbFrameToMapping++;
-			m_dropBufferAddKeyframe.push(frame);
-		}
+        if (m_isMappingIdle && m_isLoopIdle && m_tracking->checkNeedNewKeyframe()) {
+            if (m_isGTPoseReady) {
+                // drift may be important if too much time passed between frame_GT and keyframe
+                if (m_nbUpdateProcess - m_idProcessGTReceived > 20) { 
+                    m_isGTPoseReady = false;
+                    LOG_ERROR("Error while injecting the ground truth pose, the GT pose is not used since too many frames passed between the frame and the following keyframe");
+                    return;
+                }
+                // the keyframe closest to the groundtruth frame is set to be GT keyframe 
+                frame->setFixedPose(true);
+                // once the groundtruth is used, waits for the next groundtruth frame 
+                m_isGTPoseReady = false;
+            }
+            m_nbFrameToMapping++;
+            m_dropBufferAddKeyframe.push(frame);
+        }
 
         LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility elapsed time = {} ms", clock.elapsed());
     }

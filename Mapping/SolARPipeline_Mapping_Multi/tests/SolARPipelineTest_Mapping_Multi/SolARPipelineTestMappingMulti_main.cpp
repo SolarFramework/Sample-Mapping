@@ -51,7 +51,7 @@ struct groundtruth {
 std::map<std::chrono::system_clock::time_point, groundtruth> gGT; // map from timestamp to gt 
 std::array<std::vector<std::chrono::system_clock::time_point>, NB_MAX_FID> gGTActivateTimestamps;  // activated timestamps of each FID
 std::array<bool, NB_MAX_FID> gGTPoseInjected;
-std::array<Transform3Df, NB_MAX_FID> gFIDtransforms;
+std::array<Transform3Df, NB_MAX_FID-1> gFIDtransforms;
 
 // method split string into sub ones 
 vector<string> ssplit(const string& str, string delimiter = " ") {
@@ -168,11 +168,8 @@ auto fnClientProducer = []() {
 
         if (gIsReloc) {
             // check if current data contains FID other than the reference one 
-            bool other_marker_found = false;
             auto gtData = gGT.find(timestamp);
-            if (gtData != gGT.end())
-                if (gtData->second.marker_id > 0)
-                    other_marker_found = true;
+            bool other_marker_found = gtData != gGT.end() && gtData->second.marker_id > 0;
 
             // send to mapping
             Transform3Df poseCamera;
@@ -224,7 +221,7 @@ auto fnClientProducer = []() {
             // draw pose
             g3DOverlay->draw(poseCamera, camParams, displayImage);
 			// draw pose on other FID 
-			for (int i = 1; i < NB_MAX_FID; i++)
+			for (int i = 0; i < NB_MAX_FID-1; i++)
 				if (!gFIDtransforms[i].isApprox(Transform3Df::Identity()))
 					g3DOverlay->draw(gFIDtransforms[i].inverse()*poseCamera, camParams, displayImage);
         }
@@ -407,7 +404,8 @@ int main(int argc, char ** argv)
                                 transform(r,c) = std::stof(mat[r*4+c]);
                         for (int t = frame_start; t <= frame_end; t++)
                             gGT[timestamps[t]] = groundtruth(marker_id, transform);
-						gFIDtransforms[marker_id] = transform;
+                        if (marker_id >= 1) // FID other than the reference one (ID 0)
+                            gFIDtransforms[marker_id-1] = transform;
                     }
 					else if (key == "ACTIVATED") {
 						gGTActivateTimestamps[marker_id] = { timestamps.begin() + frame_start, timestamps.begin() + frame_end + 1 };

@@ -18,4 +18,8 @@ curl https://repository.solarframework.org/generic/captures/hololens/bcomLab/loo
 powershell Expand-Archive loopDesktopB.zip -DestinationPath .\data\data_hololens -F
 del loopDesktopB.zip
 
+curl https://repository.solarframework.org/generic/captures/hololens/bcomLab/gtposeFidDesktopA.zip -L -o gtposeFidDesktopA.zip
+powershell Expand-Archive gtposeFidDesktopA.zip -DestinationPath .\data\data_hololens -F
+del gtposeFidDesktopA.zip
+
 curl https://repository.solarframework.org/generic/captures/hololens/hololens_calibration.json -L -o .\data\data_hololens\hololens_calibration.json

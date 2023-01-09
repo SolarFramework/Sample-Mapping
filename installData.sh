@@ -15,6 +15,10 @@ curl https://repository.solarframework.org/generic/captures/hololens/bcomLab/loo
 unzip -o loopDesktopB.zip -d ./data/data_hololens
 rm loopDesktopB.zip
 
+curl https://repository.solarframework.org/generic/captures/hololens/bcomLab/gtposeFidDesktopA.zip -L -o gtposeFidDesktopA.zip
+unzip -o gtposeFidDesktopA.zip -d ./data/data_hololens
+rm gtposeFidDesktopA.zip
+
 # Download calibration file
 echo Download calibration file
 curl https://repository.solarframework.org/generic/captures/hololens/hololens_calibration.json -L -o ./data/data_hololens/hololens_calibration.json

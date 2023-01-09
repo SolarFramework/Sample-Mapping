@@ -39,7 +39,7 @@ namespace xpcf=org::bcom::xpcf;
 #define INDEX_USE_CAMERA 0
 #define DELAY_BETWEEN_REQUESTS 500
 #define NB_IMAGE_BETWEEN_RELOC 5
-#define NB_MAX_FID 10
+#define NB_FID 2
 
 // groundtruth related
 struct groundtruth {
@@ -49,9 +49,9 @@ struct groundtruth {
     Transform3Df transform;
 };
 std::map<std::chrono::system_clock::time_point, groundtruth> gGT; // map from timestamp to gt 
-std::array<std::vector<std::chrono::system_clock::time_point>, NB_MAX_FID> gGTActivateTimestamps;  // activated timestamps of each FID
-std::array<bool, NB_MAX_FID> gGTPoseInjected;
-std::vector<Transform3Df> gFIDtransforms; // FID transform to the reference one 
+std::array<std::vector<std::chrono::system_clock::time_point>, NB_FID> gGTActivateTimestamps;  // activated timestamps of each FID
+std::array<bool, NB_FID> gGTPoseInjected;
+std::array<Transform3Df, NB_FID> gFIDtransforms; // FID transform to the reference one 
 
 // method split string into sub ones 
 vector<string> ssplit(const string& str, string delimiter = " ") {
@@ -218,12 +218,9 @@ auto fnClientProducer = []() {
             default:
                 LOG_INFO("Mapping");
             }
-            // draw pose
-            g3DOverlay->draw(poseCamera, camParams, displayImage);
-			// draw pose on other FID 
+			// draw pose on FID 
 			for (auto i = 0; i < gFIDtransforms.size(); i++)
-				if (!gFIDtransforms[i].isApprox(Transform3Df::Identity()))
-					g3DOverlay->draw(gFIDtransforms[i].inverse()*poseCamera, camParams, displayImage);
+				g3DOverlay->draw(gFIDtransforms[i].inverse()*poseCamera, camParams, displayImage);
         }
 
         if (gImageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP) {
@@ -368,7 +365,7 @@ int main(int argc, char ** argv)
 
             // load groundtruth data if provided 
 			gGTPoseInjected.fill(false);
-			gFIDtransforms.resize(NB_MAX_FID-1, Transform3Df::Identity()); // other FID to ref, therefore NB_MAX_FID-1
+			gFIDtransforms.fill(Transform3Df::Identity()); 
             std::string pathToData = gArDevice->bindTo<xpcf::IConfigurable>()->getProperty("pathToData")->getStringValue();
             std::ifstream infile(pathToData + "/groundtruth.txt");
             if (infile.is_open()) {
@@ -393,6 +390,10 @@ int main(int argc, char ** argv)
                     if (key == "FID" || key == "ACTIVATED") {
                         line_subs = ssplit(line, ",");
                         marker_id = std::stoi(ssplit(line_subs[0], "_")[1]);
+                        if (marker_id < 0 || marker_id >= NB_FID) {
+                            LOG_ERROR("marker id inside GT file exceeds NB_FID");
+                            return -1;
+                        }
                         frame_start = std::stoi(ssplit(line_subs[1], "_")[0]);
                         frame_end = std::stoi(ssplit(line_subs[1], "_")[1]);
                     }
@@ -404,8 +405,7 @@ int main(int argc, char ** argv)
                                 transform(r,c) = std::stof(mat[r*4+c]);
                         for (int t = frame_start; t <= frame_end; t++)
                             gGT[timestamps[t]] = groundtruth(marker_id, transform);
-                        if (marker_id >= 1) // FID other than the reference one (ID 0)
-                            gFIDtransforms[marker_id-1] = transform;
+                        gFIDtransforms[marker_id] = transform;
                     }
 					else if (key == "ACTIVATED") {
 						gGTActivateTimestamps[marker_id] = { timestamps.begin() + frame_start, timestamps.begin() + frame_end + 1 };

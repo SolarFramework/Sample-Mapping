@@ -25,6 +25,9 @@ namespace MAPPING {
 
 #define NB_LOCALKEYFRAMES 10
 #define NB_NEWKEYFRAMES_LOOP 20
+// After receiving GT frame, we correct the transform
+// we consider that no drift within a certain time after the GT frame (e.g. 100 frames corresponding to about 5s)
+#define NB_FRAMES_GT_ALIVE 100 
 
 Timer timerPipeline;
 int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
@@ -588,7 +591,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         if (m_isMappingIdle && m_isLoopIdle && m_tracking->checkNeedNewKeyframe()) {
             if (m_isGTPoseReady) {
                 // drift may be important if too much time passed between frame_GT and keyframe
-                if (m_nbUpdateProcess - m_idProcessGTReceived > 20) { 
+                if (m_nbUpdateProcess - m_idProcessGTReceived > NB_FRAMES_GT_ALIVE) { 
                     m_isGTPoseReady = false;
                     LOG_ERROR("Error while injecting the ground truth pose, the GT pose is not used since too many frames passed between the frame and the following keyframe");
                     return;

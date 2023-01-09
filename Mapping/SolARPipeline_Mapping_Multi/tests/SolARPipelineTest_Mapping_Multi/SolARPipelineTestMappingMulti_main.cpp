@@ -51,7 +51,7 @@ struct groundtruth {
 std::map<std::chrono::system_clock::time_point, groundtruth> gGT; // map from timestamp to gt 
 std::array<std::vector<std::chrono::system_clock::time_point>, NB_MAX_FID> gGTActivateTimestamps;  // activated timestamps of each FID
 std::array<bool, NB_MAX_FID> gGTPoseInjected;
-std::array<Transform3Df, NB_MAX_FID-1> gFIDtransforms;
+std::vector<Transform3Df> gFIDtransforms; // FID transform to the reference one 
 
 // method split string into sub ones 
 vector<string> ssplit(const string& str, string delimiter = " ") {
@@ -221,7 +221,7 @@ auto fnClientProducer = []() {
             // draw pose
             g3DOverlay->draw(poseCamera, camParams, displayImage);
 			// draw pose on other FID 
-			for (int i = 0; i < NB_MAX_FID-1; i++)
+			for (auto i = 0; i < gFIDtransforms.size(); i++)
 				if (!gFIDtransforms[i].isApprox(Transform3Df::Identity()))
 					g3DOverlay->draw(gFIDtransforms[i].inverse()*poseCamera, camParams, displayImage);
         }
@@ -368,7 +368,7 @@ int main(int argc, char ** argv)
 
             // load groundtruth data if provided 
 			gGTPoseInjected.fill(false);
-			gFIDtransforms.fill(Transform3Df::Identity());
+			gFIDtransforms.resize(NB_MAX_FID-1, Transform3Df::Identity()); // other FID to ref, therefore NB_MAX_FID-1
             std::string pathToData = gArDevice->bindTo<xpcf::IConfigurable>()->getProperty("pathToData")->getStringValue();
             std::ifstream infile(pathToData + "/groundtruth.txt");
             if (infile.is_open()) {

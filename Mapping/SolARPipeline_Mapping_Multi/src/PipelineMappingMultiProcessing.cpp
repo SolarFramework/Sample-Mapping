@@ -244,6 +244,19 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         return FrameworkReturnCode::_ERROR_;
     }
 
+    FrameworkReturnCode PipelineMappingMultiProcessing::set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df &transform)
+    {
+        if (m_mapManager == nullptr)
+            return FrameworkReturnCode::_ERROR_;
+        FrameworkReturnCode msg;
+        std::unique_lock<std::mutex> lock(m_mutexMapping);
+        SRef<SolAR::datastructure::Map> map;
+        msg = m_mapManager->getMap(map);
+        map->setTransform3D(transform);
+        lock.unlock();
+        return msg;
+    }
+
     FrameworkReturnCode PipelineMappingMultiProcessing::start()
     {
         LOG_DEBUG("PipelineMappingMultiProcessing::start");

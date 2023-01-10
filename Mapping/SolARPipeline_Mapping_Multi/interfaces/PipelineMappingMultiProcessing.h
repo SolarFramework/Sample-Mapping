@@ -110,6 +110,11 @@ namespace MAPPING {
         FrameworkReturnCode setRectificationParameters(const SolAR::datastructure::RectificationParameters & rectCam1,
                                                        const SolAR::datastructure::RectificationParameters & rectCam2) override;
 
+        /// @brief Set the 3D transformation from SolAR to World spaces
+        /// @param[in] transform the transformation matrix from SolAR to World
+        /// @return FrameworkReturnCode::_SUCCESS if the transform is correctly set, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df & transform) override;
+
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode start() override;

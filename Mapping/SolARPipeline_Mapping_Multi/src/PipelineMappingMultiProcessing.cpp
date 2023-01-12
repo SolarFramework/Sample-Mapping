@@ -244,19 +244,6 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         return FrameworkReturnCode::_ERROR_;
     }
 
-    FrameworkReturnCode PipelineMappingMultiProcessing::set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df &transform)
-    {
-        if (m_mapManager == nullptr)
-            return FrameworkReturnCode::_ERROR_;
-        FrameworkReturnCode msg;
-        std::unique_lock<std::mutex> lock(m_mutexMapping);
-        SRef<SolAR::datastructure::Map> map;
-        msg = m_mapManager->getMap(map);
-        map->setTransform3D(transform);
-        lock.unlock();
-        return msg;
-    }
-
     FrameworkReturnCode PipelineMappingMultiProcessing::start()
     {
         LOG_DEBUG("PipelineMappingMultiProcessing::start");
@@ -403,6 +390,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
                                                                               const std::vector<SolAR::datastructure::Transform3Df> & poses,
                                                                               bool fixedPose,
                                                                               const SolAR::datastructure::Transform3Df & transform,
+                                                                              const SolAR::datastructure::Transform3Df & transformAR2SolAR,
                                                                               SolAR::datastructure::Transform3Df & updatedTransform,
                                                                               MappingStatus & status)
     {
@@ -423,22 +411,53 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             return FrameworkReturnCode::_ERROR_;
         }
 
+        if (fixedPose) {
+            std::lock_guard<std::mutex> lock(m_mutexMapping);
+            SRef<SolAR::datastructure::Map> map;
+            m_mapManager->getMap(map); // map is initialized in start() no additional check is needed here 
+            if (map->getTransform3D().isApprox(Transform3Df::Identity())) // 1st time receive GT set T_SolAR_World
+                map->setTransform3D(transform*transformAR2SolAR.inverse()); // transform is T_ARr_W 
+        }
+
+		// get current transform SolAR to World 
+		Transform3Df T_SolAR_World;
+		{
+			std::lock_guard<std::mutex> lock(m_mutexMapping);
+			SRef<SolAR::datastructure::Map> map;
+			m_mapManager->getMap(map);
+			T_SolAR_World = map->getTransform3D();
+		}
+
+		// the goal is to compute T_ARr_SolAR 
+		Transform3Df T_ARr_SolAR;
+		if (transform.isApprox(Transform3Df::Identity()))  { // at the beginning, no ARr to World transform is provided 
+			T_ARr_SolAR = transformAR2SolAR;  // input pose does not have too much drift, can use the exact T from ARr to SolAR
+		}
+		else {  // transform provided
+			// compute current transform AR runtime to SolAR 
+			T_ARr_SolAR = T_SolAR_World.inverse()*transform;  // transform is T_ARr_W 
+		}
+
+		// transform is updated at each reception of GT pose, allowing to compensate for pose drift in ARr
+		// this compensation is transferred to T_ARr_SolAR
+		// now we can do all the computations in SolAR space ...
+
         // init last transform
         if (m_lastTransform.matrix().isZero())
-            m_lastTransform = transform;
+            m_lastTransform = T_ARr_SolAR;
 
-        updatedTransform = transform;
+        updatedTransform = T_ARr_SolAR;
 
         if (m_status != MappingStatus::BOOTSTRAP) {
             // refine transformation matrix by loop closure detection
             if (m_isDetectedLoop) {
-                updatedTransform = m_loopTransform * transform;
+                updatedTransform = m_loopTransform * T_ARr_SolAR;
                 LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
                 m_isDetectedLoop = false;
             }
             // drift correction
             else {
-                Transform3Df driftTransform = transform * m_lastTransform.inverse();
+                Transform3Df driftTransform = T_ARr_SolAR * m_lastTransform.inverse();
                 if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
                     m_isDetectedDrift = true;
                     m_dropBufferDriftTransform.push(driftTransform);
@@ -447,13 +466,16 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         }
 
         // Correct pose to the world coordinate system
-        Transform3Df poseCorrected = updatedTransform * poses[0];
+        Transform3Df poseCorrected = T_ARr_SolAR * poses[0];
 
         // update status
         status = m_status;
 
         // update last transform
         m_lastTransform = updatedTransform;
+
+        // computation finished, convert updatedTransform from T_ARr2SolAR to T_ARr2World 
+        updatedTransform = T_SolAR_World*updatedTransform;
 
 		// Send image and corrected pose to process
 		m_nbImageRequest++;

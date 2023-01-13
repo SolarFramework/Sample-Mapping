@@ -110,6 +110,11 @@ namespace MAPPING {
         FrameworkReturnCode setRectificationParameters(const SolAR::datastructure::RectificationParameters & rectCam1,
                                                        const SolAR::datastructure::RectificationParameters & rectCam2) override;
 
+		/// @brief Set the 3D transformation from SolAR to world spaces
+		/// @param[in] transform the transformation matrix from SolAR to World
+		/// @return FrameworkReturnCode::_SUCCESS if the transform is correctly set, else FrameworkReturnCode::_ERROR_
+		FrameworkReturnCode set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df & transform) override;
+
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode start() override;
@@ -125,16 +130,14 @@ namespace MAPPING {
         /// @param[in] poses the input pose in the device coordinate system
         /// @param[in] fixedPose the input poses are considered as ground truth
         /// @param[in] transform the transformation matrix from the device coordinate system to the world coordinate system
-        /// @param[in] transformAR2SolAR the transformation matrix from the AR runtime coordinate system to SolAR coordinate system 
         /// @param[out] updatedTransform the refined transformation by a loop closure detection
         /// @param[out] status the current status of the mapping pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
-                                                  const std::vector<SolAR::datastructure::Transform3Df> & poses,
+                                                  const std::vector<SolAR::datastructure::Transform3Df> & poses_ARr,
                                                   bool fixedPose,
-                                                  const SolAR::datastructure::Transform3Df & transform,
-                                                  const SolAR::datastructure::Transform3Df & transformAR2SolAR,
-                                                  SolAR::datastructure::Transform3Df & updatedTransform,
+                                                  const SolAR::datastructure::Transform3Df & transform_ARr_World,
+                                                  SolAR::datastructure::Transform3Df & updatedTransform_ARr_World,
                                                   MappingStatus & status) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization

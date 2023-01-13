@@ -244,6 +244,20 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         return FrameworkReturnCode::_ERROR_;
     }
 
+	FrameworkReturnCode PipelineMappingMultiProcessing::set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df &transform)
+	{
+		if (m_mapManager == nullptr)
+			return FrameworkReturnCode::_ERROR_;
+		FrameworkReturnCode msg;
+		{
+			std::lock_guard<std::mutex> lock(m_mutexMapping);
+			SRef<SolAR::datastructure::Map> map;
+			msg = m_mapManager->getMap(map);
+			map->setTransform3D(transform);
+		}
+		return msg;
+	}
+
     FrameworkReturnCode PipelineMappingMultiProcessing::start()
     {
         LOG_DEBUG("PipelineMappingMultiProcessing::start");
@@ -387,11 +401,10 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
     }
 
     FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
-                                                                              const std::vector<SolAR::datastructure::Transform3Df> & poses,
+                                                                              const std::vector<SolAR::datastructure::Transform3Df> & poses_ARr,
                                                                               bool fixedPose,
-                                                                              const SolAR::datastructure::Transform3Df & transform,
-                                                                              const SolAR::datastructure::Transform3Df & transformAR2SolAR,
-                                                                              SolAR::datastructure::Transform3Df & updatedTransform,
+                                                                              const SolAR::datastructure::Transform3Df & transform_ARr_World,
+                                                                              SolAR::datastructure::Transform3Df & updatedTransform_ARr_World,
                                                                               MappingStatus & status)
     {
         LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
@@ -411,14 +424,6 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             return FrameworkReturnCode::_ERROR_;
         }
 
-        if (fixedPose) {
-            std::lock_guard<std::mutex> lock(m_mutexMapping);
-            SRef<SolAR::datastructure::Map> map;
-            m_mapManager->getMap(map); // map is initialized in start() no additional check is needed here 
-            if (map->getTransform3D().isApprox(Transform3Df::Identity())) // 1st time receive GT set T_SolAR_World
-                map->setTransform3D(transform*transformAR2SolAR.inverse()); // transform is T_ARr_W 
-        }
-
 		// get current transform SolAR to World 
 		Transform3Df T_SolAR_World;
 		{
@@ -428,15 +433,8 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 			T_SolAR_World = map->getTransform3D();
 		}
 
-		// the goal is to compute T_ARr_SolAR 
-		Transform3Df T_ARr_SolAR;
-		if (transform.isApprox(Transform3Df::Identity()))  { // at the beginning, no ARr to World transform is provided 
-			T_ARr_SolAR = transformAR2SolAR;  // input pose does not have too much drift, can use the exact T from ARr to SolAR
-		}
-		else {  // transform provided
-			// compute current transform AR runtime to SolAR 
-			T_ARr_SolAR = T_SolAR_World.inverse()*transform;  // transform is T_ARr_W 
-		}
+		// compute T_ARr_SolAR 
+		Transform3Df T_ARr_SolAR = T_SolAR_World.inverse()*transform_ARr_World;
 
 		// transform is updated at each reception of GT pose, allowing to compensate for pose drift in ARr
 		// this compensation is transferred to T_ARr_SolAR
@@ -446,13 +444,13 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         if (m_lastTransform.matrix().isZero())
             m_lastTransform = T_ARr_SolAR;
 
-        updatedTransform = T_ARr_SolAR;
+        updatedTransform_ARr_World = T_ARr_SolAR;
 
         if (m_status != MappingStatus::BOOTSTRAP) {
             // refine transformation matrix by loop closure detection
             if (m_isDetectedLoop) {
-                updatedTransform = m_loopTransform * T_ARr_SolAR;
-                LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
+				updatedTransform_ARr_World = m_loopTransform * T_ARr_SolAR;
+                LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform_ARr_World.matrix());
                 m_isDetectedLoop = false;
             }
             // drift correction
@@ -466,16 +464,16 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         }
 
         // Correct pose to the world coordinate system
-        Transform3Df poseCorrected = T_ARr_SolAR * poses[0];
+        Transform3Df poseCorrected = T_ARr_SolAR * poses_ARr[0];
 
         // update status
         status = m_status;
 
         // update last transform
-        m_lastTransform = updatedTransform;
+        m_lastTransform = updatedTransform_ARr_World;
 
         // computation finished, convert updatedTransform from T_ARr2SolAR to T_ARr2World 
-        updatedTransform = T_SolAR_World*updatedTransform;
+		updatedTransform_ARr_World = T_SolAR_World* updatedTransform_ARr_World;
 
 		// Send image and corrected pose to process
 		m_nbImageRequest++;

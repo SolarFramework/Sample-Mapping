@@ -98,7 +98,6 @@ std::atomic_int gNbImages = NB_IMAGE_BETWEEN_RELOC;
 std::atomic_bool gIsReloc = false;
 // Transformation matrix to the world coordinate system
 Transform3Df gT_M_W = Transform3Df::Identity();
-Transform3Df gT_M_SolAR = Transform3Df::Identity();
 // Timer to manage delay between two requests to the Mapping service
 Timer timer;
 // data for visualization
@@ -127,7 +126,6 @@ auto fnRelocMarker = []() {
 		return;
 	if (gTrackablePose->estimate(image, camParams, new_pose) == FrameworkReturnCode::_SUCCESS) {
 		gT_M_W = new_pose * pose.inverse();
-        gT_M_SolAR = gT_M_W; // in the case of using multiple FIDs, the World is exactly SolAR coordinate system 
 		LOG_INFO("Transform matrix:\n{}", gT_M_W.matrix());
 		gIsReloc = true;
 		std::this_thread::sleep_for(std::chrono::seconds(30));
@@ -178,7 +176,7 @@ auto fnClientProducer = []() {
 			Transform3Df updateT_M_W = gT_M_W;
             MappingStatus status;
             if (!other_marker_found) {
-                gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, /* fixedPose = */ false, gT_M_W, gT_M_SolAR, updateT_M_W, status);
+                gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, /* fixedPose = */ false, gT_M_W, updateT_M_W, status);
             }
             else {
                 // other FID found, get its id 
@@ -193,14 +191,14 @@ auto fnClientProducer = []() {
 							auto gt_pose_solar = gtData->second.transform * pose_fid;
 							// correct gT_M_W
 							gT_M_W = gt_pose_solar * pose.inverse();
-							gMappingPipelineMulti->mappingProcessRequest({ image }, { pose }, true, gT_M_W, gT_M_SolAR, updateT_M_W, status);
+							gMappingPipelineMulti->mappingProcessRequest({ image }, { pose }, true, gT_M_W, updateT_M_W, status);
 							gGTPoseInjected[other_fid] = true;
 						}
 					}
                 }
                 else {
                     // GT pose already injected (gT_M_W has been updated), continue mapping 
-                    gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, /* fixedPose = */ false, gT_M_W, gT_M_SolAR, updateT_M_W, status);
+                    gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, /* fixedPose = */ false, gT_M_W, updateT_M_W, status);
                 }
             }
 			poseCamera = updateT_M_W * pose;

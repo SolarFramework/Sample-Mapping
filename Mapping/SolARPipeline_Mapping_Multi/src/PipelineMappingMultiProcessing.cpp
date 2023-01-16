@@ -25,6 +25,8 @@ namespace MAPPING {
 
 #define NB_LOCALKEYFRAMES 10
 #define NB_NEWKEYFRAMES_LOOP 20
+// Nb "tracking lost" events on successive frames before sending it back to the client
+#define NB_SUCCESSIVE_TRACKING_LOST 5
 // After receiving GT frame, we correct the transform
 // we consider that no drift within a certain time after the GT frame (e.g. 100 frames corresponding to about 5s)
 #define NB_FRAMES_GT_ALIVE 100 
@@ -295,6 +297,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_isMappingIdle = true;
             m_isLoopIdle = true;
             m_isGTPoseReady = false;
+            m_nbTrackingLost = 0;
 
             // Init report variables
             m_nbImageRequest = 0;
@@ -603,12 +606,16 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 		if (m_tracking->process(frame, displayImage) != FrameworkReturnCode::_SUCCESS){
 			LOG_INFO("PipelineMappingMultiProcessing::updateVisibility Tracking lost");
 			LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility elapsed time = {} ms", clock.elapsed());
-            m_status = MappingStatus::TRACKING_LOST;
+            m_nbTrackingLost ++;
+            if (m_nbTrackingLost >= NB_SUCCESSIVE_TRACKING_LOST)
+                m_status = MappingStatus::TRACKING_LOST;
             m_lastKeyframeId = m_curKeyframeId;
             return;            
         }
-        else
+        else {
             m_status = m_status == MappingStatus::LOOP_CLOSURE ? MappingStatus::LOOP_CLOSURE : MappingStatus::MAPPING;
+            m_nbTrackingLost = 0;
+        }
 		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
 		
         // once groundtruth frame is received, wait for the following keyframe and set keyframe fixedPose to true

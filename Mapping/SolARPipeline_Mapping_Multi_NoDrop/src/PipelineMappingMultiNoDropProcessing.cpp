@@ -27,6 +27,8 @@ namespace MAPPING {
 
 #define NB_LOCALKEYFRAMES 10
 #define NB_NEWKEYFRAMES_LOOP 20
+// Nb "tracking lost" events on successive frames before sending it back to the client
+#define NB_SUCCESSIVE_TRACKING_LOST 5
 
 // Public methods
 
@@ -274,6 +276,7 @@ namespace MAPPING {
             m_loopTransform = Transform3Df::Identity();
             m_isMappingIdle = true;
             m_isLoopIdle = true;
+            m_nbTrackingLost = 0;
 
             LOG_DEBUG("Empty buffers");
 
@@ -549,13 +552,17 @@ namespace MAPPING {
 		if (m_tracking->process(frame, displayImage) != FrameworkReturnCode::_SUCCESS){
             LOG_INFO("PipelineMappingMultiNoDropProcessing::updateVisibility tracking lost");
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::updateVisibility elapsed time = {} ms", clock.elapsed());
-            m_status = MappingStatus::TRACKING_LOST;
+            m_nbTrackingLost ++;
+            if (m_nbTrackingLost >= NB_SUCCESSIVE_TRACKING_LOST)
+                m_status = MappingStatus::TRACKING_LOST;
             m_lastKeyframeId = m_curKeyframeId;
             return;
         }
-        else
+        else {
             m_status = m_status == MappingStatus::LOOP_CLOSURE ? MappingStatus::LOOP_CLOSURE : MappingStatus::MAPPING;
-		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
+            m_nbTrackingLost = 0;
+        }
+        LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
 
         // send frame to mapping task
 		if (m_isMappingIdle && m_isLoopIdle && m_tracking->checkNeedNewKeyframe())

@@ -219,6 +219,7 @@ namespace MAPPING {
         bool m_cameraOK = false;        // Indicate if camera parameters has been set
         bool m_started = false;         // Indicate if pipeline il started
         bool m_tasksStarted = false;    // Indicate if tasks are started
+        uint32_t m_nbTrackingLost = 0;   // Nb successive tracking lost events
 
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;

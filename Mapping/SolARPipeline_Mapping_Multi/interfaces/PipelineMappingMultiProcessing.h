@@ -216,6 +216,7 @@ namespace MAPPING {
         bool m_started = false;         // Indicate if pipeline il started
         bool m_tasksStarted = false;    // Indicate if tasks are started
         bool m_isGTPoseReady = false;   // indicates if a groundtruth pose is freshly received and ready to use 
+        uint32_t m_nbTrackingLost = 0;   // Nb successive tracking lost events
 
         // Delegate tasks dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;

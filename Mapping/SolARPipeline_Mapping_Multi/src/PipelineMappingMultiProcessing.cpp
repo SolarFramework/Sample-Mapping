@@ -26,7 +26,7 @@ namespace MAPPING {
 #define NB_LOCALKEYFRAMES 10
 #define NB_NEWKEYFRAMES_LOOP 20
 // Nb "tracking lost" events on successive frames before sending it back to the client
-#define NB_SUCCESSIVE_TRACKING_LOST 5
+#define NB_SUCCESSIVE_TRACKING_LOST 2
 // After receiving GT frame, we correct the transform
 // we consider that no drift within a certain time after the GT frame (e.g. 100 frames corresponding to about 5s)
 #define NB_FRAMES_GT_ALIVE 100 

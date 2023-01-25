@@ -26,13 +26,16 @@ namespace MAPPING {
 #define NB_LOCALKEYFRAMES 10
 #define NB_NEWKEYFRAMES_LOOP 20
 // Nb "tracking lost" events on successive frames before sending it back to the client
-#define NB_SUCCESSIVE_TRACKING_LOST 5
+#define NB_SUCCESSIVE_TRACKING_LOST 2
+// After receiving GT frame, we correct the transform
+// we consider that no drift within a certain time after the GT frame (e.g. 100 frames corresponding to about 5s)
+#define NB_FRAMES_GT_ALIVE 100 
 
 const std::string RELOCALIZATION_CONF_FILE = "./SolARService_Mapping_Multi_Relocalization_conf.xml";
 
 Timer timerPipeline;
 int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
-	m_nbUpdateProcess(0), m_nbFrameToMapping(0), m_nbMappingProcess(0);
+	m_nbUpdateProcess(0), m_nbFrameToMapping(0), m_nbMappingProcess(0), m_idProcessGTReceived(0);
 
 // Public methods
 
@@ -293,6 +296,20 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         return FrameworkReturnCode::_ERROR_;
     }
 
+	FrameworkReturnCode PipelineMappingMultiProcessing::set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df &transform)
+	{
+		if (m_mapManager == nullptr)
+			return FrameworkReturnCode::_ERROR_;
+		FrameworkReturnCode msg;
+		{
+			std::lock_guard<std::mutex> lock(m_mutexMapping);
+			SRef<SolAR::datastructure::Map> map;
+			msg = m_mapManager->getMap(map);
+			map->setTransform3D(transform);
+		}
+		return msg;
+	}
+
     FrameworkReturnCode PipelineMappingMultiProcessing::start()
     {
         LOG_DEBUG("PipelineMappingMultiProcessing::start");
@@ -328,6 +345,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_loopTransform = Transform3Df::Identity();
             m_isMappingIdle = true;
             m_isLoopIdle = true;
+            m_isGTPoseReady = false;
             m_nbTrackingLost = 0;
 
             // Init report variables
@@ -337,10 +355,11 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_nbUpdateProcess = 0;
             m_nbFrameToMapping = 0;
             m_nbMappingProcess = 0;
+            m_idProcessGTReceived = 0;
 
             LOG_DEBUG("Empty buffers");
 
-            std::pair<SRef<Image>, Transform3Df> imagePose;
+            CaptureDropBufferElement imagePose;
             m_dropBufferCamImagePoseCapture.tryPop(imagePose);
             SRef<Frame> frame;
             m_dropBufferFrame.tryPop(frame);
@@ -434,9 +453,10 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
     }
 
     FrameworkReturnCode PipelineMappingMultiProcessing::mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
-                                                                              const std::vector<SolAR::datastructure::Transform3Df> & poses,
-                                                                              const SolAR::datastructure::Transform3Df & transform,
-                                                                              SolAR::datastructure::Transform3Df & updatedTransform,
+                                                                              const std::vector<SolAR::datastructure::Transform3Df> & poses_ARr,
+                                                                              bool fixedPose,
+                                                                              const SolAR::datastructure::Transform3Df & transform_ARr_World,
+                                                                              SolAR::datastructure::Transform3Df & updatedTransform_ARr_World,
                                                                               MappingStatus & status)
     {
         LOG_DEBUG("PipelineMappingMultSolARImageConvertorOpencviProcessing::mappingProcessRequest");
@@ -456,22 +476,38 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             return FrameworkReturnCode::_ERROR_;
         }
 
+		// get current transform SolAR to World 
+		Transform3Df T_SolAR_World;
+		{
+			std::lock_guard<std::mutex> lock(m_mutexMapping);
+			SRef<SolAR::datastructure::Map> map;
+			m_mapManager->getMap(map);
+			T_SolAR_World = map->getTransform3D();
+		}
+
+		// compute T_ARr_SolAR 
+		Transform3Df T_ARr_SolAR = T_SolAR_World.inverse()*transform_ARr_World;
+
+		// transform is updated at each reception of GT pose, allowing to compensate for pose drift in ARr
+		// this compensation is transferred to T_ARr_SolAR
+		// now we can do all the computations in SolAR space ...
+
         // init last transform
         if (m_lastTransform.matrix().isZero())
-            m_lastTransform = transform;
+            m_lastTransform = T_ARr_SolAR;
 
-        updatedTransform = transform;
+        updatedTransform_ARr_World = T_ARr_SolAR;
 
         if (m_status != MappingStatus::BOOTSTRAP) {
             // refine transformation matrix by loop closure detection
             if (m_isDetectedLoop) {
-                updatedTransform = m_loopTransform * transform;
-                LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform.matrix());
+				updatedTransform_ARr_World = m_loopTransform * T_ARr_SolAR;
+                LOG_INFO("New transform matrix after loop detection:\n{}", updatedTransform_ARr_World.matrix());
                 m_isDetectedLoop = false;
             }
             // drift correction
             else {
-                Transform3Df driftTransform = transform * m_lastTransform.inverse();
+                Transform3Df driftTransform = T_ARr_SolAR * m_lastTransform.inverse();
                 if (!driftTransform.isApprox(Transform3Df::Identity()) && (m_status != TRACKING_LOST)){
                     m_isDetectedDrift = true;
                     m_dropBufferDriftTransform.push(driftTransform);
@@ -480,17 +516,20 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         }
 
         // Correct pose to the world coordinate system
-        Transform3Df poseCorrected = updatedTransform * poses[0];
+        Transform3Df poseCorrected = T_ARr_SolAR * poses_ARr[0];
 
         // update status
         status = m_status;
 
         // update last transform
-        m_lastTransform = updatedTransform;
+        m_lastTransform = updatedTransform_ARr_World;
+
+        // computation finished, convert updatedTransform from T_ARr2SolAR to T_ARr2World 
+		updatedTransform_ARr_World = T_SolAR_World* updatedTransform_ARr_World;
 
 		// Send image and corrected pose to process
 		m_nbImageRequest++;
-        m_dropBufferCamImagePoseCapture.push(std::make_pair(images[0], poseCorrected));
+        m_dropBufferCamImagePoseCapture.push({ images[0], poseCorrected, fixedPose });
 
         LOG_DEBUG("New pair of (image, pose) stored for mapping processing");
 
@@ -515,19 +554,20 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
     void PipelineMappingMultiProcessing::featureExtraction()
     {
-		std::pair<SRef<Image>, Transform3Df> imagePose;
+        CaptureDropBufferElement imagePose;
 		if (!m_started || !m_dropBufferCamImagePoseCapture.tryPop(imagePose)) {
 			xpcf::DelegateTask::yield();
 			return;
 		}
         Timer clock;
-		SRef<Image> image = imagePose.first;
-		Transform3Df pose = imagePose.second;
+        SRef<Image> image = imagePose.image;
+        Transform3Df pose = imagePose.pose;
 		std::vector<Keypoint> keypoints, undistortedKeypoints;
 		SRef<DescriptorBuffer> descriptors;
 		if (m_descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
             m_undistortKeypoints->undistort(keypoints, m_cameraParams, undistortedKeypoints);
             SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, m_cameraParamsID, pose);
+            frame->setFixedPose(imagePose.fixedPose);
             if (m_status != MappingStatus::BOOTSTRAP) {
 				m_nbFrameToUpdate++;
 				m_dropBufferFrame.push(frame);
@@ -625,13 +665,34 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_status = m_status == MappingStatus::LOOP_CLOSURE ? MappingStatus::LOOP_CLOSURE : MappingStatus::MAPPING;
             m_nbTrackingLost = 0;
         }
-        LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
+		LOG_DEBUG("Number of tracked points: {}", frame->getVisibility().size());
+		
+        // once groundtruth frame is received, wait for the following keyframe and set keyframe fixedPose to true
+        // currently, for each received GT frame, we will wait for the following keyframe to see if GT can be used
+        if (!m_isGTPoseReady) { 
+            if (frame->isFixedPose()) {
+                m_isGTPoseReady = true;
+                m_idProcessGTReceived = m_nbUpdateProcess;
+            }
+        }
 
         // send frame to mapping task
-		if (m_isMappingIdle && m_isLoopIdle && m_tracking->checkNeedNewKeyframe()) {
-			m_nbFrameToMapping++;
-			m_dropBufferAddKeyframe.push(frame);
-		}		
+        if (m_isMappingIdle && m_isLoopIdle && m_tracking->checkNeedNewKeyframe()) {
+            if (m_isGTPoseReady) {
+                // drift may be important if too much time passed between frame_GT and keyframe
+                if (m_nbUpdateProcess - m_idProcessGTReceived > NB_FRAMES_GT_ALIVE) { 
+                    m_isGTPoseReady = false;
+                    LOG_ERROR("Error while injecting the ground truth pose, the GT pose is not used since too many frames passed between the frame and the following keyframe");
+                    return;
+                }
+                // the keyframe closest to the groundtruth frame is set to be GT keyframe 
+                frame->setFixedPose(true);
+                // once the groundtruth is used, waits for the next groundtruth frame 
+                m_isGTPoseReady = false;
+            }
+            m_nbFrameToMapping++;
+            m_dropBufferAddKeyframe.push(frame);
+        }
 
         LOG_DEBUG("PipelineMappingMultiProcessing::updateVisibility elapsed time = {} ms", clock.elapsed());
     }
@@ -644,11 +705,12 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             xpcf::DelegateTask::yield();
             return;
         }        
+
 		m_isMappingIdle = false;
         std::unique_lock<std::mutex> lock(m_mutexMapping);
         Timer clock;
 		m_nbMappingProcess++;
-        SRef<Keyframe> keyframe;        
+		SRef<Keyframe> keyframe;
         if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
             m_curKeyframeId = keyframe->getId();
             LOG_DEBUG("New keyframe id: {}", keyframe->getId());
@@ -743,6 +805,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                  m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
         lock.unlock();
+
         if (m_mapUpdatePipeline != nullptr){
             try {
                 LOG_DEBUG("Start the remote map update pipeline");

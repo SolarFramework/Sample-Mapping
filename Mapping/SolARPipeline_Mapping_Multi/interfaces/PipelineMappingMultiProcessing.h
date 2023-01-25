@@ -115,6 +115,11 @@ namespace MAPPING {
         FrameworkReturnCode setRectificationParameters(const SolAR::datastructure::RectificationParameters & rectCam1,
                                                        const SolAR::datastructure::RectificationParameters & rectCam2) override;
 
+		/// @brief Set the 3D transformation from SolAR to world spaces
+		/// @param[in] transform the transformation matrix from SolAR to World
+		/// @return FrameworkReturnCode::_SUCCESS if the transform is correctly set, else FrameworkReturnCode::_ERROR_
+		FrameworkReturnCode set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df & transform) override;
+
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode start() override;
@@ -128,14 +133,16 @@ namespace MAPPING {
         /// (camera configuration, fiducial marker, point cloud, key frames, key points)
         /// @param[in] images the input image to process
         /// @param[in] poses the input pose in the device coordinate system
+        /// @param[in] fixedPose the input poses are considered as ground truth
         /// @param[in] transform the transformation matrix from the device coordinate system to the world coordinate system
         /// @param[out] updatedTransform the refined transformation by a loop closure detection
         /// @param[out] status the current status of the mapping pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
-                                                  const std::vector<SolAR::datastructure::Transform3Df> & poses,
-                                                  const SolAR::datastructure::Transform3Df & transform,
-                                                  SolAR::datastructure::Transform3Df & updatedTransform,
+                                                  const std::vector<SolAR::datastructure::Transform3Df> & poses_ARr,
+                                                  bool fixedPose,
+                                                  const SolAR::datastructure::Transform3Df & transform_ARr_World,
+                                                  SolAR::datastructure::Transform3Df & updatedTransform_ARr_World,
                                                   MappingStatus & status) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization
@@ -218,6 +225,7 @@ namespace MAPPING {
         bool m_cameraOK = false;        // Indicate if camera parameters has been set
         bool m_started = false;         // Indicate if pipeline il started
         bool m_tasksStarted = false;    // Indicate if tasks are started
+        bool m_isGTPoseReady = false;   // indicates if a groundtruth pose is freshly received and ready to use 
         uint32_t m_nbTrackingLost = 0;   // Nb successive tracking lost events
 
         // Delegate tasks dedicated to asynchronous mapping processing
@@ -229,7 +237,13 @@ namespace MAPPING {
         xpcf::DelegateTask * m_driftCorrectionTask = nullptr;
 
         // Drop buffers used by mapping processing
-        xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCapture;
+        struct CaptureDropBufferElement
+        {
+            SRef<datastructure::Image> image;
+            datastructure::Transform3Df pose;
+            bool fixedPose;
+        };
+        xpcf::DropBuffer<CaptureDropBufferElement>                             m_dropBufferCamImagePoseCapture;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrame;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameBootstrap;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;

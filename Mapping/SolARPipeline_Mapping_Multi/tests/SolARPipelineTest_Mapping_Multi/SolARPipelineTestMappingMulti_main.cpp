@@ -36,9 +36,38 @@ using namespace SolAR::api::pipeline;
 using namespace SolAR::datastructure;
 namespace xpcf=org::bcom::xpcf;
 
-#define INDEX_USE_CAMERA 1
+#define INDEX_USE_CAMERA 0
 #define DELAY_BETWEEN_REQUESTS 500
 #define NB_IMAGE_BETWEEN_RELOC 5
+#define NB_FID 2
+
+// groundtruth related
+struct groundtruth {
+    groundtruth() {}
+    groundtruth(int i, const Transform3Df& t): marker_id(i), transform(t) {}
+    int marker_id;
+    Transform3Df transform;
+};
+std::map<std::chrono::system_clock::time_point, groundtruth> gGT; // map from timestamp to gt 
+std::array<std::vector<std::chrono::system_clock::time_point>, NB_FID> gGTActivateTimestamps;  // activated timestamps of each FID
+std::array<bool, NB_FID> gGTPoseInjected;
+std::array<Transform3Df, NB_FID> gFIDtransforms; // FID transform to the reference one 
+
+// method split string into sub ones 
+vector<string> ssplit(const string& str, string delimiter = " ") {
+    vector<string> out;
+    string strtmp = str;
+    auto pos = strtmp.find(delimiter);
+    while (pos != string::npos) {
+        out.push_back(strtmp.substr(0, pos));
+        strtmp.erase(0, pos+1);
+        pos = strtmp.find(delimiter);
+    }
+    out.push_back(strtmp);
+    return out;
+}
+
+MappingStatus gMappingStatus = BOOTSTRAP; 
 
 // Global XPCF Component Manager
 SRef<xpcf::IComponentManager> gXpcfComponentManager = 0;
@@ -93,13 +122,14 @@ auto fnRelocMarker = []() {
     Transform3Df new_pose;
 
     LOG_DEBUG("Relocalization marker processing");
-
-    if (gTrackablePose->estimate(image, camParams, new_pose) == FrameworkReturnCode::_SUCCESS) {
-        gT_M_W = new_pose * pose.inverse();
-        LOG_INFO("Transform matrix:\n{}", gT_M_W.matrix());
-        gIsReloc = true;
-        std::this_thread::sleep_for(std::chrono::seconds(30));
-    }
+	if (gMappingStatus != BOOTSTRAP)
+		return;
+	if (gTrackablePose->estimate(image, camParams, new_pose) == FrameworkReturnCode::_SUCCESS) {
+		gT_M_W = new_pose * pose.inverse();
+		LOG_INFO("Transform matrix:\n{}", gT_M_W.matrix());
+		gIsReloc = true;
+		std::this_thread::sleep_for(std::chrono::seconds(30));
+	}
 };
 
 // Function for producer client thread
@@ -121,18 +151,60 @@ auto fnClientProducer = []() {
         SRef<Image> displayImage = image->copy();
 
         if (gNbImages == NB_IMAGE_BETWEEN_RELOC){
-            gDropBufferRelocalizationMarker.push(std::make_pair(image, pose));
+			if (gMappingStatus == BOOTSTRAP) {
+				if (gGT.empty())
+					gDropBufferRelocalizationMarker.push(std::make_pair(image, pose));
+				else {
+					auto gtData = gGT.find(timestamp);
+					if (gtData != gGT.end()) // groundtruth found
+						if (gtData->second.marker_id == 0) // reference FID (FID_0 is used by Bootstrap)
+						    gDropBufferRelocalizationMarker.push(std::make_pair(image, pose));
+				}
+			}
             gNbImages = 0;
         }
         else
             gNbImages++;
 
         if (gIsReloc) {
+            // check if current data contains FID other than the reference one 
+            auto gtData = gGT.find(timestamp);
+            bool other_marker_found = gtData != gGT.end() && gtData->second.marker_id > 0;
+
             // send to mapping
-            Transform3Df updateT_M_W;
+            Transform3Df poseCamera;
+			Transform3Df updateT_M_W = gT_M_W;
             MappingStatus status;
-            gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, gT_M_W, updateT_M_W, status);
+            if (!other_marker_found) {
+                gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, /* fixedPose = */ false, gT_M_W, updateT_M_W, status);
+            }
+            else {
+                // other FID found, get its id 
+                int other_fid = gtData->second.marker_id;
+                if (!gGTPoseInjected[other_fid]) {
+					// check if current frame is activated for GT pose estimation 
+					const auto& fid_acti_map = gGTActivateTimestamps[other_fid];
+					if (std::find(fid_acti_map.begin(), fid_acti_map.end(), timestamp) != fid_acti_map.end()) { // if activated 
+						Transform3Df pose_fid;
+						if (gTrackablePose->estimate(image, camParams, pose_fid) == FrameworkReturnCode::_SUCCESS) {
+							// GT camera pose in SolAR CS (1st FID CS)
+							auto gt_pose_solar = gtData->second.transform * pose_fid;
+							// correct gT_M_W
+							gT_M_W = gt_pose_solar * pose.inverse();
+							gMappingPipelineMulti->mappingProcessRequest({ image }, { pose }, true, gT_M_W, updateT_M_W, status);
+							gGTPoseInjected[other_fid] = true;
+						}
+					}
+                }
+                else {
+                    // GT pose already injected (gT_M_W has been updated), continue mapping 
+                    gMappingPipelineMulti->mappingProcessRequest({image}, {pose}, /* fixedPose = */ false, gT_M_W, updateT_M_W, status);
+                }
+            }
+			poseCamera = updateT_M_W * pose;
             gT_M_W = updateT_M_W;
+			gMappingStatus = status;
+
             switch (status) {
             case BOOTSTRAP:
                 LOG_INFO("Bootstrap");
@@ -146,8 +218,9 @@ auto fnClientProducer = []() {
             default:
                 LOG_INFO("Mapping");
             }
-            // draw pose
-            g3DOverlay->draw(gT_M_W * pose, camParams, displayImage);
+			// draw pose on FID 
+			for (auto i = 0; i < gFIDtransforms.size(); i++)
+				g3DOverlay->draw(gFIDtransforms[i].inverse()*poseCamera, camParams, displayImage);
         }
 
         if (gImageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP) {
@@ -157,6 +230,8 @@ auto fnClientProducer = []() {
     else {
         gImageToSend = false;
         LOG_INFO("Producer client: no more images to send");
+		if (gMappingPipelineMulti != 0)
+			gMappingPipelineMulti->stop();
     }
 };
 
@@ -236,10 +311,15 @@ int main(int argc, char ** argv)
 
     // Default configuration file
     char * config_file = (char *)"SolARPipelineTest_Mapping_Multi_Processing_conf.xml";
+    char * config_file_producer = (char *)"SolARPipelineTest_Mapping_Multi_Producer_conf.xml";
 
     if (argc > 1) {
         // Get mapping pipeline configuration file path and name from main args
         config_file = argv[1];
+    }
+    if (argc > 2) {
+        // Get mapping producer configuration file path and name from main args
+        config_file_producer = argv[2];
     }
 
     try {
@@ -264,7 +344,7 @@ int main(int argc, char ** argv)
         }
 
         // Manage producer client thread
-        if (gXpcfComponentManager->load("SolARPipelineTest_Mapping_Multi_Producer_conf.xml") == org::bcom::xpcf::_SUCCESS)
+        if (gXpcfComponentManager->load(config_file_producer) == org::bcom::xpcf::_SUCCESS)
         {
             LOG_INFO("Producer client configuration file loaded");
 
@@ -282,6 +362,57 @@ int main(int argc, char ** argv)
 
 			g3DOverlay = gXpcfComponentManager->resolve<display::I3DOverlay>();
 			LOG_INFO("Producer client: 3D overlay component created");
+
+            // load groundtruth data if provided 
+			gGTPoseInjected.fill(false);
+			gFIDtransforms.fill(Transform3Df::Identity()); 
+            std::string pathToData = gArDevice->bindTo<xpcf::IConfigurable>()->getProperty("pathToData")->getStringValue();
+            std::ifstream infile(pathToData + "/groundtruth.txt");
+            if (infile.is_open()) {
+                std::ifstream fileTimestamps(pathToData + "/timestamps.txt");
+                if (!fileTimestamps.is_open()) {
+                    LOG_ERROR("Failed to open timestamp file");
+                    return -1;
+                }
+                std::vector<std::chrono::system_clock::time_point> timestamps;
+                std::string line;
+                while (std::getline(fileTimestamps, line)) {
+                    std::chrono::milliseconds dur(std::stoll(line));
+                    timestamps.push_back(std::chrono::time_point<std::chrono::system_clock>(dur));
+                }
+                fileTimestamps.close();
+
+                // read GT data
+                while (std::getline(infile, line)) {
+                    vector<string> line_subs;
+                    int marker_id, frame_start, frame_end;
+                    auto key = line.substr(0, line.find_first_of("_"));
+                    if (key == "FID" || key == "ACTIVATED") {
+                        line_subs = ssplit(line, ",");
+                        marker_id = std::stoi(ssplit(line_subs[0], "_")[1]);
+                        if (marker_id < 0 || marker_id >= NB_FID) {
+                            LOG_ERROR("marker id inside GT file exceeds NB_FID");
+                            return -1;
+                        }
+                        frame_start = std::stoi(ssplit(line_subs[1], "_")[0]);
+                        frame_end = std::stoi(ssplit(line_subs[1], "_")[1]);
+                    }
+                    if (key == "FID") {
+                        auto mat = ssplit(line_subs[2], "_");
+                        Transform3Df transform;
+                        for (int r = 0; r < 4; r++)
+                            for (int c = 0; c < 4; c++)
+                                transform(r,c) = std::stof(mat[r*4+c]);
+                        for (int t = frame_start; t <= frame_end; t++)
+                            gGT[timestamps[t]] = groundtruth(marker_id, transform);
+                        gFIDtransforms[marker_id] = transform;
+                    }
+					else if (key == "ACTIVATED") {
+						gGTActivateTimestamps[marker_id] = { timestamps.begin() + frame_start, timestamps.begin() + frame_end + 1 };
+					}
+                }
+                infile.close();
+            }
 
 			// set camera parameters
 			CameraRigParameters camRigParams = gArDevice->getCameraParameters();
@@ -362,6 +493,11 @@ int main(int argc, char ** argv)
     }
     catch (xpcf::Exception & e) {
         LOG_ERROR("The following exception has been caught {}", e.what());
+        return -1;
+    }
+    catch(std::invalid_argument const& ex)
+    {
+        LOG_ERROR("Invalid argument has been caught: {}", ex.what());
         return -1;
     }
 

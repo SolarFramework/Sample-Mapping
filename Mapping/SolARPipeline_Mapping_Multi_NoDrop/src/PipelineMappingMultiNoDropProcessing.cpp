@@ -420,6 +420,7 @@ const std::string RELOCALIZATION_CONF_FILE = "./SolARService_Mapping_Multi_NoDro
 
     FrameworkReturnCode PipelineMappingMultiNoDropProcessing::mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
                                                                                     const std::vector<SolAR::datastructure::Transform3Df> & poses,
+                                                                                    bool fixedPose,
                                                                                     const SolAR::datastructure::Transform3Df & transform,
                                                                                     SolAR::datastructure::Transform3Df & updatedTransform,
                                                                                     MappingStatus & status)
@@ -474,7 +475,7 @@ const std::string RELOCALIZATION_CONF_FILE = "./SolARService_Mapping_Multi_NoDro
         m_lastTransform = updatedTransform;
 
 		// Send image and corrected pose to process
-        m_sharedBufferCamImagePoseCapture.push(std::make_pair(images[0], poseCorrected));
+        m_sharedBufferCamImagePoseCapture.push({images[0], poseCorrected, fixedPose });
 
         LOG_DEBUG("Nb images in buffer = {}", m_sharedBufferCamImagePoseCapture.size());
 
@@ -501,14 +502,14 @@ const std::string RELOCALIZATION_CONF_FILE = "./SolARService_Mapping_Multi_NoDro
 
     void PipelineMappingMultiNoDropProcessing::featureExtraction()
     {
-		std::pair<SRef<Image>, Transform3Df> imagePose;
+        SharedBufferImagePoseElement imagePose;
 		if (!m_sharedBufferCamImagePoseCapture.tryPop(imagePose)) {
 			xpcf::DelegateTask::yield();
 			return;
 		}
         Timer clock;
-		SRef<Image> image = imagePose.first;
-		Transform3Df pose = imagePose.second;
+        SRef<Image> image = imagePose.image;
+        Transform3Df pose = imagePose.pose;
 		std::vector<Keypoint> keypoints, undistortedKeypoints;
 		SRef<DescriptorBuffer> descriptors;
 		if (m_descriptorExtractor->extract(image, keypoints, descriptors) == FrameworkReturnCode::_SUCCESS) {
@@ -518,6 +519,7 @@ const std::string RELOCALIZATION_CONF_FILE = "./SolARService_Mapping_Multi_NoDro
             LOG_DEBUG("PipelineMappingMultiNoDropProcessing::featureExtraction: nb undistortedKeypoints = {}",
                      undistortedKeypoints.size());
             SRef<Frame> frame = xpcf::utils::make_shared<Frame>(keypoints, undistortedKeypoints, descriptors, image, m_cameraParamsID, pose);
+            frame->setFixedPose(imagePose.fixedPose);
             if (m_status != MappingStatus::BOOTSTRAP)
 				m_sharedBufferFrame.push(frame);
 			else

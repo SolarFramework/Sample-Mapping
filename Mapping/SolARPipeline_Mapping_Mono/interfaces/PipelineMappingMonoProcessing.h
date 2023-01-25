@@ -123,12 +123,14 @@ namespace MAPPING {
         /// (camera configuration, fiducial marker, point cloud, key frames, key points)
         /// @param[in] images the input image to process
         /// @param[in] poses the input pose in the device coordinate system
+        /// @param[in] fixedPose the input poses are considered as ground truth
         /// @param[in] transform the transformation matrix from the device coordinate system to the world coordinate system
         /// @param[out] updatedTransform the refined transformation by a loop closure detection
         /// @param[out] status the current status of the mapping pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
                                                   const std::vector<SolAR::datastructure::Transform3Df> & poses,
+                                                  bool fixedPose,
                                                   const SolAR::datastructure::Transform3Df & transform,
                                                   SolAR::datastructure::Transform3Df & updatedTransform,
                                                   MappingStatus & status) override;
@@ -199,8 +201,14 @@ namespace MAPPING {
         // Delegate task dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_mappingTask = nullptr;
 
-        // Drop buffer containing (image,pose) pairs sent by client
-        xpcf::SharedFifo<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>> m_inputImagePoseBuffer;       
+        // Drop buffer containing data sent by client
+        struct SharedInputBufferElement
+        {
+            SRef<datastructure::Image> image;
+            datastructure::Transform3Df pose;
+            bool fixedPose;
+        };
+        xpcf::SharedFifo<SharedInputBufferElement> m_inputImagePoseBuffer;
     };
 
 }

@@ -110,10 +110,10 @@ namespace MAPPING {
         FrameworkReturnCode setRectificationParameters(const SolAR::datastructure::RectificationParameters & rectCam1,
                                                        const SolAR::datastructure::RectificationParameters & rectCam2) override;
 
-		/// @brief Set the 3D transformation from SolAR to world spaces
-		/// @param[in] transform the transformation matrix from SolAR to World
-		/// @return FrameworkReturnCode::_SUCCESS if the transform is correctly set, else FrameworkReturnCode::_ERROR_
-		FrameworkReturnCode set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df & transform) override;
+        /// @brief Set the 3D transformation from SolAR to world spaces
+        /// @param[in] transform the transformation matrix from SolAR to World
+        /// @return FrameworkReturnCode::_SUCCESS if the transform is correctly set, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df & transform) override;
 
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
@@ -127,17 +127,17 @@ namespace MAPPING {
         /// Retrieve the new image (and pose) to process, in the current pipeline context
         /// (camera configuration, fiducial marker, point cloud, key frames, key points)
         /// @param[in] images the input image to process
-        /// @param[in] poses the input pose in the device coordinate system
+        /// @param[in] posesArr the input pose in the device coordinate system
         /// @param[in] fixedPose the input poses are considered as ground truth
-        /// @param[in] transform the transformation matrix from the device coordinate system to the world coordinate system
-        /// @param[out] updatedTransform the refined transformation by a loop closure detection
+        /// @param[in] transformArrWorld the transformation matrix from the device coordinate system to the world coordinate system
+        /// @param[out] updatedTransformArrWorld the refined transformation by a loop closure detection
         /// @param[out] status the current status of the mapping pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
-                                                  const std::vector<SolAR::datastructure::Transform3Df> & poses_ARr,
+                                                  const std::vector<SolAR::datastructure::Transform3Df> & posesArr,
                                                   bool fixedPose,
-                                                  const SolAR::datastructure::Transform3Df & transform_ARr_World,
-                                                  SolAR::datastructure::Transform3Df & updatedTransform_ARr_World,
+                                                  const SolAR::datastructure::Transform3Df & transformArrWorld,
+                                                  SolAR::datastructure::Transform3Df & updatedTransformArrWorld,
                                                   MappingStatus & status) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization

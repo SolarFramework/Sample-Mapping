@@ -789,7 +789,6 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             Timer clock;
             // Global bundle adjustment
             m_globalBundler->bundleAdjustment();
-            lock.unlock();
             LOG_INFO("Global BA done");
             // Map pruning
             int nbCpPruning = m_mapManager->pointCloudPruning();
@@ -798,6 +797,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             LOG_INFO("Nb of pruning keyframes: {}", nbKfPruning);
             LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                      m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
+            lock.unlock();
 
             if (m_mapUpdatePipeline != nullptr){
                 try {
@@ -807,8 +807,10 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 
                         LOG_DEBUG("Send local map to the remote map update pipeline");
 
+                        std::unique_lock<std::mutex> lock2(m_mutexMapping);
                         SRef<Map> localMap;
                         m_mapManager->getMap(localMap);
+                        lock2.unlock();
 
                         if (m_mapUpdatePipeline->mapUpdateRequest(localMap) == FrameworkReturnCode::_SUCCESS) {
                             LOG_DEBUG("Request to the remote map update pipeline has succeeded");

@@ -494,6 +494,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
     {
         if (m_status != MappingStatus::BOOTSTRAP) {
 			LOG_DEBUG("PipelineMappingMultiProcessing::getDataForVisualization");
+            std::unique_lock<std::mutex> lock(m_mutexMapData);
             outputPointClouds = m_allPointClouds;
             keyframePoses = m_allKeyframePoses;
             return FrameworkReturnCode::_SUCCESS;

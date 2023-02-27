@@ -337,6 +337,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
                 // add current camera parameters to the map manager
                 SRef<CameraParameters> camParams = xpcf::utils::make_shared<CameraParameters>(m_cameraParams);
                 m_mapManager->addCameraParameters(camParams);
+                m_cameraParamsID = camParams->id;
             }
 
             m_countNewKeyframes = 0;

@@ -50,6 +50,7 @@
 #include "api/pipeline/IMapUpdatePipeline.h"
 #include "api/pipeline/IRelocalizationPipeline.h"
 #include "api/geom/I3DTransform.h"
+#include "api/reloc/IKeyframeRetriever.h"
 
 namespace SolAR {
 using namespace api::pipeline;
@@ -208,6 +209,7 @@ namespace MAPPING {
         SRef<api::loop::ILoopCorrector>						m_loopCorrector;
 		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
         SRef<api::geom::I3DTransform>                       m_transform3D;
+        SRef<api::reloc::IKeyframeRetriever>                m_keyframeRetriever;
 
         std::atomic_bool                                    m_isMappingIdle;		// indicates if the mapping task is idle
         std::atomic_bool                                    m_isLoopIdle;			// indicates if the loop closure task is idle

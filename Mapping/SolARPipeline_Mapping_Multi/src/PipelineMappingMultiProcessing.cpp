@@ -66,6 +66,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             declareInjectable<api::loop::ILoopClosureDetector>(m_loopDetector);
             declareInjectable<api::loop::ILoopCorrector>(m_loopCorrector);
             declareInjectable<api::geom::I3DTransform>(m_transform3D);
+            declareInjectable<api::reloc::IKeyframeRetriever>(m_keyframeRetriever);
 
             LOG_DEBUG("All component injections declared");
 
@@ -615,10 +616,24 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
                     m_cameraParamsID = camParams->id;
 
                     SRef<Keyframe> keyframe;
-                    m_keyframesManager->getKeyframe(0, keyframe);
-                    m_lastKeyframeId = 0;
-                    m_curKeyframeId = 0;
-                    m_tracking->setNewKeyframe(keyframe);
+                    std::vector<uint32_t> retKeyframesId;
+                    // find the keyframe most similar to frame and set it as reference keyframe 
+                    if (m_keyframeRetriever->retrieve(frame, retKeyframesId) == FrameworkReturnCode::_SUCCESS) {
+                        LOG_DEBUG("Successful relocalization. Update reference keyframe id: {}", retKeyframesId[0]);
+                        if (m_keyframesManager->getKeyframe(retKeyframesId[0], keyframe) == FrameworkReturnCode::_SUCCESS) {
+                            m_lastKeyframeId = retKeyframesId[0];
+                            m_curKeyframeId = retKeyframesId[0];
+                            m_tracking->setNewKeyframe(keyframe);
+                        }
+                        else {
+                            LOG_ERROR("Get keyframe failed");
+                            return;
+                        }
+                    }
+                    else {
+                        LOG_ERROR("Relocalization Failed");
+                        return;
+                    }
                     LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
                     LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
                     m_status = MappingStatus::MAPPING;

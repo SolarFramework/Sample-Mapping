@@ -233,7 +233,7 @@
             <property name="thresAngleViewDirection" type="float" value="0.8"/>
 			<property name="nbPassedFrameAtLeast" type="int" value="1"/>
             <property name="ratioCPRefKeyframe" type="float" value="0.5"/>
-            <property name="minTrackedPoints" type="int" value="200"/>
+            <property name="minTrackedPoints" type="int" value="400"/>
             <property name="nbVisibilityAtLeast" type="int" value="5"/>
         </configure>
         <configure component="SolARSLAMMapping">
@@ -271,12 +271,12 @@
         <configure component="SolARDescriptorMatcherRegionOpencv">
                 <property name="distanceRatio" type="float" value="0.8"/>
                 <property name="radius" type="float" value="15"/>
-                <property name="matchingDistanceMax" type="float" value="300"/>
+                <property name="matchingDistanceMax" type="float" value="500"/>
         </configure>
         <configure component="SolARDescriptorMatcherGeometricOpencv">
-                <property name="distanceRatio" type="float" value="0.7"/>
+                <property name="distanceRatio" type="float" value="0.8"/>
                 <property name="paddingRatio" type="float" value="0.003"/>
-                <property name="matchingDistanceMax" type="float" value="300"/>
+                <property name="matchingDistanceMax" type="float" value="500"/>
         </configure>
         <configure component="SolARDescriptorMatcherHammingBruteForceOpencv">
 			<property name="distanceRatio" type="float" value="0.9"/>
@@ -292,7 +292,7 @@
         <configure component="SolARPoseEstimationSACPnpOpencv">
 			<property name="iterationsCount" type="int" value="500"/>
 			<property name="reprojError" type="float" value="3.0"/>
-			<property name="confidence" type="float" value="0.99"/>
+			<property name="confidence" type="float" value="0.96"/>
 			<property name="minNbInliers" type="int" value="15"/>
         </configure>
         <configure component="SolARMapFilter">
@@ -310,13 +310,13 @@
 			<property name="threshold" type="float" value="0.01"/>
 			<property name="level" type="int" value="3"/>
 			<property name="matchingDistanceRatio" type="float" value="0.8"/>
-                        <property name="matchingDistanceMax" type="float" value="300"/>
+                        <property name="matchingDistanceMax" type="float" value="500"/>
         </configure>
         <configure component="SolAR3DTransformEstimationSACFrom3D3D">
 			<property name="iterationsCount" type="int" value="500"/>
 			<property name="reprojError" type="float" value="3.0"/>
 			<property name="confidence" type="float" value="0.9"/>
-                        <property name="minNbInliers" type="int" value="40"/>
+                        <property name="minNbInliers" type="int" value="20"/>
         </configure>
         <configure component="SolARPoseFinderFrom2D2DOpencv">
 			<property name="confidence" type="float" value="0.99"/>
@@ -339,7 +339,7 @@
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
-			<property name="errorOutlier" type="float" value="5.0"/>
+			<property name="errorOutlier" type="float" value="10.0"/>
 			<property name="useSpanningTree" type="int" value="0"/>
 			<property name="isRobust" type="int" value="0"/>
 			<property name="fixedMap" type="int" value="0"/>
@@ -350,7 +350,7 @@
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
-			<property name="errorOutlier" type="float" value="5.0"/>
+			<property name="errorOutlier" type="float" value="10.0"/>
 			<property name="useSpanningTree" type="int" value="0"/>
 			<property name="isRobust" type="int" value="0"/>
 			<property name="fixedMap" type="int" value="0"/>

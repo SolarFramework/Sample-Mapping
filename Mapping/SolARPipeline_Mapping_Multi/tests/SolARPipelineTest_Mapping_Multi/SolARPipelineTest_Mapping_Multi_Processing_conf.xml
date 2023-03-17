@@ -257,7 +257,7 @@
         <configure component="SolARSLAMMapping">
             <property name="minWeightNeighbor" type="float" value="5.0"/>
             <property name="maxNbNeighborKfs" type="int" value="8"/>
-            <property name="saveImage" type="int" value="0"/>
+            <property name="saveImage" type="int" value="1"/>
         </configure>
         <configure component="SolARMapManager">
 			<property name="directory" type="string" value="../../../../../data/map_hololens/mapA"/>
@@ -308,7 +308,7 @@
         <configure component="SolARGeometricMatchesFilterOpencv">
 			<property name="confidence" type="float" value="0.99"/>
 			<property name="outlierDistanceRatio" type="float" value="0.005"/>
-			<property name="epilinesDistance" type="float" value="3.0"/>
+			<property name="epilinesDistance" type="float" value="10.0"/>
         </configure>
         <configure component="SolARPoseEstimationSACPnpOpencv">
 			<property name="iterationsCount" type="int" value="500"/>
@@ -328,7 +328,7 @@
         </configure>
         <configure component="SolARKeyframeRetrieverFBOW">
 			<property name="VOCpath" type="string" value="../../../../../data/fbow_voc/akaze.fbow"/>
-			<property name="threshold" type="float" value="0.01"/>
+			<property name="threshold" type="float" value="0.005"/>
 			<property name="level" type="int" value="3"/>
 			<property name="matchingDistanceRatio" type="float" value="0.8"/>
 			<property name="matchingDistanceMax" type="float" value="500"/>

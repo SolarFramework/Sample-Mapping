@@ -305,6 +305,7 @@ int main(int argc, char ** argv)
 #endif
 
     LOG_ADD_LOG_TO_CONSOLE();
+    //LOG_SET_DEBUG_LEVEL();
 
     // Signal interruption function (Ctrl + C)
     signal(SIGINT, SigInt);

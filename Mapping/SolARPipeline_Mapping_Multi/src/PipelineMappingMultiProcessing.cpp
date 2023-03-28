@@ -134,6 +134,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         LOG_DEBUG("PipelineMappingMultiProcessing::onInjected");
         // Get properties
         m_minWeightNeighbor = m_mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
+        m_boWFeatureFromMatchedDescriptors = m_mapManager->bindTo<xpcf::IConfigurable>()->getProperty("boWFeatureFromMatchedDescriptors")->getIntegerValue();
     }
 
     PipelineMappingMultiProcessing::~PipelineMappingMultiProcessing()
@@ -301,6 +302,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_isLoopIdle = true;
             m_isGTPoseReady = false;
             m_nbTrackingLost = 0;
+            m_keyframeIds.resize(0);
 
             // Init report variables
             m_nbImageRequest = 0;
@@ -399,6 +401,8 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 					LOG_ERROR("Cannot stop relocalization pipeline");
 				}
 			}
+
+            m_keyframeIds.resize(0);
         }
         else {
             LOG_INFO("Pipeline already stopped");
@@ -581,7 +585,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
                         }
                     }
                     else {
-                        LOG_ERROR("Relocalization Failed");
+                        LOG_ERROR("Relocalization failed");
                         return;
                     }
                     LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
@@ -705,6 +709,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
                 m_curKeyframeId = keyframe->getId();
                 LOG_DEBUG("New keyframe id: {}", keyframe->getId());
+                m_keyframeIds.push_back(keyframe->getId());
                 // Local bundle adjustment
                 std::vector<uint32_t> bestIdx;
                 m_covisibilityGraphManager->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx, NB_LOCALKEYFRAMES);
@@ -809,6 +814,14 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             LOG_INFO("Nb of pruning keyframes: {}", nbKfPruning);
             LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                      m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
+            if (m_boWFeatureFromMatchedDescriptors > 0) {
+                // recompute BoW features using only useful descriptors 
+                for (auto id : m_keyframeIds) {
+                    SRef<Keyframe> keyframe;
+                    if (m_keyframesManager->getKeyframe(id, keyframe) == FrameworkReturnCode::_SUCCESS) // may return fail because of keyframe pruning
+                        m_keyframeRetriever->addKeyframe(keyframe, true);
+                }
+            }
             lock.unlock();
 
             if (m_mapUpdatePipeline != nullptr){

@@ -259,6 +259,7 @@
 			<property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
 			<property name="reprojErrorThreshold" type="float" value="5.0"/>
 			<property name="thresConfidence" type="float" value="0.03"/>
+			<property name="boWFeatureFromMatchedDescriptors" type="int" value="1" description="compute Bag of words feature only from matched descriptors"/>
         </configure>
         <configure component="SolARDescritorsExtractorFromImagePopSift">
                 <property name="mode" type="string" value="PopSift"/>

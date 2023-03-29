@@ -816,6 +816,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
                      m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
             if (m_boWFeatureFromMatchedDescriptors > 0) {
                 // recompute BoW features using only useful descriptors 
+                LOG_INFO("Recompute BoW features from matched descriptors for {} keyframes", m_keyframeIds.size());
                 for (auto id : m_keyframeIds) {
                     SRef<Keyframe> keyframe;
                     if (m_keyframesManager->getKeyframe(id, keyframe) == FrameworkReturnCode::_SUCCESS) // may return fail because of keyframe pruning

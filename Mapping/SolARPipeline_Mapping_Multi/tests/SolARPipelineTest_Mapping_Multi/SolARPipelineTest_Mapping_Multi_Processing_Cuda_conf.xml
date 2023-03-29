@@ -267,14 +267,14 @@
                 <property name="nbOctaves" type="integer" value="3"/>
                 <property name="nbLevelPerOctave" type="integer" value="3"/>
                 <property name="sigma" type="float" value="1.6"/>
-                <property name="threshold" type="float" value="0.001"/>
+                <property name="threshold" type="float" value="0.01"/>
                 <property name="edgeLimit" type="float" value="10.0"/>
                 <property name="downsampling" type="float" value="-1.0"/>
                 <property name="initialBlur" type="float" value="-1.0"/>
-                <property name="maxTotalKeypoints" type="uint" value="1000"/>
+                <property name="maxTotalKeypoints" type="uint" value="2000"/>
         </configure>
         <configure component="SolARDescriptorMatcherKNNOpencv">
-                <property name="distanceRatio" type="float" value="0.8"/>
+                <property name="distanceRatio" type="float" value="0.9"/>
         </configure>
         <configure component="SolARDescriptorMatcherRegionOpencv">
                 <property name="distanceRatio" type="float" value="0.8"/>

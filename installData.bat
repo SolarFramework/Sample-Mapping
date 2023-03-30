@@ -7,6 +7,7 @@ powershell Expand-Archive fbow_voc.zip -DestinationPath .\data\fbow_voc -F
 del fbow_voc.zip
 
 curl https://repository.solarframework.org/generic/FbowVoc/popsift_uint8.fbow -L -o ./data/fbow_voc/popsift_uint8.fbow
+curl https://repository.solarframework.org/generic/FbowVoc/popsift_uint8_indoor.fbow -L -o ./data/fbow_voc/popsift_uint8_indoor.fbow
 
 :: Download AR device captures
 echo Download and install AR device captures

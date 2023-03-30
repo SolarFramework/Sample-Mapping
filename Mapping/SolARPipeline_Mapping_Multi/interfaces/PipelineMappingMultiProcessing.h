@@ -222,6 +222,8 @@ namespace MAPPING {
         uint32_t                                            m_curKeyframeId;        // the current keyframe will be corrected by using the new transformation
 		float												m_minWeightNeighbor;
         int													m_countNewKeyframes;
+        std::vector<uint32_t>                               m_keyframeIds;          // keyframe ids added during current mapping
+        int                                                 m_boWFeatureFromMatchedDescriptors;  // if > 0 indicate that bow feature will be computed merely from matched descriptors
 
         bool m_init = false;            // Indicate if initialization has been made
         bool m_cameraOK = false;        // Indicate if camera parameters has been set

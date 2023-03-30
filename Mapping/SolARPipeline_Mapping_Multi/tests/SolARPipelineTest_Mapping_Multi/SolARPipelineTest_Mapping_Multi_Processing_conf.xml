@@ -331,6 +331,7 @@
 			<property name="VOCpath" type="string" value="../../../../../data/fbow_voc/akaze.fbow"/>
 			<property name="threshold" type="float" value="0.005"/>
 			<property name="level" type="int" value="3"/>
+			<property name="distanceMetricId" type="int" value="0" description="0:L2; 1:L1; 2:ChiSquare; 3:BHATTACHARYYA; 4:DotProduct; 5:KLS"/>
 			<property name="matchingDistanceRatio" type="float" value="0.8"/>
 			<property name="matchingDistanceMax" type="float" value="500"/>
         </configure>

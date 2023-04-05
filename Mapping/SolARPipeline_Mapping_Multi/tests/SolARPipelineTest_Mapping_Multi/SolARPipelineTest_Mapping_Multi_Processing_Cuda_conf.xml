@@ -6,13 +6,6 @@
 			<interface uuid="2dc3cd33-5a11-4748-94a3-e7ab40462097" name="IMappingPipeline" description="The interface to define a mapping processing pipeline"/>
 		</component>
 	</module>
-    
-    	<!--module uuid="29c5afa7-df22-4704-b5e8-6c0d4ee80036" name="SolARPipelineRelocalization" description="Relocalization vision pipeline based on SolAR Framework" path="$XPCF_MODULE_ROOT/SolARBuild/SolARPipelineRelocalization/1.0.0/lib/x86_64/shared">
-			<component uuid="890d718b-3feb-44db-a16f-1330386d5fb2" name="SolARRelocalizationPipeline" description="SolARRelocalizationPipeline implements api::pipeline::IRelocalizationPipeline interface">
-				<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
-				<interface uuid="ef2a631d-93c9-4979-ad1e-5fa16d5d00ef" name="IRelocalizationPipeline" description="The interface to define a relocalization processing pipeline"/>
-			</component>
-		</module-->
 
         <module uuid="fde83ee6-3e22-4531-9e1c-54cb0a3bf3fa" name="SolARModuleOpenCVCuda" description="SolARModuleOpenCVCuda" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleOpenCVCuda/1.1.0/lib/x86_64/shared">
 		<component uuid="7823dac8-1597-41cf-bdef-59aa22f3d40a" name="SolARDescriptorMatcherKNNOpencv" description="SolARDescriptorMatcherKNNOpencv">
@@ -271,7 +264,7 @@
                 <property name="edgeLimit" type="float" value="10.0"/>
                 <property name="downsampling" type="float" value="-1.0"/>
                 <property name="initialBlur" type="float" value="-1.0"/>
-                <property name="maxTotalKeypoints" type="uint" value="2000"/>
+                <property name="maxTotalKeypoints" type="uint" value="1000"/>
         </configure>
         <configure component="SolARDescriptorMatcherKNNOpencv">
                 <property name="distanceRatio" type="float" value="0.9"/>
@@ -294,7 +287,7 @@
         </configure>
         <configure component="SolARGeometricMatchesFilterOpencv">
 			<property name="confidence" type="float" value="0.99"/>
-			<property name="outlierDistanceRatio" type="float" value="0.005"/>
+			<property name="outlierDistanceRatio" type="float" value="0.015"/>
 			<property name="epilinesDistance" type="float" value="10.0"/>
         </configure>
         <configure component="SolARPoseEstimationSACPnpOpencv">
@@ -314,7 +307,7 @@
 			<property name="minMeanDistanceIsKeyframe" type="float" value="0.04"/>
         </configure>
         <configure component="SolARKeyframeRetrieverFBOW">
-                        <property name="VOCpath" type="string" value="../../../../../data/fbow_voc/popsift_uint8.fbow"/>
+                        <property name="VOCpath" type="string" value="../../../../../data/fbow_voc/popsift_uint8_indoor.fbow"/>
 			<property name="threshold" type="float" value="0.005"/>
 			<property name="level" type="int" value="3"/>
 			<property name="distanceMetricId" type="int" value="0" description="0:L2; 1:L1; 2:ChiSquare; 3:BHATTACHARYYA; 4:DotProduct; 5:KLS"/>

@@ -32,6 +32,7 @@
 #include "xpcf/threading/BaseTask.h"
 
 #include <mutex>  // For std::unique_lock
+#include <unordered_set> // For storing keyframe ids 
 
 #include "base/pipeline/AMappingPipeline.h"
 #include "api/slam/IBootstrapper.h"
@@ -222,7 +223,7 @@ namespace MAPPING {
         uint32_t                                            m_curKeyframeId;        // the current keyframe will be corrected by using the new transformation
 		float												m_minWeightNeighbor;
         int													m_countNewKeyframes;
-        std::vector<uint32_t>                               m_keyframeIds;          // keyframe ids added during current mapping
+        std::unordered_set<uint32_t>                        m_keyframeIds;          // keyframe ids added during current mapping
         int                                                 m_boWFeatureFromMatchedDescriptors;  // if > 0 indicate that bow feature will be computed merely from matched descriptors
 
         bool m_init = false;            // Indicate if initialization has been made

@@ -30,6 +30,8 @@ namespace MAPPING {
 // Nb "tracking lost" events on successive frames before sending it back to the client
 #define NB_SUCCESSIVE_TRACKING_LOST 5
 
+const std::string RELOCALIZATION_CONF_FILE = "./SolARService_Mapping_Multi_NoDrop_Relocalization_conf.xml";
+
 // Public methods
 
     PipelineMappingMultiNoDropProcessing::PipelineMappingMultiNoDropProcessing(): base::pipeline::AMappingPipeline(xpcf::toMap<PipelineMappingMultiNoDropProcessing>())
@@ -200,6 +202,54 @@ namespace MAPPING {
         m_init = true;
 
         return FrameworkReturnCode::_SUCCESS;
+    }
+
+    FrameworkReturnCode PipelineMappingMultiNoDropProcessing::init(const std::string relocalizationServiceURL)
+    {
+        LOG_DEBUG("PipelineMappingMultiNoDropProcessing::init(relocalizationServiceURL)");
+
+        if (relocalizationServiceURL != "") {
+            // Open/create configuration file for the Relocalization service
+            std::ofstream confFile(RELOCALIZATION_CONF_FILE, std::ofstream::out);
+
+            // Check if file was successfully opened for writing
+            if (confFile.is_open())
+            {
+                confFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>" << std::endl;
+                confFile << "<xpcf-registry autoAlias=\"true\">" << std::endl << std::endl;
+                confFile << "<properties>" << std::endl;
+                confFile << "    <!-- gRPC proxy configuration-->" << std::endl;
+                confFile << "    <configure component=\"IRelocalizationPipeline_grpcProxy\">" << std::endl;
+                confFile << "        <property name=\"channelUrl\" access=\"rw\" type=\"string\" value=\""
+                      << relocalizationServiceURL << "\"/>" << std::endl;
+                confFile << "        <property name=\"channelCredentials\" access=\"rw\" type=\"uint\" value=\"0\"/>" << std::endl;
+                confFile << "    </configure>" << std::endl << std::endl;
+                confFile << "</properties>" << std::endl << std::endl;
+                confFile << "</xpcf-registry>" << std::endl;
+
+                confFile.close();
+            }
+            else {
+                LOG_ERROR("Error when creating the Relocalization service configuration file");
+                return FrameworkReturnCode::_ERROR_;
+            }
+
+            LOG_DEBUG("Load the new Relocalization properties configuration file: {}", RELOCALIZATION_CONF_FILE);
+
+            SRef<xpcf::IComponentManager> cmpMgr = xpcf::getComponentManagerInstance();
+            if (cmpMgr->load(RELOCALIZATION_CONF_FILE.c_str()) != org::bcom::xpcf::_SUCCESS) {
+                LOG_ERROR("Failed to load properties configuration file: {}", RELOCALIZATION_CONF_FILE);
+                return FrameworkReturnCode::_ERROR_;
+            }
+
+            m_relocPipeline = cmpMgr->resolve<api::pipeline::IRelocalizationPipeline>();
+        }
+        else {
+            LOG_ERROR("Initialization with an empty Relocalization Service URL");
+            return FrameworkReturnCode::_ERROR_;
+        }
+
+        return init();
     }
 
     FrameworkReturnCode PipelineMappingMultiNoDropProcessing::setCameraParameters(const CameraParameters & cameraParams)

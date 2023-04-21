@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xpcf-registry autoAlias="true" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-        <module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" description="SolARModuleOpenCV" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleOpenCV/1.1.0/lib/x86_64/shared">
+        <module uuid="15e1990b-86b2-445c-8194-0cbe80ede970" name="SolARModuleOpenCV" description="SolARModuleOpenCV" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleOpenCV/1.0.0/lib/x86_64/shared">
 		<component uuid="4b5576c1-4c44-4835-a405-c8de2d4f85b0" name="SolARDeviceDataLoader" description="SolARDeviceDataLoader">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="999085e6-1d11-41a5-8cca-3daf4e02e941" name="IARDevice" description="IARDevice"/>
@@ -67,7 +67,7 @@
 		</component>
 	</module>
 	
-        <module uuid="28b89d39-41bd-451d-b19e-d25a3d7c5797" name="SolARModuleTools" description="SolARModuleTools" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleTools/1.1.0/lib/x86_64/shared">
+        <module uuid="28b89d39-41bd-451d-b19e-d25a3d7c5797" name="SolARModuleTools" description="SolARModuleTools" path="$XPCF_MODULE_ROOT/SolARBuild/SolARModuleTools/1.0.0/lib/x86_64/shared">
 		<component uuid="a2ef5542-029e-4fce-9974-0aea14b29d6f" name="SolARSBPatternReIndexer" description="SolARSBPatternReIndexer">
 			<interface uuid="125f2007-1bf9-421d-9367-fbdc1210d006" name="IComponentIntrospect" description="IComponentIntrospect"/>
 			<interface uuid="79c5b810-d557-11e7-9296-cec278b6b50a" name="ISBPatternReIndexer" description="ISBPatternReIndexer"/>

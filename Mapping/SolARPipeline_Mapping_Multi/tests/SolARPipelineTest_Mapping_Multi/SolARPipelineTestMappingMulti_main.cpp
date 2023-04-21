@@ -17,6 +17,7 @@
 #include <boost/log/core.hpp>
 #include <boost/thread/thread.hpp>
 #include <signal.h>
+#include <thread>
 
 #include "core/Log.h"
 #include "api/pipeline/IMappingPipeline.h"
@@ -224,7 +225,8 @@ auto fnClientProducer = []() {
         }
 
         if (gImageViewer->display(displayImage) == SolAR::FrameworkReturnCode::_STOP) {
-            gClientProducerTask->stop();
+            std::thread t ([](){raise(SIGINT);} );
+            t.detach();
         }
     }
     else {
@@ -252,7 +254,8 @@ auto fnClientViewer = []() {
 		}
 		// Display
 		if (gViewer3D->display(pointClouds, keyframePoses[keyframePoses.size() - 1], keyframePoses, {}, {}) == FrameworkReturnCode::_STOP) {
-			gClientViewerTask->stop();
+            std::thread t ([](){raise(SIGINT);} );
+            t.detach();
 		}
 	}    
     else {

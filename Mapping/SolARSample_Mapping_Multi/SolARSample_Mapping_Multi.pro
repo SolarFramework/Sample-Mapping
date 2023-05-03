@@ -30,23 +30,20 @@ DEPENDENCIESCONFIG = sharedlib install_recurse
 win32:CONFIG -= static
 win32:CONFIG += shared
 
-## Configuration for Visual Studio to install binaries and dependencies. Work also for QT Creator by replacing QMAKE_INSTALL
+## Configuration for Visual Studio to install binaries and dependencies. Work also for QT Creator by replacing QMAKE_INSTALLm
 PROJECTCONFIG = QTVS
 
 #NOTE : CONFIG as staticlib or sharedlib, DEPENDENCIESCONFIG as staticlib or sharedlib, QMAKE_TARGET.arch and PROJECTDEPLOYDIR MUST BE DEFINED BEFORE templatelibconfig.pri inclusion
 include ($$shell_quote($$shell_path($${QMAKE_REMAKEN_RULES_ROOT}/templateappconfig.pri)))  # Shell_quote & shell_path required for visual on windows
 
 #DEFINES += BOOST_ALL_NO_LIB
-DEFINES += BOOST_ALL_DYN_LINK
 DEFINES += BOOST_AUTO_LINK_NOMANGLE
-DEFINES += BOOST_LOG_DYN_LINK
 
 SOURCES += \
     main.cpp
 
 unix {
     LIBS += -ldl
-    QMAKE_CXXFLAGS += -DBOOST_LOG_DYN_LINK
 
     # Avoids adding install steps manually. To be commented to have a better control over them.
     QMAKE_POST_LINK += "make install install_deps"

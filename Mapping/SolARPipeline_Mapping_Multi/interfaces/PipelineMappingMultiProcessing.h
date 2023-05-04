@@ -32,6 +32,7 @@
 #include "xpcf/threading/BaseTask.h"
 
 #include <mutex>  // For std::unique_lock
+#include <unordered_set> // For storing keyframe ids 
 
 #include "base/pipeline/AMappingPipeline.h"
 #include "api/slam/IBootstrapper.h"
@@ -50,6 +51,7 @@
 #include "api/pipeline/IMapUpdatePipeline.h"
 #include "api/pipeline/IRelocalizationPipeline.h"
 #include "api/geom/I3DTransform.h"
+#include "api/reloc/IKeyframeRetriever.h"
 
 namespace SolAR {
 using namespace api::pipeline;
@@ -97,6 +99,11 @@ namespace MAPPING {
         /// @brief Initialization of the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the init succeed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode init() override;
+
+        /// @brief Initialization of the pipeline with the URL of an available Relocalization Service
+        /// @param[in] relocalizationServiceURL the URL of an available Relocalization Service
+        /// @return FrameworkReturnCode::_SUCCESS if the init succeed, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode init(const std::string relocalizationServiceURL) override;
 
         /// @brief Set the camera parameters
         /// @param[in] cameraParams: the camera parameters (its resolution and its focal)
@@ -203,6 +210,7 @@ namespace MAPPING {
         SRef<api::loop::ILoopCorrector>						m_loopCorrector;
 		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
         SRef<api::geom::I3DTransform>                       m_transform3D;
+        SRef<api::reloc::IKeyframeRetriever>                m_keyframeRetriever;
 
         std::atomic_bool                                    m_isMappingIdle;		// indicates if the mapping task is idle
         std::atomic_bool                                    m_isLoopIdle;			// indicates if the loop closure task is idle
@@ -215,6 +223,8 @@ namespace MAPPING {
         uint32_t                                            m_curKeyframeId;        // the current keyframe will be corrected by using the new transformation
 		float												m_minWeightNeighbor;
         int													m_countNewKeyframes;
+        std::unordered_set<uint32_t>                        m_keyframeIds;          // keyframe ids added during current mapping
+        int                                                 m_boWFeatureFromMatchedDescriptors;  // if > 0 indicate that bow feature will be computed merely from matched descriptors
 
         bool m_init = false;            // Indicate if initialization has been made
         bool m_cameraOK = false;        // Indicate if camera parameters has been set

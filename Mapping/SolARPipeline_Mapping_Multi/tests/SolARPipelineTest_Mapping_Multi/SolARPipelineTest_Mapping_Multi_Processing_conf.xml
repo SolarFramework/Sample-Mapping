@@ -246,17 +246,18 @@
 			<property name="angleThres" type="float" value="0.08"/>
         </configure>
         <configure component="SolARSLAMTracking">
-            <property name="minWeightNeighbor" type="float" value="50.0"/>
+            <property name="minWeightNeighbor" type="float" value="20.0"/>
             <property name="displayTrackedPoints" type="int" value="1"/>
             <property name="thresAngleViewDirection" type="float" value="0.8"/>
 			<property name="nbPassedFrameAtLeast" type="int" value="1"/>
             <property name="ratioCPRefKeyframe" type="float" value="0.5"/>
-            <property name="minTrackedPoints" type="int" value="200"/>
+            <property name="minTrackedPoints" type="int" value="100"/>
+			<property name="nbVisibilityAtLeast" type="int" value="5"/>
         </configure>
         <configure component="SolARSLAMMapping">
             <property name="minWeightNeighbor" type="float" value="5.0"/>
             <property name="maxNbNeighborKfs" type="int" value="8"/>
-            <property name="saveImage" type="int" value="0"/>
+            <property name="saveImage" type="int" value="1"/>
         </configure>
         <configure component="SolARMapManager">
 			<property name="directory" type="string" value="../../../../../data/map_hololens/mapA"/>
@@ -269,11 +270,12 @@
 			<property name="keyframeRetrieverFileName" type="string" value="keyframe_retriever.bin"/>
 			<property name="reprojErrorThreshold" type="float" value="5.0"/>
 			<property name="thresConfidence" type="float" value="0.03"/>
+			<property name="boWFeatureFromMatchedDescriptors" type="int" value="1" description="compute Bag of words feature only from matched descriptors"/>
         </configure>
         <configure component="SolARKeypointDetectorOpencv">
 			<property name="type" type="string" value="AKAZE2"/>
 			<property name="imageRatio" type="float" value="1.0"/>
-			<property name="nbDescriptors" type="int" value="2000"/>
+			<property name="nbDescriptors" type="int" value="1000"/>
 			<property name="nbOctaves" type="int" value="4"/>
 			<property name="threshold" type="float" value="0.0001"/>
 			<property name="borderRatio" type="float" value="0.0"/>
@@ -302,22 +304,22 @@
 			<property name="distanceRatio" type="float" value="0.9"/>
         </configure>
         <configure component="SolARDescriptorMatcherRadiusOpencv">
-                        <property name="maxDistance" type="float" value="1.0"/>
+                        <property name="maxDistance" type="float" value="0.9"/>
         </configure>
         <configure component="SolARGeometricMatchesFilterOpencv">
 			<property name="confidence" type="float" value="0.99"/>
 			<property name="outlierDistanceRatio" type="float" value="0.005"/>
-			<property name="epilinesDistance" type="float" value="3.0"/>
+			<property name="epilinesDistance" type="float" value="10.0"/>
         </configure>
         <configure component="SolARPoseEstimationSACPnpOpencv">
 			<property name="iterationsCount" type="int" value="500"/>
 			<property name="reprojError" type="float" value="3.0"/>
-			<property name="confidence" type="float" value="0.99"/>
+			<property name="confidence" type="float" value="0.96"/>
 			<property name="minNbInliers" type="int" value="15"/>
         </configure>
         <configure component="SolARMapFilter">
-			<property name="reprojErrorThreshold" type="float" value="5.0"/>
-			<property name="minTriangulationAngle" type="float" value="0.01"/>
+			<property name="reprojErrorThreshold" type="float" value="4.0"/>
+			<property name="minTriangulationAngle" type="float" value="0.02"/>
 			<property name="maxTriangulationAngle" type="float" value="2.0"/>
 			<property name="cheiralityCheck" type="int" value="1"/>
         </configure>
@@ -327,10 +329,11 @@
         </configure>
         <configure component="SolARKeyframeRetrieverFBOW">
 			<property name="VOCpath" type="string" value="../../../../../data/fbow_voc/akaze.fbow"/>
-			<property name="threshold" type="float" value="0.01"/>
+			<property name="threshold" type="float" value="0.005"/>
 			<property name="level" type="int" value="3"/>
+			<property name="distanceMetricId" type="int" value="0" description="0:L2; 1:L1; 2:ChiSquare; 3:BHATTACHARYYA; 4:DotProduct; 5:KLS"/>
 			<property name="matchingDistanceRatio" type="float" value="0.8"/>
-			<property name="matchingDistanceMax" type="float" value="800"/>
+			<property name="matchingDistanceMax" type="float" value="500"/>
         </configure>
         <configure component="SolAR3DTransformEstimationSACFrom3D3D">
 			<property name="iterationsCount" type="int" value="500"/>
@@ -343,7 +346,7 @@
 			<property name="outlierDistanceRatio" type="float" value="0.005"/>
         </configure>
         <configure component="SolARLoopClosureDetector">
-                        <property name="minNbInliers" type="int" value="30"/>
+                        <property name="minNbInliers" type="int" value="50"/>
         </configure>
         <configure component="SolARMatchesOverlayOpencv">
 			<property name="thickness" type="uint" value="1"/>
@@ -359,7 +362,7 @@
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
-			<property name="errorOutlier" type="float" value="5.0"/>
+			<property name="errorOutlier" type="float" value="10.0"/>
 			<property name="useSpanningTree" type="int" value="0"/>
 			<property name="isRobust" type="int" value="0"/>
 			<property name="fixedMap" type="int" value="0"/>
@@ -370,7 +373,7 @@
 			<property name="nbIterationsGlobal" type="int" value="20"/>
 			<property name="setVerbose" type="int" value="0"/>
 			<property name="nbMaxFixedKeyframes" type="int" value="20"/>
-			<property name="errorOutlier" type="float" value="5.0"/>
+			<property name="errorOutlier" type="float" value="10.0"/>
 			<property name="useSpanningTree" type="int" value="0"/>
 			<property name="isRobust" type="int" value="0"/>
 			<property name="fixedMap" type="int" value="0"/>

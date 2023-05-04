@@ -31,6 +31,8 @@ namespace MAPPING {
 // we consider that no drift within a certain time after the GT frame (e.g. 100 frames corresponding to about 5s)
 #define NB_FRAMES_GT_ALIVE 100 
 
+const std::string RELOCALIZATION_CONF_FILE = "./SolARService_Mapping_Multi_Relocalization_conf.xml";
+
 Timer timerPipeline;
 int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 	m_nbUpdateProcess(0), m_nbFrameToMapping(0), m_nbMappingProcess(0), m_idProcessGTReceived(0);
@@ -64,6 +66,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             declareInjectable<api::loop::ILoopClosureDetector>(m_loopDetector);
             declareInjectable<api::loop::ILoopCorrector>(m_loopCorrector);
             declareInjectable<api::geom::I3DTransform>(m_transform3D);
+            declareInjectable<api::reloc::IKeyframeRetriever>(m_keyframeRetriever);
 
             LOG_DEBUG("All component injections declared");
 
@@ -133,6 +136,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
         LOG_DEBUG("PipelineMappingMultiProcessing::onInjected");
         // Get properties
         m_minWeightNeighbor = m_mapping->bindTo<xpcf::IConfigurable>()->getProperty("minWeightNeighbor")->getFloatingValue();
+        m_boWFeatureFromMatchedDescriptors = m_mapManager->bindTo<xpcf::IConfigurable>()->getProperty("boWFeatureFromMatchedDescriptors")->getIntegerValue();
     }
 
     PipelineMappingMultiProcessing::~PipelineMappingMultiProcessing()
@@ -204,6 +208,54 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 		m_init = true;
 		
         return FrameworkReturnCode::_SUCCESS;
+    }
+
+    FrameworkReturnCode PipelineMappingMultiProcessing::init(const std::string relocalizationServiceURL)
+    {
+        LOG_DEBUG("PipelineMappingMultiProcessing::init(relocalizationServiceURL)");
+
+        if (relocalizationServiceURL != "") {
+            // Open/create configuration file for the Relocalization service
+            std::ofstream confFile(RELOCALIZATION_CONF_FILE, std::ofstream::out);
+
+            // Check if file was successfully opened for writing
+            if (confFile.is_open())
+            {
+                confFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>" << std::endl;
+                confFile << "<xpcf-registry autoAlias=\"true\">" << std::endl << std::endl;
+                confFile << "<properties>" << std::endl;
+                confFile << "    <!-- gRPC proxy configuration-->" << std::endl;
+                confFile << "    <configure component=\"IRelocalizationPipeline_grpcProxy\">" << std::endl;
+                confFile << "        <property name=\"channelUrl\" access=\"rw\" type=\"string\" value=\""
+                      << relocalizationServiceURL << "\"/>" << std::endl;
+                confFile << "        <property name=\"channelCredentials\" access=\"rw\" type=\"uint\" value=\"0\"/>" << std::endl;
+                confFile << "    </configure>" << std::endl << std::endl;
+                confFile << "</properties>" << std::endl << std::endl;
+                confFile << "</xpcf-registry>" << std::endl;
+
+                confFile.close();
+            }
+            else {
+                LOG_ERROR("Error when creating the Relocalization service configuration file");
+                return FrameworkReturnCode::_ERROR_;
+            }
+
+            LOG_DEBUG("Load the new Relocalization properties configuration file: {}", RELOCALIZATION_CONF_FILE);
+
+            SRef<xpcf::IComponentManager> cmpMgr = xpcf::getComponentManagerInstance();
+            if (cmpMgr->load(RELOCALIZATION_CONF_FILE.c_str()) != org::bcom::xpcf::_SUCCESS) {
+                LOG_ERROR("Failed to load properties configuration file: {}", RELOCALIZATION_CONF_FILE);
+                return FrameworkReturnCode::_ERROR_;
+            }
+
+            m_relocPipeline = cmpMgr->resolve<api::pipeline::IRelocalizationPipeline>();
+        }
+        else {
+            LOG_ERROR("Initialization with an empty Relocalization Service URL");
+            return FrameworkReturnCode::_ERROR_;
+        }
+
+        return init();
     }
 
     FrameworkReturnCode PipelineMappingMultiProcessing::setCameraParameters(const CameraParameters & cameraParams)
@@ -300,6 +352,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_isLoopIdle = true;
             m_isGTPoseReady = false;
             m_nbTrackingLost = 0;
+            m_keyframeIds.clear();
 
             // Init report variables
             m_nbImageRequest = 0;
@@ -398,6 +451,8 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 					LOG_ERROR("Cannot stop relocalization pipeline");
 				}
 			}
+
+            m_keyframeIds.clear();
         }
         else {
             LOG_INFO("Pipeline already stopped");
@@ -565,10 +620,24 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
                     m_cameraParamsID = camParams->id;
 
                     SRef<Keyframe> keyframe;
-                    m_keyframesManager->getKeyframe(0, keyframe);
-                    m_lastKeyframeId = 0;
-                    m_curKeyframeId = 0;
-                    m_tracking->setNewKeyframe(keyframe);
+                    std::vector<uint32_t> retKeyframesId;
+                    // find the keyframe most similar to frame and set it as reference keyframe 
+                    if (m_keyframeRetriever->retrieve(frame, retKeyframesId) == FrameworkReturnCode::_SUCCESS) {
+                        LOG_DEBUG("Successful relocalization. Update reference keyframe id: {}", retKeyframesId[0]);
+                        if (m_keyframesManager->getKeyframe(retKeyframesId[0], keyframe) == FrameworkReturnCode::_SUCCESS) {
+                            m_lastKeyframeId = retKeyframesId[0];
+                            m_curKeyframeId = retKeyframesId[0];
+                            m_tracking->setNewKeyframe(keyframe);
+                        }
+                        else {
+                            LOG_ERROR("Get keyframe failed");
+                            return;
+                        }
+                    }
+                    else {
+                        LOG_ERROR("Relocalization failed");
+                        return;
+                    }
                     LOG_INFO("Number of initial keyframes: {}", m_keyframesManager->getNbKeyframes());
                     LOG_INFO("Number of initial point cloud: {}", m_pointCloudManager->getNbPoints());
                     m_status = MappingStatus::MAPPING;
@@ -690,6 +759,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             if (m_mapping->process(frame, keyframe) == FrameworkReturnCode::_SUCCESS) {
                 m_curKeyframeId = keyframe->getId();
                 LOG_DEBUG("New keyframe id: {}", keyframe->getId());
+                m_keyframeIds.insert(keyframe->getId());
                 // Local bundle adjustment
                 std::vector<uint32_t> bestIdx;
                 m_covisibilityGraphManager->getNeighbors(keyframe->getId(), m_minWeightNeighbor, bestIdx, NB_LOCALKEYFRAMES);
@@ -794,6 +864,16 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             LOG_INFO("Nb of pruning keyframes: {}", nbKfPruning);
             LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                      m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
+            if (m_boWFeatureFromMatchedDescriptors > 0) {
+                // recompute BoW features using only useful descriptors 
+                m_keyframeRetriever->resetKeyframeRetrieval();
+                for (auto id : m_keyframeIds) {
+                    SRef<Keyframe> keyframe;
+                    if (m_keyframesManager->getKeyframe(id, keyframe) == FrameworkReturnCode::_SUCCESS) // may return fail because of keyframe pruning
+                        m_keyframeRetriever->addKeyframe(keyframe, true);
+                }
+                LOG_INFO("Recompute BoW features from matched descriptors for keyframes");
+            }
             lock.unlock();
 
             if (m_mapUpdatePipeline != nullptr){

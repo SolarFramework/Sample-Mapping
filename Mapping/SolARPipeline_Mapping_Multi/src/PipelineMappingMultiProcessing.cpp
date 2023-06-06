@@ -441,7 +441,7 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
 			LOG_INFO("Nb of mapping request and process: {} / {}", m_nbFrameToMapping, m_nbMappingProcess);
 
             if (m_status != MappingStatus::BOOTSTRAP){
-				LOG_INFO("Bundle adjustment, map pruning and global map udate");
+                LOG_INFO("Bundle adjustment, map pruning and global map update");
                 globalBundleAdjustment();
             }
 
@@ -858,12 +858,19 @@ int m_nbImageRequest(0), m_nbExtractionProcess(0), m_nbFrameToUpdate(0),
             m_globalBundler->bundleAdjustment();
             LOG_INFO("Global BA done");
             // Map pruning
+            if (m_mapManager->visibilityPruning() != FrameworkReturnCode::_SUCCESS) {
+               LOG_WARNING("Visibility pruning did not succeed, may lead to reduced reloc accuracy from this map");
+            }
+            else {
+               LOG_INFO("Visibilities of keyframes and cloud points pruned");
+            }
             int nbCpPruning = m_mapManager->pointCloudPruning();
             LOG_INFO("Nb of pruning cloud points: {}", nbCpPruning);
             int nbKfPruning = m_mapManager->keyframePruning();
             LOG_INFO("Nb of pruning keyframes: {}", nbKfPruning);
             LOG_INFO("Nb of keyframes / cloud points: {} / {}",
                      m_keyframesManager->getNbKeyframes(), m_pointCloudManager->getNbPoints());
+
             if (m_boWFeatureFromMatchedDescriptors > 0) {
                 // recompute BoW features using only useful descriptors 
                 m_keyframeRetriever->resetKeyframeRetrieval();

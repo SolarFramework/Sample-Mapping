@@ -130,14 +130,3 @@ This sample allows to visualize any 3D map previously built by the mapping sampl
 >
 	./run.sh ./SolARSample_Mapping_MapVisualizer
 
-### Map Extension sample
-
-This sample allows to extend a map with a new capture. It will load a 3D map previously built as well as a new AR device capture. It will first try to relocalize the camera of the new capture in relation to the 3D map, and then will extend the 3D map by triangulating new 3D points of the real environment. When the mapping is completed, the extended map is saved when exiting the application by pressing escape key. By default, the initial 3D map is `mapA` and the AR device capture is `loop_desktop_B`.
-
-> #### Windows
->
-	SolARSample_Mapping_MapExtension.exe
-
-> #### Linux
->
-	./run.sh ./SolARSample_Mapping_MapExtension

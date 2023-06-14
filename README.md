@@ -98,18 +98,6 @@ Add `SolARPipelineTest_Mapping_Mono_Processing_Cuda_conf.xml` at the end of the 
 
 Add `SolARPipelineTest_Mapping_Multi_Processing_Cuda_conf.xml` at the end of the command to run the pipeline test with Cuda optimization (required CUDA to be installed on your computer).
 
-* <strong>Pipeline Multi No Drop</strong>: It is a multi-threaded implementation of a mapping pipeline which will consume images and corresponding poses without any image drop, and will build the 3D map. A project to test the pipeline is also provided in the `tests` folder.
-
-> #### Windows
->
-	SolARPipelineTest_Mapping_Multi_NoDrop.exe
-
-> #### Linux
->
-	./run.sh ./SolARPipelineTest_Mapping_Multi_NoDrop
-
-Add `SolARPipelineTest_Mapping_Multi_NoDrop_Processing_Cuda_conf.xml` at the end of the command to run the pipeline test with Cuda optimization (required CUDA to be installed on your computer).
-
 We recommend first to run the `Sample Multi` which by default will load the `loop_desktop_A` AR device capture and which will build the `mapA`. To go deeper with this sample, you can change some properties available in the `SolARSample_Mapping_Multi_conf.xml` file and test on your own data:
 * component `SolARDeviceDataLoader`, properties `calibrationFile` and `pathToData`: these two properties defined the path to the calibration file of the camera of your AR device and to the captured sequence.
 * component `SolARMarker2DSquaredBinaryOpencv`, property `filePath`: the path to your fiducial marker if you want to initialize the mapping with it.

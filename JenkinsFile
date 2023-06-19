@@ -17,8 +17,7 @@ node("master") {
         moduleName="SolARSample_Mapping"
         dirName="SolARBuild"
         buildDir= \
-        "Mapping/SolARSample_Mapping_Multi,\
-         Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi,\
+        "Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi,\
          MapViz/SolARSample_Mapping_MapVisualizer"
         packageScripts="bundleSamples"
     }

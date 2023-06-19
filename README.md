@@ -49,43 +49,6 @@ These samples construct a 3D map from a AR device capture producing an image seq
 
 Also, the samples offer different modes of initialization, whether based on a fiducial marker which will define the reference coordinate system of the map, an existing 3D map previoulsy built, or no initial knowledge. In this last case, an initial map will be built based on a translation movement of the camera, and the reference coordinate system of the map will be defined by the first pose of the camera.
 
-Four samples are available for the mapping in the `Mapping` folder:
-* <strong>Sample Mono</strong>: It is a mono-threaded implementation of a standalone application which will load the AR device capture and will build the 3D map (recommended to better understand the pipeline with the source code).
-
-> #### Windows
->
-	SolARSample_Mapping_Mono.exe
-
-> #### Linux
->
-	./run.sh ./SolARSample_Mapping_Mono
-
-Add `SolARSample_Mapping_Mono_Cuda_conf.xml` at the end of the command to run the sample with Cuda optimization (required CUDA to be installed on your computer).
-
-* <strong>Sample Multi</strong>: It is a multi-threaded implementation of a standalone application which will load the AR device capture and will build the 3D map (recommended for better performances).
-
-> #### Windows
->
-	SolARSample_Mapping_Multi.exe
-
-> #### Linux
->
-	./run.sh ./SolARSample_Mapping_Multi
-
-Add `SolARSample_Mapping_Multi_Cuda_conf.xml` at the end of the command to run the sample with Cuda optimization (required CUDA to be installed on your computer).
-
-* <strong>Pipeline Mono</strong>: It is a mono-threaded implementation of a mapping pipeline which will consume images and corresponding poses, and will build the 3D map. A project to test the pipeline is also provided in the `tests` folder.
-
-> #### Windows
->
-	SolARPipelineTest_Mapping_Mono.exe
-
-> #### Linux
->
-	./run.sh ./SolARPipelineTest_Mapping_Mono
-
-Add `SolARPipelineTest_Mapping_Mono_Processing_Cuda_conf.xml` at the end of the command to run the pipeline test with Cuda optimization (required CUDA to be installed on your computer).
-
 * <strong>Pipeline Multi</strong>: It is a multi-threaded implementation of a mapping pipeline which will consume images and corresponding poses, and will build the 3D map. A project to test the pipeline is also provided in the `tests` folder.
 
 > #### Windows
@@ -98,7 +61,7 @@ Add `SolARPipelineTest_Mapping_Mono_Processing_Cuda_conf.xml` at the end of the 
 
 Add `SolARPipelineTest_Mapping_Multi_Processing_Cuda_conf.xml` at the end of the command to run the pipeline test with Cuda optimization (required CUDA to be installed on your computer).
 
-We recommend first to run the `Sample Multi` which by default will load the `loop_desktop_A` AR device capture and which will build the `mapA`. To go deeper with this sample, you can change some properties available in the `SolARSample_Mapping_Multi_conf.xml` file and test on your own data:
+We recommend first to run the `Pipeline test` which by default will load the `loop_desktop_A` AR device capture and which will build the `mapA`. To go deeper with this sample, you can change some properties available in the `SolARPipelineTest_Mapping_Multi_Processing_Cuda_conf.xml` file and test on your own data:
 * component `SolARDeviceDataLoader`, properties `calibrationFile` and `pathToData`: these two properties defined the path to the calibration file of the camera of your AR device and to the captured sequence.
 * component `SolARMarker2DSquaredBinaryOpencv`, property `filePath`: the path to your fiducial marker if you want to initialize the mapping with it.
 * component `SolARMapper`, property `directory`: here, you can set the folder path of your map used to load an existing map (in case of initial relocalization based on an existing map), and to save the resulting map.

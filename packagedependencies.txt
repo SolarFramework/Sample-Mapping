@@ -8,5 +8,3 @@ SolARModuleOpenGL|1.0.0|SolARModuleOpenGL|SolARBuild@github|https://github.com/S
 SolARModuleTools|1.0.0|SolARModuleTools|SolARBuild@github|https://github.com/SolarFramework/SolARModuleTools/releases/download|shared|
 SolARModulePopSift|1.0.0|SolARModulePopSift|SolARBuild@github|https://github.com/SolarFramework/SolARModulePopSift/releases/download|shared|
 SolARPipelineMappingMulti|1.0.0|SolARPipelineMappingMulti|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
-SolARPipelineMappingMono|1.0.0|SolARPipelineMappingMono|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download
-SolARPipelineMappingMultiNoDrop|1.0.0|SolARPipelineMappingMultiNoDrop|SolARBuild@github|https://github.com/SolarFramework/Sample-Mapping/releases/download

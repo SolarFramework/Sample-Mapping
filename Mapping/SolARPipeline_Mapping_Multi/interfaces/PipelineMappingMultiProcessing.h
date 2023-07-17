@@ -32,6 +32,7 @@
 #include "xpcf/threading/BaseTask.h"
 
 #include <mutex>  // For std::unique_lock
+#include <unordered_set> // For storing keyframe ids 
 
 #include "base/pipeline/AMappingPipeline.h"
 #include "api/slam/IBootstrapper.h"
@@ -40,6 +41,7 @@
 #include "api/slam/ITracking.h"
 #include "api/slam/IMapping.h"
 #include "api/storage/IKeyframesManager.h"
+#include "api/storage/ICameraParametersManager.h"
 #include "api/storage/IPointCloudManager.h"
 #include "api/storage/ICovisibilityGraphManager.h"
 #include "api/storage/IMapManager.h"
@@ -49,6 +51,7 @@
 #include "api/pipeline/IMapUpdatePipeline.h"
 #include "api/pipeline/IRelocalizationPipeline.h"
 #include "api/geom/I3DTransform.h"
+#include "api/reloc/IKeyframeRetriever.h"
 
 namespace SolAR {
 using namespace api::pipeline;
@@ -65,6 +68,7 @@ namespace MAPPING {
      * @SolARComponentInjectable{SolAR::api::solver::map::IBundler}     
      * @SolARComponentInjectable{SolAR::api::slam::IMapping}
      * @SolARComponentInjectable{SolAR::api::storage::IKeyframesManager}
+     * @SolARComponentInjectable{SolAR::api::storage::ICameraParametersManager}
      * @SolARComponentInjectable{SolAR::api::storage::IPointCloudManager}
 	 * @SolARComponentInjectable{SolAR::api::storage::ICovisibilityGraphManager}
 	 * @SolARComponentInjectable{SolAR::api::storage::IMapManager}
@@ -96,10 +100,27 @@ namespace MAPPING {
         /// @return FrameworkReturnCode::_SUCCESS if the init succeed, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode init() override;
 
+        /// @brief Initialization of the pipeline with the URL of an available Relocalization Service
+        /// @param[in] relocalizationServiceURL the URL of an available Relocalization Service
+        /// @return FrameworkReturnCode::_SUCCESS if the init succeed, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode init(const std::string relocalizationServiceURL) override;
+
         /// @brief Set the camera parameters
         /// @param[in] cameraParams: the camera parameters (its resolution and its focal)
         /// @return FrameworkReturnCode::_SUCCESS if the camera parameters are correctly set, else FrameworkReturnCode::_ERROR_
         FrameworkReturnCode setCameraParameters(const datastructure::CameraParameters & cameraParams) override;
+
+        /// @brief Set the rectification parameters (use for stereo camera)
+        /// @param[in] rectCam1 the rectification parameters of the first camera
+        /// @param[in] rectCam2 the rectification parameters of the second camera
+        /// @return FrameworkReturnCode::_SUCCESS if the rectification parameters are correctly set, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode setRectificationParameters(const SolAR::datastructure::RectificationParameters & rectCam1,
+                                                       const SolAR::datastructure::RectificationParameters & rectCam2) override;
+
+        /// @brief Set the 3D transformation from SolAR to world spaces
+        /// @param[in] transform the transformation matrix from SolAR to World
+        /// @return FrameworkReturnCode::_SUCCESS if the transform is correctly set, else FrameworkReturnCode::_ERROR_
+        FrameworkReturnCode set3DTransformSolARToWorld(const SolAR::datastructure::Transform3Df & transform) override;
 
         /// @brief Start the pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the stard succeed, else FrameworkReturnCode::_ERROR_
@@ -112,16 +133,18 @@ namespace MAPPING {
         /// @brief Request to the mapping pipeline to process a new image/pose
         /// Retrieve the new image (and pose) to process, in the current pipeline context
         /// (camera configuration, fiducial marker, point cloud, key frames, key points)
-        /// @param[in] image the input image to process
-        /// @param[in] pose the input pose in the device coordinate system
-        /// @param[in] transform the transformation matrix from the device coordinate system to the world coordinate system
-        /// @param[out] updatedTransform the refined transformation by a loop closure detection
+        /// @param[in] images the input image to process
+        /// @param[in] posesArr the input pose in the device coordinate system
+        /// @param[in] fixedPose the input poses are considered as ground truth
+        /// @param[in] transformArrWorld the transformation matrix from the device coordinate system to the world coordinate system
+        /// @param[out] updatedTransformArrWorld the refined transformation by a loop closure detection
         /// @param[out] status the current status of the mapping pipeline
         /// @return FrameworkReturnCode::_SUCCESS if the data are ready to be processed, else FrameworkReturnCode::_ERROR_
-        FrameworkReturnCode mappingProcessRequest(const SRef<SolAR::datastructure::Image> image,
-                                                  const SolAR::datastructure::Transform3Df & pose,
-                                                  const SolAR::datastructure::Transform3Df & transform,
-                                                  SolAR::datastructure::Transform3Df & updatedTransform,
+        FrameworkReturnCode mappingProcessRequest(const std::vector<SRef<SolAR::datastructure::Image>> & images,
+                                                  const std::vector<SolAR::datastructure::Transform3Df> & posesArr,
+                                                  bool fixedPose,
+                                                  const SolAR::datastructure::Transform3Df & transformArrWorld,
+                                                  SolAR::datastructure::Transform3Df & updatedTransformArrWorld,
                                                   MappingStatus & status) override;
 
         /// @brief Provide the current data from the mapping pipeline context for visualization
@@ -166,6 +189,7 @@ namespace MAPPING {
         mutable std::mutex									m_mutexMapData;         // Mutex for map data
         std::mutex                                          m_mutexMapping;         // Mutex for mapping
         datastructure::CameraParameters						m_cameraParams;         // camera parameters
+        uint32_t                                            m_cameraParamsID;       // camera parameters ID
         std::vector<SRef<datastructure::CloudPoint>>        m_allPointClouds;       // all current point cloud
         std::vector<datastructure::Transform3Df>            m_allKeyframePoses;     // all current keyframe poses
 
@@ -175,6 +199,7 @@ namespace MAPPING {
         SRef<api::slam::ITracking>							m_tracking;
         SRef<api::slam::IMapping>							m_mapping;
         SRef<api::storage::IKeyframesManager>				m_keyframesManager;
+        SRef<api::storage::ICameraParametersManager>        m_cameraParametersManager;
         SRef<api::storage::IPointCloudManager>				m_pointCloudManager;
 		SRef<api::storage::ICovisibilityGraphManager>		m_covisibilityGraphManager;
 		SRef<api::storage::IMapManager>						m_mapManager;
@@ -185,6 +210,7 @@ namespace MAPPING {
         SRef<api::loop::ILoopCorrector>						m_loopCorrector;
 		SRef<api::geom::IUndistortPoints>					m_undistortKeypoints;
         SRef<api::geom::I3DTransform>                       m_transform3D;
+        SRef<api::reloc::IKeyframeRetriever>                m_keyframeRetriever;
 
         std::atomic_bool                                    m_isMappingIdle;		// indicates if the mapping task is idle
         std::atomic_bool                                    m_isLoopIdle;			// indicates if the loop closure task is idle
@@ -197,11 +223,15 @@ namespace MAPPING {
         uint32_t                                            m_curKeyframeId;        // the current keyframe will be corrected by using the new transformation
 		float												m_minWeightNeighbor;
         int													m_countNewKeyframes;
+        std::unordered_set<uint32_t>                        m_keyframeIds;          // keyframe ids added during current mapping
+        int                                                 m_boWFeatureFromMatchedDescriptors;  // if > 0 indicate that bow feature will be computed merely from matched descriptors
 
         bool m_init = false;            // Indicate if initialization has been made
         bool m_cameraOK = false;        // Indicate if camera parameters has been set
         bool m_started = false;         // Indicate if pipeline il started
         bool m_tasksStarted = false;    // Indicate if tasks are started
+        bool m_isGTPoseReady = false;   // indicates if a groundtruth pose is freshly received and ready to use 
+        uint32_t m_nbTrackingLost = 0;   // Nb successive tracking lost events
 
         // Delegate tasks dedicated to asynchronous mapping processing
         xpcf::DelegateTask * m_bootstrapTask = nullptr;
@@ -212,7 +242,13 @@ namespace MAPPING {
         xpcf::DelegateTask * m_driftCorrectionTask = nullptr;
 
         // Drop buffers used by mapping processing
-        xpcf::DropBuffer<std::pair<SRef<datastructure::Image>, datastructure::Transform3Df>>  m_dropBufferCamImagePoseCapture;
+        struct CaptureDropBufferElement
+        {
+            SRef<datastructure::Image> image;
+            datastructure::Transform3Df pose;
+            bool fixedPose;
+        };
+        xpcf::DropBuffer<CaptureDropBufferElement>                             m_dropBufferCamImagePoseCapture;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrame;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferFrameBootstrap;
         xpcf::DropBuffer<SRef<datastructure::Frame>>                           m_dropBufferAddKeyframe;

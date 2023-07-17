@@ -3,27 +3,12 @@ node("master") {
     /*
      *  Pipelines
      */
-    SolArModulePipeline {
-        moduleName="SolARPipelineMappingMono"
-        dirName="SolARBuild"
-        buildDir="Mapping/SolARPipeline_Mapping_Mono"
-        android=true       
-    }
 
     SolArModulePipeline {
         moduleName="SolARPipelineMappingMulti"
         dirName="SolARBuild"
         buildDir="Mapping/SolARPipeline_Mapping_Multi"
-        android=true
     }
-
-    SolArModulePipeline {
-        moduleName="SolARPipelineMappingMultiNoDrop"
-        dirName="SolARBuild"
-        buildDir="Mapping/SolARPipeline_Mapping_Multi_NoDrop"
-        android=true
-    }
-
 
     /*
      *  Samples
@@ -32,14 +17,8 @@ node("master") {
         moduleName="SolARSample_Mapping"
         dirName="SolARBuild"
         buildDir= \
-        "MapExtension/SolARSample_Mapping_MapExtension_Mono,\
-         Mapping/SolARSample_Mapping_Mono,\
-         Mapping/SolARSample_Mapping_Multi,\
-         Mapping/SolARPipeline_Mapping_Mono/tests/SolARPipelineTest_Mapping_Mono,\
-         Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi,\
-         Mapping/SolARPipeline_Mapping_Multi_NoDrop/tests/SolARPipelineTest_Mapping_Multi_NoDrop,\
+        "Mapping/SolARPipeline_Mapping_Multi/tests/SolARPipelineTest_Mapping_Multi,\
          MapViz/SolARSample_Mapping_MapVisualizer"
-        android=false
         packageScripts="bundleSamples"
     }
 
